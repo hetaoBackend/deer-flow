@@ -1,11 +1,12 @@
-from typing import TypedDict
+from typing import NotRequired, TypedDict
 
 from langchain.agents import AgentState
 
 
 class SandboxState(TypedDict):
-    sandbox_id: str | None = None
+    sandbox_id: NotRequired[str | None]
 
 
 class ThreadState(AgentState):
-    sandbox: SandboxState | None = None
+    sandbox: NotRequired[SandboxState | None]
+    title: NotRequired[str | None]

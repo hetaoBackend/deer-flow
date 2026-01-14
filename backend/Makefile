@@ -8,4 +8,4 @@ lint:
 	uvx ruff check .
 
 format:
-	uvx ruff format .
+	uvx ruff check . --fix && uvx ruff format .

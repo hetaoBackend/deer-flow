@@ -3,11 +3,15 @@ from pathlib import Path
 from typing import Self
 
 import yaml
+from dotenv import load_dotenv
 from pydantic import BaseModel, ConfigDict, Field
 
 from src.config.model_config import ModelConfig
 from src.config.sandbox_config import SandboxConfig
+from src.config.title_config import load_title_config_from_dict
 from src.config.tool_config import ToolConfig, ToolGroupConfig
+
+load_dotenv()
 
 
 class AppConfig(BaseModel):
@@ -64,6 +68,11 @@ class AppConfig(BaseModel):
         with open(resolved_path) as f:
             config_data = yaml.safe_load(f)
         cls.resolve_env_variables(config_data)
+
+        # Load title config if present
+        if "title" in config_data:
+            load_title_config_from_dict(config_data["title"])
+
         result = cls.model_validate(config_data)
         return result
 

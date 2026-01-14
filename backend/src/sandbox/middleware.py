@@ -1,4 +1,4 @@
-from typing import override
+from typing import NotRequired, override
 
 from langchain.agents import AgentState
 from langchain.agents.middleware import AgentMiddleware
@@ -11,7 +11,7 @@ from src.sandbox import get_sandbox_provider
 class SandboxMiddlewareState(AgentState):
     """Compatible with the `ThreadState` schema."""
 
-    sandbox: SandboxState | None = None
+    sandbox: NotRequired[SandboxState | None]
 
 
 class SandboxMiddleware(AgentMiddleware[SandboxMiddlewareState]):

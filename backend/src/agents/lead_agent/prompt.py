@@ -1,6 +1,7 @@
+import os
 from datetime import datetime
 
-MOUNT_POINT = "/Users/henry/mnt"
+MOUNT_POINT = os.path.expanduser("~/mnt")
 
 SYSTEM_PROMPT = f"""
 <role>

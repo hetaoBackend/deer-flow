@@ -5,6 +5,8 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "agent-sandbox>=0.0.19",
+    "dotenv>=0.9.9",
     "langchain>=1.2.3",
     "langchain-deepseek>=1.0.1",
     "langchain-openai>=1.1.7",
@@ -18,5 +20,6 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+    "pytest>=8.0.0",
     "ruff>=0.14.11",
 ]
