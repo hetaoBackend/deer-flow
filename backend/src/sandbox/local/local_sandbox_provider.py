@@ -1,12 +1,11 @@
 from src.sandbox.local.local_sandbox import LocalSandbox
-from src.sandbox.sandbox import Sandbox
 from src.sandbox.sandbox_provider import SandboxProvider
 
 _singleton: LocalSandbox | None = None
 
 
 class LocalSandboxProvider(SandboxProvider):
-    def acquire(self) -> Sandbox:
+    def acquire(self, thread_id: str | None = None) -> str:
         global _singleton
         if _singleton is None:
             _singleton = LocalSandbox("local")

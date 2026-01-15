@@ -9,7 +9,7 @@ class SandboxProvider(ABC):
     """Abstract base class for sandbox providers"""
 
     @abstractmethod
-    def acquire(self) -> str:
+    def acquire(self, thread_id: str | None = None) -> str:
         """Acquire a sandbox environment and return its ID.
 
         Returns:
@@ -39,7 +39,7 @@ class SandboxProvider(ABC):
 _default_sandbox_provider: SandboxProvider | None = None
 
 
-def get_sandbox_provider() -> SandboxProvider:
+def get_sandbox_provider(**kwargs) -> SandboxProvider:
     """Get the sandbox provider.
 
     Returns:
@@ -49,5 +49,5 @@ def get_sandbox_provider() -> SandboxProvider:
     if _default_sandbox_provider is None:
         config = get_app_config()
         cls = resolve_class(config.sandbox.use, SandboxProvider)
-        _default_sandbox_provider = cls()
+        _default_sandbox_provider = cls(**kwargs)
     return _default_sandbox_provider

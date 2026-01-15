@@ -64,3 +64,32 @@ tools:
     use: src.sandbox.tools:bash_tool
 sandbox:
   use: src.sandbox.local:LocalSandboxProvider
+
+# To use Docker-based AIO sandbox instead, uncomment the following:
+# sandbox:
+#   use: src.community.aio_sandbox:AioSandboxProvider
+#   # Optional: Use existing sandbox at this URL (no Docker container will be started)
+#   # base_url: http://localhost:8080
+#   # Optional: Docker image to use (default: enterprise-public-cn-beijing.cr.volces.com/vefaas-public/all-in-one-sandbox:latest)
+#   # image: enterprise-public-cn-beijing.cr.volces.com/vefaas-public/all-in-one-sandbox:latest
+#   # Optional: Base port for sandbox containers (default: 8080)
+#   # port: 8080
+#   # Optional: Whether to automatically start Docker container (default: true)
+#   # auto_start: true
+#   # Optional: Prefix for container names (default: deer-flow-sandbox)
+#   # container_prefix: deer-flow-sandbox
+#   # Optional: Mount directories from host to container
+#   # mounts:
+#   #   - host_path: /path/on/host
+#   #     container_path: /home/user/shared
+#   #     read_only: false
+#   #   - host_path: /another/path
+#   #     container_path: /data
+#   #     read_only: true
+
+# Automatic thread title generation
+title:
+  enabled: true
+  max_words: 6
+  max_chars: 60
+  model_name: null  # Use default model

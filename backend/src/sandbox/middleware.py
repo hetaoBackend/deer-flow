@@ -4,7 +4,7 @@ from langchain.agents import AgentState
 from langchain.agents.middleware import AgentMiddleware
 from langgraph.runtime import Runtime
 
-from src.agents.thread_state import SandboxState
+from src.agents.thread_state import SandboxState, ThreadDataState
 from src.sandbox import get_sandbox_provider
 
 
@@ -12,6 +12,7 @@ class SandboxMiddlewareState(AgentState):
     """Compatible with the `ThreadState` schema."""
 
     sandbox: NotRequired[SandboxState | None]
+    thread_data: NotRequired[ThreadDataState | None]
 
 
 class SandboxMiddleware(AgentMiddleware[SandboxMiddlewareState]):
@@ -19,15 +20,17 @@ class SandboxMiddleware(AgentMiddleware[SandboxMiddlewareState]):
 
     state_schema = SandboxMiddlewareState
 
-    def _acquire_sandbox(self) -> str:
+    def _acquire_sandbox(self, thread_id: str) -> str:
         provider = get_sandbox_provider()
-        sandbox_id = provider.acquire()
+        sandbox_id = provider.acquire(thread_id)
         print(f"Acquiring sandbox {sandbox_id}")
         return sandbox_id
 
     @override
     def before_agent(self, state: SandboxMiddlewareState, runtime: Runtime) -> dict | None:
         if "sandbox" not in state or state["sandbox"] is None:
-            sandbox_id = self._acquire_sandbox()
+            thread_id = runtime.context["thread_id"]
+            print(f"Thread ID: {thread_id}")
+            sandbox_id = self._acquire_sandbox(thread_id)
             return {"sandbox": {"sandbox_id": sandbox_id}}
         return super().before_agent(state, runtime)
