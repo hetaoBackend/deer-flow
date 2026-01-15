@@ -71,8 +71,9 @@ class ThreadDataMiddleware(AgentMiddleware[ThreadDataMiddlewareState]):
     @override
     def before_agent(self, state: ThreadDataMiddlewareState, runtime: Runtime) -> dict | None:
         # Generate new thread ID and create directories
-        print(runtime.context)
-        thread_id = runtime.context["thread_id"]
+        thread_id = runtime.context.get("thread_id")
+        if thread_id is None:
+            raise ValueError("Thread ID is required in the context")
         paths = self._create_thread_directories(thread_id)
         print(f"Created thread data directories for thread {thread_id}")
 

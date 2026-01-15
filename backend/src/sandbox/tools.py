@@ -168,14 +168,16 @@ def read_file_tool(
     runtime: ToolRuntime[ContextT, ThreadState],
     description: str,
     path: str,
-    view_range: tuple[int, int] | None = None,
+    start_line: int | None = None,
+    end_line: int | None = None,
 ) -> str:
-    """Read the contents of a text file.
+    """Read the contents of a text file. Use this to examine source code, configuration files, logs, or any text-based file.
 
     Args:
-        description: Explain why you are viewing this file in short words. ALWAYS PROVIDE THIS PARAMETER FIRST.
+        description: Explain why you are reading this file in short words. ALWAYS PROVIDE THIS PARAMETER FIRST.
         path: The **absolute** path to the file to read.
-        view_range: The range of lines to view. The range is inclusive and starts at 1. For example, (1, 10) will view the first 10 lines of the file.
+        start_line: Optional starting line number (1-indexed, inclusive). Use with end_line to read a specific range.
+        end_line: Optional ending line number (1-indexed, inclusive). Use with start_line to read a specific range.
     """
     try:
         sandbox = sandbox_from_runtime(runtime)
@@ -185,9 +187,8 @@ def read_file_tool(
         content = sandbox.read_file(path)
         if not content:
             return "(empty)"
-        if view_range:
-            start, end = view_range
-            content = "\n".join(content.splitlines()[start - 1 : end])
+        if start_line is not None and end_line is not None:
+            content = "\n".join(content.splitlines()[start_line - 1 : end_line])
         return content
     except Exception as e:
         return f"Error: {e}"
