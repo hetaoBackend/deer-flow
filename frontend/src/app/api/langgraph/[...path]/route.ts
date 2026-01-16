@@ -31,7 +31,7 @@ export async function DELETE(
 }
 
 async function handleProxy(request: NextRequest, pathSegments: string[]) {
-  const targetUrl = `http://localhost:2024/${pathSegments.join("/")}`;
+  const targetUrl = `http://localhost:8000/${pathSegments.join("/")}`;
 
   // Preserve query parameters
   const searchParams = request.nextUrl.searchParams.toString();

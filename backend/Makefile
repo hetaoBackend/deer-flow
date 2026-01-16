@@ -2,7 +2,16 @@ install:
 	uv sync
 
 dev:
-	uvx --refresh --from "langgraph-cli[inmem]" --with-editable . --python 3.12 langgraph dev --no-browser --allow-blocking
+	uv run langgraph dev --no-browser --allow-blocking
+
+gateway:
+	uv run uvicorn src.gateway.app:app --host 0.0.0.0 --port 8000 --reload
+
+serve:
+	@trap 'kill 0' EXIT; \
+	uv run langgraph dev --no-browser --allow-blocking & \
+	sleep 3 && uv run uvicorn src.gateway.app:app --host 0.0.0.0 --port 8000 --reload & \
+	wait
 
 lint:
 	uvx ruff check .

@@ -15,7 +15,7 @@ middlewares = [ThreadDataMiddleware(), SandboxMiddleware(), TitleMiddleware()]
 
 def make_lead_agent(config: RunnableConfig):
     thinking_enabled = config.get("configurable", {}).get("thinking_enabled", True)
-    model_name = config.get("configurable", {}).get("model_name")
+    model_name = config.get("configurable", {}).get("model_name") or config.get("configurable", {}).get("model")
     print(f"thinking_enabled: {thinking_enabled}, model_name: {model_name}")
     return create_agent(
         model=create_chat_model(name=model_name, thinking_enabled=thinking_enabled),
