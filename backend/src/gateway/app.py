@@ -6,7 +6,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from src.gateway.config import get_gateway_config
-from src.gateway.routers import models, proxy
+from src.gateway.routers import artifacts, models, proxy
 
 logger = logging.getLogger(__name__)
 
@@ -48,6 +48,9 @@ def create_app() -> FastAPI:
     # Include routers
     # Models API is mounted at /api/models
     app.include_router(models.router)
+
+    # Artifacts API is mounted at /api/threads/{thread_id}/artifacts
+    app.include_router(artifacts.router)
 
     # Proxy router handles all LangGraph paths (must be last due to catch-all)
     app.include_router(proxy.router)

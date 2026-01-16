@@ -17,3 +17,4 @@ class ThreadState(AgentState):
     sandbox: NotRequired[SandboxState | None]
     thread_data: NotRequired[ThreadDataState | None]
     title: NotRequired[str | None]
+    artifacts: NotRequired[list[str] | None]

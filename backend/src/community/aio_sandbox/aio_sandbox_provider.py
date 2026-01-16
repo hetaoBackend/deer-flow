@@ -50,6 +50,7 @@ class AioSandboxProvider(SandboxProvider):
         self._sandboxes: dict[str, AioSandbox] = {}
         self._containers: dict[str, str] = {}  # sandbox_id -> container_id
         self._ports: dict[str, int] = {}  # sandbox_id -> port
+        self._thread_sandboxes: dict[str, str] = {}  # thread_id -> sandbox_id (for reusing sandbox across turns)
         self._config = self._load_config()
         self._shutdown_called = False
 
@@ -230,16 +231,33 @@ class AioSandboxProvider(SandboxProvider):
         If base_url is configured, uses the existing sandbox.
         Otherwise, starts a new Docker container.
 
+        For the same thread_id, this method will return the same sandbox_id,
+        allowing sandbox reuse across multiple turns in a conversation.
+
         This method is thread-safe.
 
         Args:
             thread_id: Optional thread ID for thread-specific configurations.
                 If provided, the sandbox will be configured with thread-specific
                 mounts for workspace, uploads, and outputs directories.
+                The same thread_id will reuse the same sandbox.
 
         Returns:
             The ID of the acquired sandbox environment.
         """
+        # Check if we already have a sandbox for this thread
+        if thread_id:
+            with self._lock:
+                if thread_id in self._thread_sandboxes:
+                    existing_sandbox_id = self._thread_sandboxes[thread_id]
+                    # Verify the sandbox still exists
+                    if existing_sandbox_id in self._sandboxes:
+                        logger.info(f"Reusing existing sandbox {existing_sandbox_id} for thread {thread_id}")
+                        return existing_sandbox_id
+                    else:
+                        # Sandbox was released, remove stale mapping
+                        del self._thread_sandboxes[thread_id]
+
         sandbox_id = str(uuid.uuid4())[:8]
 
         # Get thread-specific mounts if thread_id is provided
@@ -265,6 +283,8 @@ class AioSandboxProvider(SandboxProvider):
             sandbox = AioSandbox(id=sandbox_id, base_url=base_url)
             with self._lock:
                 self._sandboxes[sandbox_id] = sandbox
+                if thread_id:
+                    self._thread_sandboxes[thread_id] = sandbox_id
             return sandbox_id
 
         # Otherwise, start a new container
@@ -294,7 +314,9 @@ class AioSandboxProvider(SandboxProvider):
             self._sandboxes[sandbox_id] = sandbox
             self._containers[sandbox_id] = container_id
             self._ports[sandbox_id] = port
-        logger.info(f"Acquired sandbox {sandbox_id} at {base_url}")
+            if thread_id:
+                self._thread_sandboxes[thread_id] = sandbox_id
+        logger.info(f"Acquired sandbox {sandbox_id} for thread {thread_id} at {base_url}")
         return sandbox_id
 
     def get(self, sandbox_id: str) -> Sandbox | None:
@@ -329,6 +351,11 @@ class AioSandboxProvider(SandboxProvider):
             if sandbox_id in self._sandboxes:
                 del self._sandboxes[sandbox_id]
                 logger.info(f"Released sandbox {sandbox_id}")
+
+            # Remove thread_id -> sandbox_id mapping
+            thread_ids_to_remove = [tid for tid, sid in self._thread_sandboxes.items() if sid == sandbox_id]
+            for tid in thread_ids_to_remove:
+                del self._thread_sandboxes[tid]
 
             # Get container and port info while holding the lock
             if sandbox_id in self._containers:
