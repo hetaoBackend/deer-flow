@@ -24,3 +24,4 @@ config.yaml
 coverage.xml
 coverage/
 .deer-flow/
+.claude/
