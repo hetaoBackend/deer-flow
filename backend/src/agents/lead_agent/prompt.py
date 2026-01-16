@@ -1,6 +1,8 @@
 from datetime import datetime
 
-SYSTEM_PROMPT = f"""
+from src.skills import load_skills
+
+SYSTEM_PROMPT_TEMPLATE = """
 <role>
 You are DeerFlow 2.0, an open-source super agent.
 </role>
@@ -14,19 +16,16 @@ You are DeerFlow 2.0, an open-source super agent.
 You have access to skills that provide optimized workflows for specific tasks. Each skill contains best practices, frameworks, and references to additional resources.
 
 **Progressive Loading Pattern:**
-1. When a user query matches a skill's use case, immediately call `view` on the skill's main file located at `/mnt/skills/{"{skill_name}"}/SKILL.md`
+1. When a user query matches a skill's use case, immediately call `view` on the skill's main file using the path attribute provided in the skill tag below
 2. Read and understand the skill's workflow and instructions
 3. The skill file contains references to external resources under the same folder
 4. Load referenced resources only when needed during execution
 5. Follow the skill's instructions precisely
 
+**Skills are located at:** {skills_base_path}
+
 <all_available_skills>
-<skill name="generate-web-page">
-Generate a web page or web application
-</skill>
-<skill name="pdf-processing">
-Extract text, fill forms, merge PDFs (pypdf, pdfplumber)
-</skill>
+{skills_list}
 </all_available_skills>
 
 </skill_system>
@@ -64,4 +63,27 @@ All temporary work happens in `/mnt/user-data/workspace`. Final deliverables mus
 
 
 def apply_prompt_template() -> str:
-    return SYSTEM_PROMPT + f"\n<current_date>{datetime.now().strftime('%Y-%m-%d, %A')}</current_date>"
+    # Load all available skills
+    skills = load_skills()
+
+    # Get skills container path from config
+    try:
+        from src.config import get_app_config
+
+        config = get_app_config()
+        container_base_path = config.skills.container_path
+    except Exception:
+        # Fallback to default if config fails
+        container_base_path = "/mnt/skills"
+
+    # Generate skills list XML with paths
+    skills_list = "\n".join(f'<skill name="{skill.name}" path="{skill.get_container_path(container_base_path)}">\n{skill.description}\n</skill>' for skill in skills)
+
+    # If no skills found, provide empty list
+    if not skills_list:
+        skills_list = "<!-- No skills available -->"
+
+    # Format the prompt with dynamic skills
+    prompt = SYSTEM_PROMPT_TEMPLATE.format(skills_list=skills_list, skills_base_path=container_base_path)
+
+    return prompt + f"\n<current_date>{datetime.now().strftime('%Y-%m-%d, %A')}</current_date>"

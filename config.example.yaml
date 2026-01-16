@@ -1,30 +1,65 @@
 # Configuration for the DeerFlow application
 #
 # Guidelines:
-# - The default path of this configuration file is `config.yaml` in the CWD (Current Working Directory) or the parent directory of the CWD.
-#   How ever you can change it using the `DEER_FLOW_CONFIG_PATH` environment variable.
+# - Copy this file to `config.yaml` and customize it for your environment
+# - The default path of this configuration file is `config.yaml` in the current working directory.
+#   However you can change it using the `DEER_FLOW_CONFIG_PATH` environment variable.
 # - Environment variables are available for all field values. Example: `api_key: $OPENAI_API_KEY`
-# - Provider path is a string that looks like "package_name.sub_package_name.module_name:class_name/variable_name".
+# - The `use` path is a string that looks like "package_name.sub_package_name.module_name:class_name/variable_name".
+
+# ============================================================================
+# Models Configuration
+# ============================================================================
+# Configure available LLM models for the agent to use
 
 models:
-  - name: doubao-seed-1.8
-    display_name: Doubao 1.8
-    use: langchain_deepseek:ChatDeepSeek
-    model: doubao-seed-1-8-251228
-    api_base: https://ark.cn-beijing.volces.com/api/v3
-    api_key: $ARK_API_KEY
-    supports_thinking: true
-    when_thinking_enabled:
-      extra_body:
-        thinking:
-          type: enabled
-  - name: gpt-5
-    display_name: GPT-5
+  # Example: OpenAI model
+  - name: gpt-4
+    display_name: GPT-4
     use: langchain_openai:ChatOpenAI
-    model: gpt-5-251228
-    api_base: https://api.openai.com/v1
-    api_key: $OPENAI_API_KEY
-    supports_thinking: true
+    model: gpt-4
+    api_key: $OPENAI_API_KEY  # Use environment variable
+    max_tokens: 4096
+    temperature: 0.7
+
+  # Example: Anthropic Claude model
+  # - name: claude-3-5-sonnet
+  #   display_name: Claude 3.5 Sonnet
+  #   use: langchain_anthropic:ChatAnthropic
+  #   model: claude-3-5-sonnet-20241022
+  #   api_key: $ANTHROPIC_API_KEY
+  #   max_tokens: 8192
+
+  # Example: DeepSeek model (with thinking support)
+  # - name: deepseek-v3
+  #   display_name: DeepSeek V3 (Thinking)
+  #   use: langchain_deepseek:ChatDeepSeek
+  #   model: deepseek-chat
+  #   api_key: $DEEPSEEK_API_KEY
+  #   max_tokens: 16384
+  #   supports_thinking: true
+  #   when_thinking_enabled:
+  #     extra_body:
+  #       thinking:
+  #         type: enabled
+
+  # Example: Volcengine (Doubao) model
+  # - name: doubao-seed-1.8
+  #   display_name: Doubao 1.8 (Thinking)
+  #   use: langchain_deepseek:ChatDeepSeek
+  #   model: ep-m-20260106111913-xxxxx
+  #   api_base: https://ark.cn-beijing.volces.com/api/v3
+  #   api_key: $VOLCENGINE_API_KEY
+  #   supports_thinking: true
+  #   when_thinking_enabled:
+  #     extra_body:
+  #       thinking:
+  #         type: enabled
+
+# ============================================================================
+# Tool Groups Configuration
+# ============================================================================
+# Define groups of tools for organization and access control
 
 tool_groups:
   - name: web
@@ -32,17 +67,26 @@ tool_groups:
   - name: file:write
   - name: bash
 
+# ============================================================================
+# Tools Configuration
+# ============================================================================
+# Configure available tools for the agent to use
+
 tools:
+  # Web search tool (requires Tavily API key)
   - name: web_search
     group: web
     use: src.community.tavily.tools:web_search_tool
     max_results: 5
+    # api_key: $TAVILY_API_KEY  # Set if needed
 
+  # Web fetch tool (uses Jina AI reader)
   - name: web_fetch
     group: web
     use: src.community.jina_ai.tools:web_fetch_tool
     timeout: 10
 
+  # File operations tools
   - name: ls
     group: file:read
     use: src.sandbox.tools:ls_tool
@@ -59,37 +103,74 @@ tools:
     group: file:write
     use: src.sandbox.tools:str_replace_tool
 
+  # Bash execution tool
   - name: bash
     group: bash
     use: src.sandbox.tools:bash_tool
+
+# ============================================================================
+# Sandbox Configuration
+# ============================================================================
+# Choose between local sandbox (direct execution) or Docker-based AIO sandbox
+
+# Option 1: Local Sandbox (Default)
+# Executes commands directly on the host machine
 sandbox:
   use: src.sandbox.local:LocalSandboxProvider
 
-# To use Docker-based AIO sandbox instead, uncomment the following:
+# Option 2: Docker-based AIO Sandbox
+# Executes commands in isolated Docker containers
+# Uncomment to use:
 # sandbox:
 #   use: src.community.aio_sandbox:AioSandboxProvider
+#
 #   # Optional: Use existing sandbox at this URL (no Docker container will be started)
 #   # base_url: http://localhost:8080
-#   # Optional: Docker image to use (default: enterprise-public-cn-beijing.cr.volces.com/vefaas-public/all-in-one-sandbox:latest)
+#
+#   # Optional: Docker image to use
+#   # Default: enterprise-public-cn-beijing.cr.volces.com/vefaas-public/all-in-one-sandbox:latest
 #   # image: enterprise-public-cn-beijing.cr.volces.com/vefaas-public/all-in-one-sandbox:latest
+#
 #   # Optional: Base port for sandbox containers (default: 8080)
 #   # port: 8080
+#
 #   # Optional: Whether to automatically start Docker container (default: true)
 #   # auto_start: true
+#
 #   # Optional: Prefix for container names (default: deer-flow-sandbox)
 #   # container_prefix: deer-flow-sandbox
-#   # Optional: Mount directories from host to container
+#
+#   # Optional: Additional mount directories from host to container
+#   # NOTE: Skills directory is automatically mounted from skills.path to skills.container_path
 #   # mounts:
+#   #   # Other custom mounts
 #   #   - host_path: /path/on/host
 #   #     container_path: /home/user/shared
 #   #     read_only: false
-#   #   - host_path: /another/path
-#   #     container_path: /data
-#   #     read_only: true
 
-# Automatic thread title generation
+# ============================================================================
+# Skills Configuration
+# ============================================================================
+# Configure skills directory for specialized agent workflows
+
+skills:
+  # Path to skills directory on the host (relative to project root or absolute)
+  # Default: ../skills (relative to backend directory)
+  # Uncomment to customize:
+  # path: /absolute/path/to/custom/skills
+
+  # Path where skills are mounted in the sandbox container
+  # This is used by the agent to access skills in both local and Docker sandbox
+  # Default: /mnt/skills
+  container_path: /mnt/skills
+
+# ============================================================================
+# Title Generation Configuration
+# ============================================================================
+# Automatic conversation title generation settings
+
 title:
   enabled: true
   max_words: 6
   max_chars: 60
-  model_name: null  # Use default model
+  model_name: null  # Use default model (first model in models list)

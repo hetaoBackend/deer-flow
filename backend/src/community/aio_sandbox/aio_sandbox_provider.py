@@ -100,6 +100,26 @@ class AioSandboxProvider(SandboxProvider):
             (str(thread_dir / "outputs"), f"{CONTAINER_USER_DATA_DIR}/outputs", False),
         ]
 
+    def _get_skills_mount(self) -> tuple[str, str, bool] | None:
+        """Get the skills directory mount configuration.
+
+        Returns:
+            Tuple of (host_path, container_path, read_only) if skills directory exists,
+            None otherwise.
+        """
+        try:
+            config = get_app_config()
+            skills_path = config.skills.get_skills_path()
+            container_path = config.skills.container_path
+
+            # Only mount if skills directory exists
+            if skills_path.exists():
+                return (str(skills_path), container_path, True)  # Read-only mount for security
+        except Exception as e:
+            logger.warning(f"Could not setup skills mount: {e}")
+
+        return None
+
     def _start_container(self, sandbox_id: str, port: int, extra_mounts: list[tuple[str, str, bool]] | None = None) -> str:
         """Start a new Docker container for the sandbox.
 
@@ -208,10 +228,16 @@ class AioSandboxProvider(SandboxProvider):
         sandbox_id = str(uuid.uuid4())[:8]
 
         # Get thread-specific mounts if thread_id is provided
-        extra_mounts = None
+        extra_mounts = []
         if thread_id:
-            extra_mounts = self._get_thread_mounts(thread_id)
+            extra_mounts.extend(self._get_thread_mounts(thread_id))
             logger.info(f"Adding thread mounts for thread {thread_id}: {extra_mounts}")
+
+        # Add skills mount if available
+        skills_mount = self._get_skills_mount()
+        if skills_mount:
+            extra_mounts.append(skills_mount)
+            logger.info(f"Adding skills mount: {skills_mount}")
 
         # If base_url is configured, use existing sandbox
         if self._config.get("base_url"):
@@ -230,7 +256,7 @@ class AioSandboxProvider(SandboxProvider):
             raise RuntimeError("auto_start is disabled and no base_url is configured")
 
         port = self._find_available_port(self._config["port"])
-        container_id = self._start_container(sandbox_id, port, extra_mounts=extra_mounts)
+        container_id = self._start_container(sandbox_id, port, extra_mounts=extra_mounts if extra_mounts else None)
         self._containers[sandbox_id] = container_id
 
         base_url = f"http://localhost:{port}"

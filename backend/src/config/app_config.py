@@ -8,6 +8,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from src.config.model_config import ModelConfig
 from src.config.sandbox_config import SandboxConfig
+from src.config.skills_config import SkillsConfig
 from src.config.title_config import load_title_config_from_dict
 from src.config.tool_config import ToolConfig, ToolGroupConfig
 
@@ -21,6 +22,7 @@ class AppConfig(BaseModel):
     sandbox: SandboxConfig = Field(description="Sandbox configuration")
     tools: list[ToolConfig] = Field(default_factory=list, description="Available tools")
     tool_groups: list[ToolGroupConfig] = Field(default_factory=list, description="Available tool groups")
+    skills: SkillsConfig = Field(default_factory=SkillsConfig, description="Skills configuration")
     model_config = ConfigDict(extra="allow", frozen=False)
 
     @classmethod

@@ -26,11 +26,20 @@ make format
 
 ### Configuration System
 
-The app uses a YAML-based configuration system loaded from `config.yaml`. Configuration priority:
+The app uses a YAML-based configuration system loaded from `config.yaml`.
+
+**Setup**: Copy `config.example.yaml` to `config.yaml` in the **project root** directory and customize for your environment.
+
+```bash
+# From project root (deer-flow/)
+cp config.example.yaml config.yaml
+```
+
+Configuration priority:
 1. Explicit `config_path` argument
 2. `DEER_FLOW_CONFIG_PATH` environment variable
-3. `config.yaml` in current directory
-4. `config.yaml` in parent directory
+3. `config.yaml` in current directory (backend/)
+4. `config.yaml` in parent directory (project root - **recommended location**)
 
 Config values starting with `$` are resolved as environment variables (e.g., `$OPENAI_API_KEY`).
 
@@ -61,12 +70,25 @@ Config values starting with `$` are resolved as environment variables (e.g., `$O
 - `resolve_variable()` imports module and returns variable (e.g., `module:variable`)
 - `resolve_class()` imports and validates class against base class
 
+**Skills System** (`src/skills/`)
+- Skills provide specialized workflows for specific tasks (e.g., PDF processing, frontend design)
+- Located in `deer-flow/skills/{public,custom}` directory structure
+- Each skill has a `SKILL.md` file with YAML front matter (name, description, license)
+- Skills are automatically discovered and loaded at runtime
+- `load_skills()` scans directories and parses SKILL.md files
+- Skills are injected into agent's system prompt with paths
+- Path mapping system allows seamless access in both local and Docker sandbox:
+  - Local sandbox: `/mnt/skills` → `/path/to/deer-flow/skills`
+  - Docker sandbox: Automatically mounted as volume
+
 ### Config Schema
 
-Models, tools, and sandbox providers are configured in `config.yaml`:
+Models, tools, sandbox providers, and skills are configured in `config.yaml`:
 - `models[]`: LLM configurations with `use` class path
 - `tools[]`: Tool configurations with `use` variable path and `group`
 - `sandbox.use`: Sandbox provider class path
+- `skills.path`: Host path to skills directory (optional, default: `../skills`)
+- `skills.container_path`: Container mount path (default: `/mnt/skills`)
 
 ## Code Style
 

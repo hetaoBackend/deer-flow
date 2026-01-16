@@ -2,6 +2,50 @@
 
 > Originated from Open Source, give back to Open Source.
 
+A LangGraph-based AI agent backend with sandbox execution capabilities.
+
+## Quick Start
+
+1. **Configure the application**:
+   ```bash
+   # Copy example configuration
+   cp config.example.yaml config.yaml
+
+   # Set your API keys
+   export OPENAI_API_KEY="your-key-here"
+   # or edit config.yaml directly
+   ```
+
+2. **Install dependencies**:
+   ```bash
+   cd backend
+   make install
+   ```
+
+3. **Run development server**:
+   ```bash
+   make dev
+   ```
+
+## Project Structure
+
+```
+deer-flow/
+├── config.example.yaml    # Configuration template (copy to config.yaml)
+├── backend/               # Backend application
+│   ├── src/              # Source code
+│   └── docs/             # Documentation
+├── frontend/             # Frontend application
+└── skills/               # Agent skills
+    ├── public/           # Public skills
+    └── custom/           # Custom skills
+```
+
+## Documentation
+
+- [Configuration Guide](backend/docs/CONFIGURATION.md) - Setup and configuration instructions
+- [Architecture Overview](backend/CLAUDE.md) - Technical architecture details
+
 ## License
 
 This project is open source and available under the [MIT License](./LICENSE).
