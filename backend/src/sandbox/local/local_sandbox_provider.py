@@ -1,4 +1,5 @@
 from src.sandbox.local.local_sandbox import LocalSandbox
+from src.sandbox.sandbox import Sandbox
 from src.sandbox.sandbox_provider import SandboxProvider
 
 _singleton: LocalSandbox | None = None
@@ -43,7 +44,7 @@ class LocalSandboxProvider(SandboxProvider):
             _singleton = LocalSandbox("local", path_mappings=self._path_mappings)
         return _singleton.id
 
-    def get(self, sandbox_id: str) -> None:
+    def get(self, sandbox_id: str) -> Sandbox | None:
         if sandbox_id == "local":
             if _singleton is None:
                 self.acquire()
@@ -51,4 +52,9 @@ class LocalSandboxProvider(SandboxProvider):
         return None
 
     def release(self, sandbox_id: str) -> None:
+        # LocalSandbox uses singleton pattern - no cleanup needed.
+        # Note: This method is intentionally not called by SandboxMiddleware
+        # to allow sandbox reuse across multiple turns in a thread.
+        # For Docker-based providers (e.g., AioSandboxProvider), cleanup
+        # happens at application shutdown via the shutdown() method.
         pass

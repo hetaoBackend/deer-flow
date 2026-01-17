@@ -7,5 +7,5 @@
 
 ## Issues
 
-[ ] Make sure that no duplicated files in `state.artifacts`
+[x] Make sure that no duplicated files in `state.artifacts`
 [ ] Long thinking but with empty content (answer inside thinking process)

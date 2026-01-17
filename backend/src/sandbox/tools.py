@@ -4,6 +4,13 @@ from langchain.tools import ToolRuntime, tool
 from langgraph.typing import ContextT
 
 from src.agents.thread_state import ThreadDataState, ThreadState
+from src.sandbox.exceptions import (
+    SandboxError,
+    SandboxFileError,
+    SandboxFileNotFoundError,
+    SandboxNotFoundError,
+    SandboxRuntimeError,
+)
 from src.sandbox.sandbox import Sandbox
 from src.sandbox.sandbox_provider import get_sandbox_provider
 
@@ -106,17 +113,23 @@ def is_local_sandbox(runtime: ToolRuntime[ContextT, ThreadState] | None) -> bool
 
 
 def sandbox_from_runtime(runtime: ToolRuntime[ContextT, ThreadState] | None = None) -> Sandbox:
+    """Extract sandbox instance from tool runtime.
+
+    Raises:
+        SandboxRuntimeError: If runtime is not available or sandbox state is missing.
+        SandboxNotFoundError: If sandbox with the given ID cannot be found.
+    """
     if runtime is None:
-        raise ValueError("No sandbox found: No runtime found")
+        raise SandboxRuntimeError("Tool runtime not available")
     sandbox_state = runtime.state.get("sandbox")
     if sandbox_state is None:
-        raise ValueError("No sandbox found: No sandbox state found in runtime")
+        raise SandboxRuntimeError("Sandbox state not initialized in runtime")
     sandbox_id = sandbox_state.get("sandbox_id")
     if sandbox_id is None:
-        raise ValueError("No sandbox ID found: No sandbox ID found in sandbox state")
+        raise SandboxRuntimeError("Sandbox ID not found in state")
     sandbox = get_sandbox_provider().get(sandbox_id)
     if sandbox is None:
-        raise ValueError(f"No sandbox found: sandbox with ID {sandbox_id} not found")
+        raise SandboxNotFoundError(f"Sandbox with ID '{sandbox_id}' not found", sandbox_id=sandbox_id)
     return sandbox
 
 
@@ -138,8 +151,10 @@ def bash_tool(runtime: ToolRuntime[ContextT, ThreadState], description: str, com
             thread_data = get_thread_data(runtime)
             command = replace_virtual_paths_in_command(command, thread_data)
         return sandbox.execute_command(command)
-    except Exception as e:
+    except SandboxError as e:
         return f"Error: {e}"
+    except Exception as e:
+        return f"Error: Unexpected error executing command: {type(e).__name__}: {e}"
 
 
 @tool("ls", parse_docstring=True)
@@ -159,8 +174,14 @@ def ls_tool(runtime: ToolRuntime[ContextT, ThreadState], description: str, path:
         if not children:
             return "(empty)"
         return "\n".join(children)
-    except Exception as e:
+    except SandboxError as e:
         return f"Error: {e}"
+    except FileNotFoundError:
+        return f"Error: Directory not found: {path}"
+    except PermissionError:
+        return f"Error: Permission denied: {path}"
+    except Exception as e:
+        return f"Error: Unexpected error listing directory: {type(e).__name__}: {e}"
 
 
 @tool("read_file", parse_docstring=True)
@@ -190,8 +211,16 @@ def read_file_tool(
         if start_line is not None and end_line is not None:
             content = "\n".join(content.splitlines()[start_line - 1 : end_line])
         return content
-    except Exception as e:
+    except SandboxError as e:
         return f"Error: {e}"
+    except FileNotFoundError:
+        return f"Error: File not found: {path}"
+    except PermissionError:
+        return f"Error: Permission denied reading file: {path}"
+    except IsADirectoryError:
+        return f"Error: Path is a directory, not a file: {path}"
+    except Exception as e:
+        return f"Error: Unexpected error reading file: {type(e).__name__}: {e}"
 
 
 @tool("write_file", parse_docstring=True)
@@ -216,8 +245,16 @@ def write_file_tool(
             path = replace_virtual_path(path, thread_data)
         sandbox.write_file(path, content, append)
         return "OK"
-    except Exception as e:
+    except SandboxError as e:
         return f"Error: {e}"
+    except PermissionError:
+        return f"Error: Permission denied writing to file: {path}"
+    except IsADirectoryError:
+        return f"Error: Path is a directory, not a file: {path}"
+    except OSError as e:
+        return f"Error: Failed to write file '{path}': {e}"
+    except Exception as e:
+        return f"Error: Unexpected error writing file: {type(e).__name__}: {e}"
 
 
 @tool("str_replace", parse_docstring=True)
@@ -247,11 +284,19 @@ def str_replace_tool(
         content = sandbox.read_file(path)
         if not content:
             return "OK"
+        if old_str not in content:
+            return f"Error: String to replace not found in file: {path}"
         if replace_all:
             content = content.replace(old_str, new_str)
         else:
             content = content.replace(old_str, new_str, 1)
         sandbox.write_file(path, content)
         return "OK"
-    except Exception as e:
+    except SandboxError as e:
         return f"Error: {e}"
+    except FileNotFoundError:
+        return f"Error: File not found: {path}"
+    except PermissionError:
+        return f"Error: Permission denied accessing file: {path}"
+    except Exception as e:
+        return f"Error: Unexpected error replacing string: {type(e).__name__}: {e}"

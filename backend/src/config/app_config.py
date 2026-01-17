@@ -142,8 +142,53 @@ _app_config: AppConfig | None = None
 
 
 def get_app_config() -> AppConfig:
-    """Get the DeerFlow config instance."""
+    """Get the DeerFlow config instance.
+
+    Returns a cached singleton instance. Use `reload_app_config()` to reload
+    from file, or `reset_app_config()` to clear the cache.
+    """
     global _app_config
     if _app_config is None:
         _app_config = AppConfig.from_file()
     return _app_config
+
+
+def reload_app_config(config_path: str | None = None) -> AppConfig:
+    """Reload the config from file and update the cached instance.
+
+    This is useful when the config file has been modified and you want
+    to pick up the changes without restarting the application.
+
+    Args:
+        config_path: Optional path to config file. If not provided,
+                     uses the default resolution strategy.
+
+    Returns:
+        The newly loaded AppConfig instance.
+    """
+    global _app_config
+    _app_config = AppConfig.from_file(config_path)
+    return _app_config
+
+
+def reset_app_config() -> None:
+    """Reset the cached config instance.
+
+    This clears the singleton cache, causing the next call to
+    `get_app_config()` to reload from file. Useful for testing
+    or when switching between different configurations.
+    """
+    global _app_config
+    _app_config = None
+
+
+def set_app_config(config: AppConfig) -> None:
+    """Set a custom config instance.
+
+    This allows injecting a custom or mock config for testing purposes.
+
+    Args:
+        config: The AppConfig instance to use.
+    """
+    global _app_config
+    _app_config = config

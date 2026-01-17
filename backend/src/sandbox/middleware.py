@@ -16,7 +16,14 @@ class SandboxMiddlewareState(AgentState):
 
 
 class SandboxMiddleware(AgentMiddleware[SandboxMiddlewareState]):
-    """Create a sandbox environment and assign it to an agent."""
+    """Create a sandbox environment and assign it to an agent.
+
+    Lifecycle Management:
+    - Sandbox is acquired on first agent invocation for a thread (before_agent)
+    - Sandbox is reused across multiple turns within the same thread
+    - Sandbox is NOT released after each agent call to avoid wasteful recreation
+    - Cleanup happens at application shutdown via SandboxProvider.shutdown()
+    """
 
     state_schema = SandboxMiddlewareState
 
