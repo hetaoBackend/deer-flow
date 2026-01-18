@@ -2,10 +2,11 @@ from langchain.tools import BaseTool
 
 from src.config import get_app_config
 from src.reflection import resolve_variable
-from src.tools.builtins import present_file_tool
+from src.tools.builtins import ask_clarification_tool, present_file_tool
 
 BUILTIN_TOOLS = [
     present_file_tool,
+    ask_clarification_tool,
 ]
 
 

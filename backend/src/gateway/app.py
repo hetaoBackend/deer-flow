@@ -27,7 +27,6 @@ def create_app() -> FastAPI:
     Returns:
         Configured FastAPI application instance.
     """
-    config = get_gateway_config()
 
     app = FastAPI(
         title="DeerFlow API Gateway",
