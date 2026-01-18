@@ -32,7 +32,7 @@ async def main():
             "thread_id": "debug-thread-001",
             "thinking_enabled": True,
             # Uncomment to use a specific model
-            "model_name": "doubao-seed-1.8",
+            "model_name": "deepseek-v3.2",
         }
     }
 
