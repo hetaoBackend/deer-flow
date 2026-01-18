@@ -120,6 +120,8 @@ class AioSandboxProvider(SandboxProvider):
     def _get_thread_mounts(self, thread_id: str) -> list[tuple[str, str, bool]]:
         """Get the volume mounts for a thread's data directories.
 
+        Creates the directories if they don't exist (lazy initialization).
+
         Args:
             thread_id: The thread ID.
 
@@ -129,11 +131,18 @@ class AioSandboxProvider(SandboxProvider):
         base_dir = os.getcwd()
         thread_dir = Path(base_dir) / THREAD_DATA_BASE_DIR / thread_id / "user-data"
 
-        return [
+        # Create directories for Docker volume mounts (required before container starts)
+        mounts = [
             (str(thread_dir / "workspace"), f"{CONTAINER_USER_DATA_DIR}/workspace", False),
             (str(thread_dir / "uploads"), f"{CONTAINER_USER_DATA_DIR}/uploads", False),
             (str(thread_dir / "outputs"), f"{CONTAINER_USER_DATA_DIR}/outputs", False),
         ]
+
+        # Ensure directories exist before mounting
+        for host_path, _, _ in mounts:
+            os.makedirs(host_path, exist_ok=True)
+
+        return mounts
 
     def _get_skills_mount(self) -> tuple[str, str, bool] | None:
         """Get the skills directory mount configuration.

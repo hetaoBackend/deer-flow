@@ -6,8 +6,6 @@ from langgraph.typing import ContextT
 from src.agents.thread_state import ThreadDataState, ThreadState
 from src.sandbox.exceptions import (
     SandboxError,
-    SandboxFileError,
-    SandboxFileNotFoundError,
     SandboxNotFoundError,
     SandboxRuntimeError,
 )
@@ -115,6 +113,9 @@ def is_local_sandbox(runtime: ToolRuntime[ContextT, ThreadState] | None) -> bool
 def sandbox_from_runtime(runtime: ToolRuntime[ContextT, ThreadState] | None = None) -> Sandbox:
     """Extract sandbox instance from tool runtime.
 
+    DEPRECATED: Use ensure_sandbox_initialized() for lazy initialization support.
+    This function assumes sandbox is already initialized and will raise error if not.
+
     Raises:
         SandboxRuntimeError: If runtime is not available or sandbox state is missing.
         SandboxNotFoundError: If sandbox with the given ID cannot be found.
@@ -133,6 +134,57 @@ def sandbox_from_runtime(runtime: ToolRuntime[ContextT, ThreadState] | None = No
     return sandbox
 
 
+def ensure_sandbox_initialized(runtime: ToolRuntime[ContextT, ThreadState] | None = None) -> Sandbox:
+    """Ensure sandbox is initialized, acquiring lazily if needed.
+
+    On first call, acquires a sandbox from the provider and stores it in runtime state.
+    Subsequent calls return the existing sandbox.
+
+    Thread-safety is guaranteed by the provider's internal locking mechanism.
+
+    Args:
+        runtime: Tool runtime containing state and context.
+
+    Returns:
+        Initialized sandbox instance.
+
+    Raises:
+        SandboxRuntimeError: If runtime is not available or thread_id is missing.
+        SandboxNotFoundError: If sandbox acquisition fails.
+    """
+    if runtime is None:
+        raise SandboxRuntimeError("Tool runtime not available")
+
+    # Check if sandbox already exists in state
+    sandbox_state = runtime.state.get("sandbox")
+    if sandbox_state is not None:
+        sandbox_id = sandbox_state.get("sandbox_id")
+        if sandbox_id is not None:
+            sandbox = get_sandbox_provider().get(sandbox_id)
+            if sandbox is not None:
+                return sandbox
+            # Sandbox was released, fall through to acquire new one
+
+    # Lazy acquisition: get thread_id and acquire sandbox
+    thread_id = runtime.context.get("thread_id")
+    if thread_id is None:
+        raise SandboxRuntimeError("Thread ID not available in runtime context")
+
+    provider = get_sandbox_provider()
+    print(f"Lazy acquiring sandbox for thread {thread_id}")
+    sandbox_id = provider.acquire(thread_id)
+
+    # Update runtime state - this persists across tool calls
+    runtime.state["sandbox"] = {"sandbox_id": sandbox_id}
+
+    # Retrieve and return the sandbox
+    sandbox = provider.get(sandbox_id)
+    if sandbox is None:
+        raise SandboxNotFoundError("Sandbox not found after acquisition", sandbox_id=sandbox_id)
+
+    return sandbox
+
+
 @tool("bash", parse_docstring=True)
 def bash_tool(runtime: ToolRuntime[ContextT, ThreadState], description: str, command: str) -> str:
     """Execute a bash command in a Linux environment.
@@ -146,7 +198,7 @@ def bash_tool(runtime: ToolRuntime[ContextT, ThreadState], description: str, com
         command: The bash command to execute. Always use absolute paths for files and directories.
     """
     try:
-        sandbox = sandbox_from_runtime(runtime)
+        sandbox = ensure_sandbox_initialized(runtime)
         if is_local_sandbox(runtime):
             thread_data = get_thread_data(runtime)
             command = replace_virtual_paths_in_command(command, thread_data)
@@ -166,7 +218,7 @@ def ls_tool(runtime: ToolRuntime[ContextT, ThreadState], description: str, path:
         path: The **absolute** path to the directory to list.
     """
     try:
-        sandbox = sandbox_from_runtime(runtime)
+        sandbox = ensure_sandbox_initialized(runtime)
         if is_local_sandbox(runtime):
             thread_data = get_thread_data(runtime)
             path = replace_virtual_path(path, thread_data)
@@ -201,7 +253,7 @@ def read_file_tool(
         end_line: Optional ending line number (1-indexed, inclusive). Use with start_line to read a specific range.
     """
     try:
-        sandbox = sandbox_from_runtime(runtime)
+        sandbox = ensure_sandbox_initialized(runtime)
         if is_local_sandbox(runtime):
             thread_data = get_thread_data(runtime)
             path = replace_virtual_path(path, thread_data)
@@ -239,7 +291,7 @@ def write_file_tool(
         content: The content to write to the file. ALWAYS PROVIDE THIS PARAMETER THIRD.
     """
     try:
-        sandbox = sandbox_from_runtime(runtime)
+        sandbox = ensure_sandbox_initialized(runtime)
         if is_local_sandbox(runtime):
             thread_data = get_thread_data(runtime)
             path = replace_virtual_path(path, thread_data)
@@ -277,7 +329,7 @@ def str_replace_tool(
         replace_all: Whether to replace all occurrences of the substring. If False, only the first occurrence will be replaced. Default is False.
     """
     try:
-        sandbox = sandbox_from_runtime(runtime)
+        sandbox = ensure_sandbox_initialized(runtime)
         if is_local_sandbox(runtime):
             thread_data = get_thread_data(runtime)
             path = replace_virtual_path(path, thread_data)

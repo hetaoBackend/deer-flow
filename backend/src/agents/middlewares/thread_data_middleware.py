@@ -25,18 +25,26 @@ class ThreadDataMiddleware(AgentMiddleware[ThreadDataMiddlewareState]):
     - backend/.deer-flow/threads/{thread_id}/user-data/workspace
     - backend/.deer-flow/threads/{thread_id}/user-data/uploads
     - backend/.deer-flow/threads/{thread_id}/user-data/outputs
+
+    Lifecycle Management:
+    - With lazy_init=True (default): Only compute paths, directories created on-demand
+    - With lazy_init=False: Eagerly create directories in before_agent()
     """
 
     state_schema = ThreadDataMiddlewareState
 
-    def __init__(self, base_dir: str | None = None):
+    def __init__(self, base_dir: str | None = None, lazy_init: bool = True):
         """Initialize the middleware.
 
         Args:
             base_dir: Base directory for thread data. Defaults to the current working directory.
+            lazy_init: If True, defer directory creation until needed.
+                      If False, create directories eagerly in before_agent().
+                      Default is True for optimal performance.
         """
         super().__init__()
         self._base_dir = base_dir or os.getcwd()
+        self._lazy_init = lazy_init
 
     def _get_thread_paths(self, thread_id: str) -> dict[str, str]:
         """Get the paths for a thread's data directories.
@@ -70,12 +78,17 @@ class ThreadDataMiddleware(AgentMiddleware[ThreadDataMiddlewareState]):
 
     @override
     def before_agent(self, state: ThreadDataMiddlewareState, runtime: Runtime) -> dict | None:
-        # Generate new thread ID and create directories
         thread_id = runtime.context.get("thread_id")
         if thread_id is None:
             raise ValueError("Thread ID is required in the context")
-        paths = self._create_thread_directories(thread_id)
-        print(f"Created thread data directories for thread {thread_id}")
+
+        if self._lazy_init:
+            # Lazy initialization: only compute paths, don't create directories
+            paths = self._get_thread_paths(thread_id)
+        else:
+            # Eager initialization: create directories immediately
+            paths = self._create_thread_directories(thread_id)
+            print(f"Created thread data directories for thread {thread_id}")
 
         return {
             "thread_data": {

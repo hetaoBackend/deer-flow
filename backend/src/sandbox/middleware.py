@@ -19,13 +19,25 @@ class SandboxMiddleware(AgentMiddleware[SandboxMiddlewareState]):
     """Create a sandbox environment and assign it to an agent.
 
     Lifecycle Management:
-    - Sandbox is acquired on first agent invocation for a thread (before_agent)
+    - With lazy_init=True (default): Sandbox is acquired on first tool call
+    - With lazy_init=False: Sandbox is acquired on first agent invocation (before_agent)
     - Sandbox is reused across multiple turns within the same thread
     - Sandbox is NOT released after each agent call to avoid wasteful recreation
     - Cleanup happens at application shutdown via SandboxProvider.shutdown()
     """
 
     state_schema = SandboxMiddlewareState
+
+    def __init__(self, lazy_init: bool = True):
+        """Initialize sandbox middleware.
+
+        Args:
+            lazy_init: If True, defer sandbox acquisition until first tool call.
+                      If False, acquire sandbox eagerly in before_agent().
+                      Default is True for optimal performance.
+        """
+        super().__init__()
+        self._lazy_init = lazy_init
 
     def _acquire_sandbox(self, thread_id: str) -> str:
         provider = get_sandbox_provider()
@@ -35,6 +47,11 @@ class SandboxMiddleware(AgentMiddleware[SandboxMiddlewareState]):
 
     @override
     def before_agent(self, state: SandboxMiddlewareState, runtime: Runtime) -> dict | None:
+        # Skip acquisition if lazy_init is enabled
+        if self._lazy_init:
+            return super().before_agent(state, runtime)
+
+        # Eager initialization (original behavior)
         if "sandbox" not in state or state["sandbox"] is None:
             thread_id = runtime.context["thread_id"]
             print(f"Thread ID: {thread_id}")
