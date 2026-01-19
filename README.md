@@ -31,18 +31,62 @@ A LangGraph-based AI agent backend with sandbox execution capabilities.
    make dev
    ```
 
+### Production Deployment
+
+For production environments, use nginx as a reverse proxy to route traffic between the gateway and LangGraph services:
+
+1. **Start backend services**:
+   ```bash
+   # Terminal 1: Start Gateway API (port 8001)
+   cd backend
+   python -m src.gateway.app
+
+   # Terminal 2: Start LangGraph Server (port 2024)
+   cd backend
+   langgraph up
+   ```
+
+2. **Start nginx**:
+   ```bash
+   nginx -c $(pwd)/nginx.conf
+   ```
+
+3. **Access the application**:
+   - Main API: http://localhost:8000
+
+The nginx configuration provides:
+- Unified entry point on port 8000
+- Routes `/api/models`, `/api/threads/*/artifacts`, and `/health` to Gateway (8001)
+- Routes all other requests to LangGraph (2024)
+- Centralized CORS handling
+- SSE/streaming support for real-time agent responses
+- Optimized timeouts for long-running operations
+
 ## Project Structure
 
 ```
 deer-flow/
 ├── config.example.yaml    # Configuration template (copy to config.yaml)
-├── backend/               # Backend application
-│   ├── src/              # Source code
-│   └── docs/             # Documentation
-├── frontend/             # Frontend application
-└── skills/               # Agent skills
-    ├── public/           # Public skills
-    └── custom/           # Custom skills
+├── nginx.conf            # Nginx reverse proxy configuration
+├── backend/              # Backend application
+│   ├── src/             # Source code
+│   │   ├── gateway/     # Gateway API (port 8001)
+│   │   └── agents/      # LangGraph agents (port 2024)
+│   └── docs/            # Documentation
+├── frontend/            # Frontend application
+└── skills/              # Agent skills
+    ├── public/          # Public skills
+    └── custom/          # Custom skills
+```
+
+### Architecture
+
+```
+Client
+  ↓
+Nginx (port 8000) ← Unified entry point
+  ├→ Gateway API (port 8001) ← /api/models, /api/threads/*/artifacts, /health
+  └→ LangGraph Server (port 2024) ← All other requests (agent interactions)
 ```
 
 ## Documentation
