@@ -81,14 +81,27 @@ Config values starting with `$` are resolved as environment variables (e.g., `$O
   - Local sandbox: `/mnt/skills` → `/path/to/deer-flow/skills`
   - Docker sandbox: Automatically mounted as volume
 
+**Middleware System**
+- Custom middlewares in `src/agents/middlewares/`: Title generation, thread data, clarification, etc.
+- `SummarizationMiddleware` from LangChain automatically condenses conversation history when token limits are approached
+- Configured in `config.yaml` under `summarization` key with trigger/keep thresholds
+- Middlewares are registered in `src/agents/lead_agent/agent.py` with execution order:
+  1. `ThreadDataMiddleware` - Initializes thread context
+  2. `SandboxMiddleware` - Manages sandbox lifecycle
+  3. `SummarizationMiddleware` - Reduces context when limits are approached (if enabled)
+  4. `TitleMiddleware` - Generates conversation titles
+  5. `ClarificationMiddleware` - Handles clarification requests (must be last)
+
 ### Config Schema
 
-Models, tools, sandbox providers, and skills are configured in `config.yaml`:
+Models, tools, sandbox providers, skills, and middleware settings are configured in `config.yaml`:
 - `models[]`: LLM configurations with `use` class path
 - `tools[]`: Tool configurations with `use` variable path and `group`
 - `sandbox.use`: Sandbox provider class path
 - `skills.path`: Host path to skills directory (optional, default: `../skills`)
 - `skills.container_path`: Container mount path (default: `/mnt/skills`)
+- `title`: Automatic thread title generation configuration
+- `summarization`: Automatic conversation summarization configuration
 
 ## Code Style
 

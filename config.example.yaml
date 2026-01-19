@@ -174,3 +174,51 @@ title:
   max_words: 6
   max_chars: 60
   model_name: null  # Use default model (first model in models list)
+
+# ============================================================================
+# Summarization Configuration
+# ============================================================================
+# Automatically summarize conversation history when token limits are approached
+# This helps maintain context in long conversations without exceeding model limits
+
+summarization:
+  enabled: true
+
+  # Model to use for summarization (null = use default model)
+  # Recommended: Use a lightweight, cost-effective model like "gpt-4o-mini" or similar
+  model_name: null
+
+  # Trigger conditions - at least one required
+  # Summarization runs when ANY threshold is met (OR logic)
+  # You can specify a single trigger or a list of triggers
+  trigger:
+    # Trigger when token count reaches 4000
+    - type: tokens
+      value: 4000
+    # Uncomment to also trigger when message count reaches 50
+    # - type: messages
+    #   value: 50
+    # Uncomment to trigger when 80% of model's max input tokens is reached
+    # - type: fraction
+    #   value: 0.8
+
+  # Context retention policy after summarization
+  # Specifies how much recent history to preserve
+  keep:
+    # Keep the most recent 20 messages (recommended)
+    type: messages
+    value: 20
+    # Alternative: Keep specific token count
+    # type: tokens
+    # value: 3000
+    # Alternative: Keep percentage of model's max input tokens
+    # type: fraction
+    # value: 0.3
+
+  # Maximum tokens to keep when preparing messages for summarization
+  # Set to null to skip trimming (not recommended for very long conversations)
+  trim_tokens_to_summarize: 4000
+
+  # Custom summary prompt template (null = use default LangChain prompt)
+  # The prompt should guide the model to extract important context
+  summary_prompt: null
