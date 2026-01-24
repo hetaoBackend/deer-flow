@@ -29,3 +29,6 @@ coverage/
 .claude/
 skills/custom/*
 logs/
+
+# pnpm
+.pnpm-store

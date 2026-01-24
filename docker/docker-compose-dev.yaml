@@ -1,0 +1,85 @@
+# DeerFlow Development Environment
+# Usage: docker-compose -f docker-compose-dev.yaml up --build
+#
+# Services:
+#   - nginx: Reverse proxy (port 2026)
+#   - web: Frontend Next.js dev server (port 3000)
+#   - api: Backend Gateway API (port 8001)
+#   - langgraph: LangGraph server (port 2024)
+#
+# Access: http://localhost:2026
+
+services:
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: deer-flow-nginx
+    ports:
+      - "2026:2026"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - web
+      - api
+      - langgraph
+    networks:
+      - deer-flow-dev
+    restart: unless-stopped
+
+  # Frontend - Next.js Development Server
+  web:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+      args:
+        PNPM_STORE_PATH: ${PNPM_STORE_PATH:-/root/.local/share/pnpm/store}
+    container_name: deer-flow-web
+    command: pnpm run dev
+    volumes:
+      - ../frontend:/app
+      # Mount pnpm store for caching
+      - ${PNPM_STORE_PATH:-~/.local/share/pnpm/store}:/root/.local/share/pnpm/store
+    environment:
+      - NODE_ENV=development
+      - WATCHPACK_POLLING=true
+    env_file:
+      - ../frontend/.env
+    networks:
+      - deer-flow-dev
+    restart: unless-stopped
+
+  # Backend - Gateway API
+  api:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    container_name: deer-flow-api
+    command: uv run uvicorn src.gateway.app:app --host 0.0.0.0 --port 8001 --reload
+    volumes:
+      - ../backend:/app
+      - ../config.yaml:/app/config.yaml:ro
+    env_file:
+      - ../backend/.env
+    networks:
+      - deer-flow-dev
+    restart: unless-stopped
+
+  # Backend - LangGraph Server
+  langgraph:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    container_name: deer-flow-langgraph
+    command: uv run langgraph dev --no-browser --allow-blocking --no-reload --host 0.0.0.0 --port 2024
+    volumes:
+      - ../backend:/app
+      - ../config.yaml:/app/config.yaml:ro
+    env_file:
+      - ../backend/.env
+    networks:
+      - deer-flow-dev
+    restart: unless-stopped
+
+networks:
+  deer-flow-dev:
+    driver: bridge

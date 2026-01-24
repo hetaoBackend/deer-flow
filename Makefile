@@ -1,14 +1,20 @@
 # DeerFlow - Unified Development Environment
 
-.PHONY: help check install dev stop clean
+.PHONY: help check install dev stop clean docker-init docker-dev docker-dev-stop docker-dev-logs
 
 help:
 	@echo "DeerFlow Development Commands:"
-	@echo "  make check    - Check if all required tools are installed"
-	@echo "  make install  - Install all dependencies (frontend + backend)"
-	@echo "  make dev      - Start all services (frontend + backend + nginx on localhost:2026)"
-	@echo "  make stop     - Stop all running services"
-	@echo "  make clean    - Clean up processes and temporary files"
+	@echo "  make check          - Check if all required tools are installed"
+	@echo "  make install        - Install all dependencies (frontend + backend)"
+	@echo "  make dev            - Start all services (frontend + backend + nginx on localhost:2026)"
+	@echo "  make stop           - Stop all running services"
+	@echo "  make clean          - Clean up processes and temporary files"
+	@echo ""
+	@echo "Docker Development Commands:"
+	@echo "  make docker-init     - Initialize and install dependencies in Docker containers"
+	@echo "  make docker-dev      - Start all services in Docker (localhost:2026)"
+	@echo "  make docker-dev-stop - Stop Docker development services"
+	@echo "  make docker-dev-logs - View Docker development logs"
 
 # Check required tools
 check:
@@ -99,7 +105,7 @@ dev:
 	@-pkill -f "langgraph dev" 2>/dev/null || true
 	@-pkill -f "uvicorn src.gateway.app:app" 2>/dev/null || true
 	@-pkill -f "next dev" 2>/dev/null || true
-	@-nginx -c $(PWD)/nginx.conf -p $(PWD) -s quit 2>/dev/null || true
+	@-nginx -c $(PWD)/docker/nginx.local.conf -p $(PWD) -s quit 2>/dev/null || true
 	@sleep 1
 	@-pkill -9 nginx 2>/dev/null || true
 	@sleep 1
@@ -119,7 +125,7 @@ dev:
 		pkill -f "langgraph dev" 2>/dev/null || true; \
 		pkill -f "uvicorn src.gateway.app:app" 2>/dev/null || true; \
 		pkill -f "next dev" 2>/dev/null || true; \
-		nginx -c $(PWD)/nginx.conf -p $(PWD) -s quit 2>/dev/null || true; \
+		nginx -c $(PWD)/docker/nginx.local.conf -p $(PWD) -s quit 2>/dev/null || true; \
 		sleep 1; \
 		pkill -9 nginx 2>/dev/null || true; \
 		echo "✓ All services stopped"; \
@@ -139,7 +145,7 @@ dev:
 	sleep 3; \
 	echo "✓ Frontend started on localhost:3000"; \
 	echo "Starting Nginx reverse proxy..."; \
-	mkdir -p logs && nginx -g 'daemon off;' -c $(PWD)/nginx.conf -p $(PWD) > logs/nginx.log 2>&1 & \
+	mkdir -p logs && nginx -g 'daemon off;' -c $(PWD)/docker/nginx.local.conf -p $(PWD) > logs/nginx.log 2>&1 & \
 	sleep 2; \
 	echo "✓ Nginx started on localhost:2026"; \
 	echo ""; \
@@ -167,7 +173,7 @@ stop:
 	@-pkill -f "langgraph dev" 2>/dev/null || true
 	@-pkill -f "uvicorn src.gateway.app:app" 2>/dev/null || true
 	@-pkill -f "next dev" 2>/dev/null || true
-	@-nginx -c $(PWD)/nginx.conf -p $(PWD) -s quit 2>/dev/null || true
+	@-nginx -c $(PWD)/docker/nginx.local.conf -p $(PWD) -s quit 2>/dev/null || true
 	@sleep 1
 	@-pkill -9 nginx 2>/dev/null || true
 	@echo "✓ All services stopped"
@@ -177,3 +183,29 @@ clean: stop
 	@echo "Cleaning up..."
 	@-rm -rf logs/*.log 2>/dev/null || true
 	@echo "✓ Cleanup complete"
+
+# ==========================================
+# Docker Development Commands
+# ==========================================
+
+# Initialize Docker containers and install dependencies
+docker-init:
+	@./scripts/docker.sh init
+
+# Start Docker development environment
+docker-start:
+	@./scripts/docker.sh start
+
+# Stop Docker development environment
+docker-stop:
+	@./scripts/docker.sh stop
+
+# View Docker development logs
+docker-logs:
+	@./scripts/docker.sh logs
+
+# View Docker development logs
+docker-logs-web:
+	@./scripts/docker.sh logs --web
+docker-logs-api:
+	@./scripts/docker.sh logs --api
