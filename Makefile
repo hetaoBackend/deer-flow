@@ -12,9 +12,11 @@ help:
 	@echo ""
 	@echo "Docker Development Commands:"
 	@echo "  make docker-init     - Initialize and install dependencies in Docker containers"
-	@echo "  make docker-dev      - Start all services in Docker (localhost:2026)"
-	@echo "  make docker-dev-stop - Stop Docker development services"
-	@echo "  make docker-dev-logs - View Docker development logs"
+	@echo "  make docker-start    - Start all services in Docker (localhost:2026)"
+	@echo "  make docker-stop     - Stop Docker development services"
+	@echo "  make docker-logs 	  - View Docker development logs"
+	@echo "  make docker-logs-web - View Docker frontend logs"
+	@echo "  make docker-logs-api - View Docker backend logs"
 
 # Check required tools
 check:
