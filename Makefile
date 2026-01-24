@@ -1,6 +1,6 @@
 # DeerFlow - Unified Development Environment
 
-.PHONY: help check install dev stop clean docker-init docker-dev docker-dev-stop docker-dev-logs
+.PHONY: help check install dev stop clean docker-init docker-start docker-stop docker-logs docker-logs-web docker-logs-api
 
 help:
 	@echo "DeerFlow Development Commands:"
@@ -107,7 +107,7 @@ dev:
 	@-pkill -f "langgraph dev" 2>/dev/null || true
 	@-pkill -f "uvicorn src.gateway.app:app" 2>/dev/null || true
 	@-pkill -f "next dev" 2>/dev/null || true
-	@-nginx -c $(PWD)/docker/nginx.local.conf -p $(PWD) -s quit 2>/dev/null || true
+	@-nginx -c $(PWD)/docker/nginx/nginx.local.conf -p $(PWD) -s quit 2>/dev/null || true
 	@sleep 1
 	@-pkill -9 nginx 2>/dev/null || true
 	@sleep 1
@@ -127,13 +127,14 @@ dev:
 		pkill -f "langgraph dev" 2>/dev/null || true; \
 		pkill -f "uvicorn src.gateway.app:app" 2>/dev/null || true; \
 		pkill -f "next dev" 2>/dev/null || true; \
-		nginx -c $(PWD)/docker/nginx.local.conf -p $(PWD) -s quit 2>/dev/null || true; \
+		nginx -c $(PWD)/docker/nginx/nginx.local.conf -p $(PWD) -s quit 2>/dev/null || true; \
 		sleep 1; \
 		pkill -9 nginx 2>/dev/null || true; \
 		echo "✓ All services stopped"; \
 		exit 0; \
 	}; \
 	trap cleanup INT TERM; \
+	mkdir -p logs; \
 	echo "Starting LangGraph server..."; \
 	cd backend && uv run langgraph dev --no-browser --allow-blocking --no-reload > ../logs/langgraph.log 2>&1 & \
 	sleep 3; \
@@ -147,7 +148,7 @@ dev:
 	sleep 3; \
 	echo "✓ Frontend started on localhost:3000"; \
 	echo "Starting Nginx reverse proxy..."; \
-	mkdir -p logs && nginx -g 'daemon off;' -c $(PWD)/docker/nginx.local.conf -p $(PWD) > logs/nginx.log 2>&1 & \
+	mkdir -p logs && nginx -g 'daemon off;' -c $(PWD)/docker/nginx/nginx.local.conf -p $(PWD) > logs/nginx.log 2>&1 & \
 	sleep 2; \
 	echo "✓ Nginx started on localhost:2026"; \
 	echo ""; \
@@ -175,7 +176,7 @@ stop:
 	@-pkill -f "langgraph dev" 2>/dev/null || true
 	@-pkill -f "uvicorn src.gateway.app:app" 2>/dev/null || true
 	@-pkill -f "next dev" 2>/dev/null || true
-	@-nginx -c $(PWD)/docker/nginx.local.conf -p $(PWD) -s quit 2>/dev/null || true
+	@-nginx -c $(PWD)/docker/nginx/nginx.local.conf -p $(PWD) -s quit 2>/dev/null || true
 	@sleep 1
 	@-pkill -9 nginx 2>/dev/null || true
 	@echo "✓ All services stopped"

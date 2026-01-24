@@ -6,114 +6,70 @@ A LangGraph-based AI agent backend with sandbox execution capabilities.
 
 ## Quick Start
 
-1. **Check system requirements**:
-   ```bash
-   make check
-   ```
-   This will verify that you have all required tools installed:
-   - Node.js 22+
-   - pnpm
-   - uv (Python package manager)
-   - nginx
+### Option 1: Docker (Recommended)
 
-2. **Configure the application**:
+The fastest way to get started with a consistent environment:
+
+1. **Configure the application**:
    ```bash
-   # Copy example configuration
    cp config.example.yaml config.yaml
-
-   # Set your API keys
-   export OPENAI_API_KEY="your-key-here"
-   # or edit config.yaml directly
-
-   # Optional: Enable MCP servers and skills
-   cp extensions_config.example.json extensions_config.json
-   # Edit extensions_config.json to enable desired MCP servers and skills
+   # Edit config.yaml and set your API keys
    ```
 
-3. **Install dependencies**:
+2. **Initialize and start**:
    ```bash
+   make docker-init  # First time only
+   make docker-dev   # Start all services
+   ```
+
+3. **Access**: http://localhost:2026
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed Docker development guide.
+
+### Option 2: Local Development
+
+If you prefer running services locally:
+
+1. **Check prerequisites**:
+   ```bash
+   make check  # Verifies Node.js 22+, pnpm, uv, nginx
+   ```
+
+2. **Configure and install**:
+   ```bash
+   cp config.example.yaml config.yaml
    make install
    ```
 
-4. **Run development server** (starts frontend, backend, and nginx):
+3. **Start services**:
    ```bash
    make dev
    ```
 
-5. **Access the application**:
-   - Web Interface: http://localhost:2026
-   - All API requests are automatically proxied through nginx
+4. **Access**: http://localhost:2026
 
-### Manual Deployment
+See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed local development guide.
 
-If you need to start services individually:
+## Features
 
-1. **Start backend services**:
-   ```bash
-   # Terminal 1: Start LangGraph Server (port 2024)
-   cd backend
-   make dev
-
-   # Terminal 2: Start Gateway API (port 8001)
-   cd backend
-   make gateway
-
-   # Terminal 3: Start Frontend (port 3000)
-   cd frontend
-   pnpm dev
-   ```
-
-2. **Start nginx**:
-   ```bash
-   make nginx
-   # or directly: nginx -c $(pwd)/nginx.conf -g 'daemon off;'
-   ```
-
-3. **Access the application**:
-   - Web Interface: http://localhost:2026
-
-The nginx configuration provides:
-- Unified entry point on port 2026
-- Routes `/api/langgraph/*` to LangGraph Server (2024)
-- Routes other `/api/*` endpoints to Gateway API (8001)
-- Routes non-API requests to Frontend (3000)
-- Centralized CORS handling
-- SSE/streaming support for real-time agent responses
-- Optimized timeouts for long-running operations
-
-## Project Structure
-
-```
-deer-flow/
-├── config.example.yaml    # Configuration template (copy to config.yaml)
-├── nginx.conf            # Nginx reverse proxy configuration
-├── backend/              # Backend application
-│   ├── src/             # Source code
-│   │   ├── gateway/     # Gateway API (port 8001)
-│   │   └── agents/      # LangGraph agents (port 2024)
-│   └── docs/            # Documentation
-├── frontend/            # Frontend application
-└── skills/              # Agent skills
-    ├── public/          # Public skills
-    └── custom/          # Custom skills
-```
-
-### Architecture
-
-```
-Browser
-  ↓
-Nginx (port 2026) ← Unified entry point
-  ├→ Frontend (port 3000) ← / (non-API requests)
-  ├→ Gateway API (port 8001) ← /api/models, /api/mcp, /api/skills, /api/threads/*/artifacts
-  └→ LangGraph Server (port 2024) ← /api/langgraph/* (agent interactions)
-```
+- 🤖 **LangGraph-based Agents** - Multi-agent orchestration with sophisticated workflows
+- 🔧 **Model Context Protocol (MCP)** - Extensible tool integration
+- 🎯 **Skills System** - Reusable agent capabilities
+- 🛡️ **Sandbox Execution** - Safe code execution environment
+- 🌐 **Unified API Gateway** - Single entry point with nginx reverse proxy
+- 🔄 **Hot Reload** - Fast development iteration
+- 📊 **Real-time Streaming** - Server-Sent Events (SSE) support
 
 ## Documentation
 
+- [Contributing Guide](CONTRIBUTING.md) - Development environment setup and workflow
 - [Configuration Guide](backend/docs/CONFIGURATION.md) - Setup and configuration instructions
 - [Architecture Overview](backend/CLAUDE.md) - Technical architecture details
 - [MCP Setup Guide](MCP_SETUP.md) - Configure Model Context Protocol servers for additional tools
+
+## Contributing
+
+We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, workflow, and guidelines.
 
 ## License
 
