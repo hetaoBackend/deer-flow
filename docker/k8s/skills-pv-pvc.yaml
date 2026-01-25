@@ -14,9 +14,8 @@ spec:
   persistentVolumeReclaimPolicy: Retain
   storageClassName: deer-flow-skills
   hostPath:
-    # IMPORTANT: Update this path to match your project root
-    # Example: /Users/feng/Projects/deer-flow/skills
-    path: /Users/feng/Projects/deer-flow/skills
+    # IMPORTANT: This path will be automatically replaced by setup.sh
+    path: __DEER_FLOW_SKILLS_PATH__
     type: Directory
 ---
 apiVersion: v1

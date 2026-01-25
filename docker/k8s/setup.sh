@@ -84,10 +84,10 @@ update_skills_path() {
     # Update the path
     if [[ "$OSTYPE" == "darwin"* ]]; then
         # macOS
-        sed -i '' "s|/path/to/your/project/skills|${SKILLS_PATH}|g" "$PVC_FILE"
+        sed -i '' "s|__DEER_FLOW_SKILLS_PATH__|${SKILLS_PATH}|g" "$PVC_FILE"
     else
         # Linux
-        sed -i "s|/path/to/your/project/skills|${SKILLS_PATH}|g" "$PVC_FILE"
+        sed -i "s|__DEER_FLOW_SKILLS_PATH__|${SKILLS_PATH}|g" "$PVC_FILE"
     fi
     
     success "Updated skills path to: ${SKILLS_PATH}"

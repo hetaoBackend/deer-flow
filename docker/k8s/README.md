@@ -67,30 +67,48 @@ kubectl get nodes
 
 ## Deployment Steps
 
-### Step 1: Update Skills PV Path
+### Option A: Automated Setup (Recommended)
 
-Edit `skills-pv-pvc.yaml` and replace the placeholder path with your actual project root:
+The easiest way to get started:
 
 ```bash
-# Get your project root path
-PROJECT_ROOT=$(pwd)
-echo "Project root: $PROJECT_ROOT"
-
-# Update the YAML file (macOS/Linux)
-sed -i.bak "s|/path/to/your/project/skills|${PROJECT_ROOT}/skills|g" docker/k8s/skills-pv-pvc.yaml
-
-# Or manually edit docker/k8s/skills-pv-pvc.yaml and replace:
-# path: /path/to/your/project/skills
-# with:
-# path: /Users/feng/Projects/deer-flow/skills  (your actual path)
+cd docker/k8s
+./setup.sh
 ```
 
-### Step 2: Apply Kubernetes Resources
+The script automatically handles:
+- Path configuration in `skills-pv-pvc.yaml` (replaces `__DEER_FLOW_SKILLS_PATH__` placeholder)
+- Kubernetes resource deployment
+- Backend configuration prompts
+- Image pulling
+
+For other options, see [QUICKSTART.md](QUICKSTART.md).
+
+### Option B: Manual Setup
+
+If you prefer manual control:
+
+#### Step 1: Configure Skills Path
+
+The `setup.sh` script automatically replaces the `__DEER_FLOW_SKILLS_PATH__` placeholder in `skills-pv-pvc.yaml`. 
+
+For manual setup, run just the path update:
 
 ```bash
-# Navigate to k8s directory
 cd docker/k8s
 
+# Auto-detect and update path
+PROJECT_ROOT=$(cd ../.. && pwd)
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    sed -i '' "s|__DEER_FLOW_SKILLS_PATH__|${PROJECT_ROOT}/skills|g" skills-pv-pvc.yaml
+else
+    sed -i "s|__DEER_FLOW_SKILLS_PATH__|${PROJECT_ROOT}/skills|g" skills-pv-pvc.yaml
+fi
+```
+
+#### Step 2: Apply Kubernetes Resources
+
+```bash
 # Apply in order
 kubectl apply -f namespace.yaml
 kubectl apply -f skills-pv-pvc.yaml
@@ -111,7 +129,7 @@ persistentvolumeclaim/deer-flow-skills-pvc created
 service/deer-flow-sandbox created
 ```
 
-### Step 3: Update Backend Configuration
+#### Step 3: Update Backend Configuration
 
 Edit `backend/config.yaml` to use the Kubernetes provider:
 
@@ -140,7 +158,7 @@ sandbox:
   #   API_KEY: $MY_API_KEY
 ```
 
-### Step 4: Install Dependencies
+#### Step 4: Install Dependencies
 
 ```bash
 cd backend
@@ -151,7 +169,7 @@ pip install -e .
 uv sync
 ```
 
-### Step 5: Start the Backend
+#### Step 5: Start the Backend
 
 ```bash
 cd backend
@@ -275,19 +293,24 @@ kubectl get pvc -n deer-flow
 # deer-flow-skills-pvc   Pending   deer-flow-skills   0s
 ```
 
-**Solution**: Check PV path exists and is accessible
+**Solution**: Verify path was correctly configured by setup.sh
 
 ```bash
+# Check if placeholder was replaced
+grep -n "__DEER_FLOW_SKILLS_PATH__" skills-pv-pvc.yaml
+# Should return nothing if properly configured
+
+# Check actual path in YAML
+grep "path:" skills-pv-pvc.yaml
+
 # Verify skills directory exists
 ls -la /Users/feng/Projects/deer-flow/skills
 
 # Check PV status
 kubectl describe pv deer-flow-skills-pv
 
-# Update path in skills-pv-pvc.yaml if incorrect
-# Then reapply:
-kubectl delete -f skills-pv-pvc.yaml
-kubectl apply -f skills-pv-pvc.yaml
+# Re-run setup if path is wrong:
+./setup.sh --skip-config
 ```
 
 ### Issue: Pod ImagePullBackOff
