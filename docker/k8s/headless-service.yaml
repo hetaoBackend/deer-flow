@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: deer-flow-sandbox
+  namespace: deer-flow
+  labels:
+    app.kubernetes.io/name: deer-flow
+    app.kubernetes.io/component: sandbox
+spec:
+  type: ClusterIP
+  clusterIP: None # Headless service for direct Pod DNS access
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+      protocol: TCP
+  selector:
+    app: deer-flow-sandbox
+  # Enable DNS-based service discovery
+  # Pods will be accessible at: {pod-name}.deer-flow-sandbox.deer-flow.svc.cluster.local:8080
+  publishNotReadyAddresses: false

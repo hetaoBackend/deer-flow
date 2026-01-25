@@ -29,19 +29,22 @@ services:
   # Frontend - Next.js Development Server
   web:
     build:
-      context: ../frontend
-      dockerfile: Dockerfile
+      context: ../
+      dockerfile: frontend/Dockerfile
       args:
         PNPM_STORE_PATH: ${PNPM_STORE_PATH:-/root/.local/share/pnpm/store}
     container_name: deer-flow-web
-    command: pnpm run dev
+    command: sh -c "cd frontend && pnpm install && pnpm run dev"
     volumes:
-      - ../frontend:/app
+      - ../:/app
+      - /app/frontend/node_modules # Exclude node_modules from volume mount
       # Mount pnpm store for caching
       - ${PNPM_STORE_PATH:-~/.local/share/pnpm/store}:/root/.local/share/pnpm/store
+    working_dir: /app
     environment:
       - NODE_ENV=development
       - WATCHPACK_POLLING=true
+      - CI=true
     env_file:
       - ../frontend/.env
     networks:
@@ -51,13 +54,17 @@ services:
   # Backend - Gateway API
   api:
     build:
-      context: ../backend
-      dockerfile: Dockerfile
+      context: ../
+      dockerfile: backend/Dockerfile
     container_name: deer-flow-api
-    command: uv run uvicorn src.gateway.app:app --host 0.0.0.0 --port 8001 --reload
+    command: sh -c "cd backend && uv sync && uv run uvicorn src.gateway.app:app --host 0.0.0.0 --port 8001 --reload"
     volumes:
-      - ../backend:/app
+      - ../:/app
+      - /app/backend/.venv # Exclude .venv from volume mount to avoid conflicts
       - ../config.yaml:/app/config.yaml:ro
+    working_dir: /app
+    environment:
+      - CI=true
     env_file:
       - ../backend/.env
     networks:
@@ -67,13 +74,17 @@ services:
   # Backend - LangGraph Server
   langgraph:
     build:
-      context: ../backend
-      dockerfile: Dockerfile
+      context: ../
+      dockerfile: backend/Dockerfile
     container_name: deer-flow-langgraph
-    command: uv run langgraph dev --no-browser --allow-blocking --no-reload --host 0.0.0.0 --port 2024
+    command: sh -c "cd backend && uv sync && uv run langgraph dev --no-browser --allow-blocking --no-reload --host 0.0.0.0 --port 2024"
     volumes:
-      - ../backend:/app
+      - ../:/app
+      - /app/backend/.venv # Exclude .venv from volume mount to avoid conflicts
       - ../config.yaml:/app/config.yaml:ro
+    working_dir: /app
+    environment:
+      - CI=true
     env_file:
       - ../backend/.env
     networks:

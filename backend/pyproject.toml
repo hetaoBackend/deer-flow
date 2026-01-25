@@ -9,6 +9,7 @@ dependencies = [
     "dotenv>=0.9.9",
     "fastapi>=0.115.0",
     "httpx>=0.28.0",
+    "kubernetes>=30.0.0",
     "langchain>=1.2.3",
     "langchain-deepseek>=1.0.1",
     "langchain-mcp-adapters>=0.1.0",
@@ -30,7 +31,4 @@ dependencies = [
 ]
 
 [dependency-groups]
-dev = [
-    "pytest>=8.0.0",
-    "ruff>=0.14.11",
-]
+dev = ["pytest>=8.0.0", "ruff>=0.14.11"]

@@ -24,6 +24,15 @@ class SandboxConfig(BaseModel):
         idle_timeout: Idle timeout in seconds before sandbox is released (default: 600 = 10 minutes). Set to 0 to disable.
         mounts: List of volume mounts to share directories with the container
         environment: Environment variables to inject into the container (values starting with $ are resolved from host env)
+
+    KubernetesSandboxProvider specific options:
+        k8s_namespace: Kubernetes namespace (default: deer-flow)
+        k8s_context: Optional kubeconfig context to use
+        ttl_seconds: Pod cleanup TTL after release (default: 3600)
+        cpu_request: CPU request (e.g., "100m")
+        cpu_limit: CPU limit (e.g., "1000m")
+        memory_request: Memory request (e.g., "256Mi")
+        memory_limit: Memory limit (e.g., "1Gi")
     """
 
     use: str = Field(
@@ -61,6 +70,36 @@ class SandboxConfig(BaseModel):
     environment: dict[str, str] = Field(
         default_factory=dict,
         description="Environment variables to inject into the sandbox container. Values starting with $ will be resolved from host environment variables.",
+    )
+
+    # Kubernetes-specific configuration
+    k8s_namespace: str | None = Field(
+        default=None,
+        description="Kubernetes namespace for sandbox Pods (KubernetesSandboxProvider only)",
+    )
+    k8s_context: str | None = Field(
+        default=None,
+        description="Kubeconfig context to use (KubernetesSandboxProvider only)",
+    )
+    ttl_seconds: int | None = Field(
+        default=None,
+        description="Pod cleanup TTL in seconds after release (KubernetesSandboxProvider only)",
+    )
+    cpu_request: str | None = Field(
+        default=None,
+        description="CPU request for Pod (e.g., '100m') (KubernetesSandboxProvider only)",
+    )
+    cpu_limit: str | None = Field(
+        default=None,
+        description="CPU limit for Pod (e.g., '1000m') (KubernetesSandboxProvider only)",
+    )
+    memory_request: str | None = Field(
+        default=None,
+        description="Memory request for Pod (e.g., '256Mi') (KubernetesSandboxProvider only)",
+    )
+    memory_limit: str | None = Field(
+        default=None,
+        description="Memory limit for Pod (e.g., '1Gi') (KubernetesSandboxProvider only)",
     )
 
     model_config = ConfigDict(extra="allow")
