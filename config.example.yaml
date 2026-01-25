@@ -18,7 +18,7 @@ models:
     display_name: GPT-4
     use: langchain_openai:ChatOpenAI
     model: gpt-4
-    api_key: $OPENAI_API_KEY  # Use environment variable
+    api_key: $OPENAI_API_KEY # Use environment variable
     max_tokens: 4096
     temperature: 0.7
     supports_vision: true  # Enable vision support for view_image tool
@@ -185,6 +185,15 @@ sandbox:
 #   #   API_KEY: $MY_API_KEY        # Reads from host's MY_API_KEY env var
 #   #   DATABASE_URL: $DATABASE_URL  # Reads from host's DATABASE_URL env var
 
+# Option 3: Kubernetes-based Sandbox
+# Executes commands in isolated Kubernetes pods, refer to setup instructions in `docker/k8s/README.md`
+# Uncomment to use:
+# sandbox:
+#   use: src.community.aio_sandbox:KubernetesSandboxProvider
+#   image: enterprise-public-cn-beijing.cr.volces.com/vefaas-public/all-in-one-sandbox:latest
+#   k8s_namespace: deer-flow
+#   ttl_seconds: 3600
+
 # ============================================================================
 # Skills Configuration
 # ============================================================================
@@ -210,7 +219,7 @@ title:
   enabled: true
   max_words: 6
   max_chars: 60
-  model_name: null  # Use default model (first model in models list)
+  model_name: null # Use default model (first model in models list)
 
 # ============================================================================
 # Summarization Configuration

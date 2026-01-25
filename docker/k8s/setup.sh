@@ -150,25 +150,12 @@ pull_image() {
     fi
 }
 
-# Configure backend
-configure_backend() {
-    info "Checking backend configuration..."
-    
-    BACKEND_CONFIG="${PROJECT_ROOT}/backend/config.yaml"
-    
-    if [[ ! -f "$BACKEND_CONFIG" ]]; then
-        warn "Backend config.yaml not found. Creating from example..."
-        if [[ -f "${PROJECT_ROOT}/config.example.yaml" ]]; then
-            cp "${PROJECT_ROOT}/config.example.yaml" "$BACKEND_CONFIG"
-        fi
-    fi
-    
-    # Check if sandbox config already exists
-    if grep -q "KubernetesSandboxProvider" "$BACKEND_CONFIG" 2>/dev/null; then
-        success "Kubernetes sandbox already configured in backend/config.yaml"
-        return
-    fi
-    
+# Print next steps
+print_next_steps() {
+    echo
+    echo -e "${BLUE}╔════════════════════════════════════════════╗${NC}"
+    echo -e "${BLUE}║   Setup Complete!                          ║${NC}"
+    echo -e "${BLUE}╚════════════════════════════════════════════╝${NC}"
     echo
     echo -e "${YELLOW}To enable Kubernetes sandbox, add the following to backend/config.yaml:${NC}"
     echo
@@ -178,31 +165,6 @@ configure_backend() {
     echo -e "${GREEN}  k8s_namespace: deer-flow${NC}"
     echo -e "${GREEN}  ttl_seconds: 3600${NC}"
     echo
-    
-    read -p "Would you like to automatically append this configuration? [y/N] " -n 1 -r
-    echo
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-        cat >> "$BACKEND_CONFIG" << EOF
-
-# Kubernetes Sandbox Configuration (added by init.sh)
-sandbox:
-  use: src.community.aio_sandbox:KubernetesSandboxProvider
-  image: enterprise-public-cn-beijing.cr.volces.com/vefaas-public/all-in-one-sandbox:latest
-  k8s_namespace: deer-flow
-  ttl_seconds: 3600
-EOF
-        success "Backend configuration updated"
-    else
-        warn "Skipped backend configuration. Please configure manually."
-    fi
-}
-
-# Print next steps
-print_next_steps() {
-    echo
-    echo -e "${BLUE}╔════════════════════════════════════════════╗${NC}"
-    echo -e "${BLUE}║   Setup Complete!                          ║${NC}"
-    echo -e "${BLUE}╚════════════════════════════════════════════╝${NC}"
     echo
     echo -e "${GREEN}Next steps:${NC}"
     echo "  1. Start the backend:"
@@ -252,7 +214,6 @@ show_help() {
 }
 
 # Parse arguments
-SKIP_CONFIG=false
 SKIP_PULL=false
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -261,10 +222,6 @@ while [[ $# -gt 0 ]]; do
             ;;
         -c|--cleanup)
             cleanup "$1"
-            ;;
-        -s|--skip-config)
-            SKIP_CONFIG=true
-            shift
             ;;
         -p|--skip-pull)
             SKIP_PULL=true
@@ -293,11 +250,6 @@ main() {
     update_skills_path
     apply_resources
     verify_deployment
-    
-    if [[ "$SKIP_CONFIG" == false ]]; then
-        configure_backend
-    fi
-    
     print_next_steps
 }
 
