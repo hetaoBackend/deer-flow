@@ -9,9 +9,12 @@ import {
   Sparkles,
   Terminal,
   Play,
+  Pause,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { useState, useEffect, useRef } from "react";
+
+import { Tooltip } from "@/components/workspace/tooltip";
 
 type AnimationPhase =
   | "idle"
@@ -69,13 +72,19 @@ export default function ProgressiveSkillsAnimation() {
   const [hasAutoPlayed, setHasAutoPlayed] = useState(false);
   const chatMessagesRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const timeoutsRef = useRef<NodeJS.Timeout[]>([]);
 
   // Additional display duration after the final step (done) completes, used to show the final result
   const FINAL_DISPLAY_DURATION = 3000; // milliseconds
 
   // Play animation only when isPlaying is true
   useEffect(() => {
-    if (!isPlaying) return;
+    if (!isPlaying) {
+      // Clear all timeouts when paused
+      timeoutsRef.current.forEach(clearTimeout);
+      timeoutsRef.current = [];
+      return;
+    }
 
     const timeline = [
       { phase: "user-input" as const, delay: ANIMATION_DELAYS["user-input"] },
@@ -117,7 +126,12 @@ export default function ProgressiveSkillsAnimation() {
       }, totalDelay + FINAL_DISPLAY_DURATION),
     );
 
-    return () => timeouts.forEach(clearTimeout);
+    timeoutsRef.current = timeouts;
+
+    return () => {
+      timeouts.forEach(clearTimeout);
+      timeoutsRef.current = [];
+    };
   }, [isPlaying]);
 
   const handlePlay = () => {
@@ -128,6 +142,20 @@ export default function ProgressiveSkillsAnimation() {
     setSearchIndex(0);
     setBuildIndex(0);
     setShowWorkspace(false);
+  };
+
+  const handleTogglePlayPause = () => {
+    if (isPlaying) {
+      setIsPlaying(false);
+    } else {
+      // If animation hasn't started or is at idle, restart from beginning
+      if (phase === "idle") {
+        handlePlay();
+      } else {
+        // Resume from current phase
+        setIsPlaying(true);
+      }
+    }
   };
 
   // Auto-play when component enters viewport for the first time
@@ -308,7 +336,7 @@ export default function ProgressiveSkillsAnimation() {
     >
       {/* Overlay and Play Button */}
       <AnimatePresence>
-        {!isPlaying && (
+        {!isPlaying && !hasPlayed && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -330,12 +358,29 @@ export default function ProgressiveSkillsAnimation() {
                 />
               </div>
               <span className="text-lg font-medium text-white">
-                {hasPlayed ? "Click to replay" : "Click to play"}
+                Click to play
               </span>
             </motion.button>
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Bottom Left Play/Pause Button */}
+      <Tooltip content="Play / Pause">
+        <motion.button
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          onClick={handleTogglePlayPause}
+          className="absolute bottom-8 left-8 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-white/10 backdrop-blur-md transition-all hover:scale-110 hover:bg-white/20 active:scale-95"
+          aria-label={isPlaying ? "暂停" : "播放"}
+        >
+          {isPlaying ? (
+            <Pause size={24} className="text-white" fill="white" />
+          ) : (
+            <Play size={24} className="ml-0.5 text-white" fill="white" />
+          )}
+        </motion.button>
+      </Tooltip>
 
       <div className="flex h-full max-h-[700px] w-full max-w-6xl gap-8">
         {/* Left: File Tree */}
@@ -588,7 +633,7 @@ export default function ProgressiveSkillsAnimation() {
                             className="flex items-center gap-2 text-sm text-green-500"
                           >
                             <FileText size={14} />
-                            <span>{file}</span>
+                            <span>Generating {file}...</span>
                             <Check size={14} />
                           </motion.div>
                         ))}
@@ -617,7 +662,7 @@ export default function ProgressiveSkillsAnimation() {
                             className="flex items-center gap-2 pl-4 text-zinc-400"
                           >
                             <Terminal size={16} />
-                            <span>Executing deploy.sh</span>
+                            <span>Executing scripts/deploy.sh</span>
                           </motion.div>
                         )}
                       </div>

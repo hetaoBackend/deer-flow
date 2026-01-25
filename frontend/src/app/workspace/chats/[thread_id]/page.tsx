@@ -30,6 +30,7 @@ import { type AgentThread } from "@/core/threads";
 import { useSubmitThread, useThreadStream } from "@/core/threads/hooks";
 import { pathOfThread, titleOfThread } from "@/core/threads/utils";
 import { uuid } from "@/core/utils/uuid";
+import { env } from "@/env";
 import { cn } from "@/lib/utils";
 
 export default function ChatPage() {
@@ -42,6 +43,7 @@ export default function ChatPage() {
     open: artifactsOpen,
     setOpen: setArtifactsOpen,
     setArtifacts,
+    select: selectArtifact,
     selectedArtifact,
   } = useArtifacts();
   const { thread_id: threadIdFromPath } = useParams<{ thread_id: string }>();
@@ -72,11 +74,28 @@ export default function ChatPage() {
     return result;
   }, [thread, isNewThread]);
 
+  const [autoSelectFirstArtifact, setAutoSelectFirstArtifact] = useState(true);
   useEffect(() => {
     setArtifacts(thread.values.artifacts);
-  }, [setArtifacts, thread.values.artifacts]);
+    if (
+      env.NEXT_PUBLIC_STATIC_WEBSITE_ONLY === "true" &&
+      autoSelectFirstArtifact
+    ) {
+      if (thread?.values?.artifacts?.length > 0) {
+        setAutoSelectFirstArtifact(false);
+        selectArtifact(thread.values.artifacts[0]!);
+      }
+    }
+  }, [
+    autoSelectFirstArtifact,
+    selectArtifact,
+    setArtifacts,
+    thread.values.artifacts,
+  ]);
 
-  const [todoListCollapsed, setTodoListCollapsed] = useState(true);
+  const [todoListCollapsed, setTodoListCollapsed] = useState(
+    env.NEXT_PUBLIC_STATIC_WEBSITE_ONLY !== "true",
+  );
 
   const handleSubmit = useSubmitThread({
     isNewThread,
@@ -100,8 +119,8 @@ export default function ChatPage() {
       <ResizablePanelGroup orientation="horizontal">
         <ResizablePanel
           className="relative"
-          defaultSize={artifactsOpen ? 46 : 100}
-          minSize={artifactsOpen ? 30 : 100}
+          defaultSize={artifactsOpen && artifacts?.length > 0 ? 46 : 100}
+          minSize={artifactsOpen && artifacts?.length > 0 ? 30 : 100}
         >
           <div className="relative flex size-full min-h-0 justify-between">
             <header
@@ -176,12 +195,18 @@ export default function ChatPage() {
                     status={thread.isLoading ? "streaming" : "ready"}
                     context={settings.context}
                     extraHeader={isNewThread && <Welcome />}
+                    disabled={env.NEXT_PUBLIC_STATIC_WEBSITE_ONLY === "true"}
                     onContextChange={(context) =>
                       setSettings("context", context)
                     }
                     onSubmit={handleSubmit}
                     onStop={handleStop}
                   />
+                  {env.NEXT_PUBLIC_STATIC_WEBSITE_ONLY === "true" && (
+                    <div className="text-muted-foreground/67 w-full -translate-y-2 text-center text-xs">
+                      {t.common.notAvailableInDemoMode}
+                    </div>
+                  )}
                 </div>
               </div>
             </main>
@@ -190,7 +215,9 @@ export default function ChatPage() {
         <ResizableHandle
           className={cn(
             "opacity-33 hover:opacity-100",
-            !artifactsOpen && "pointer-events-none opacity-0",
+            !artifactsOpen &&
+              artifacts?.length > 0 &&
+              "pointer-events-none opacity-0",
           )}
         />
         <ResizablePanel
@@ -198,14 +225,16 @@ export default function ChatPage() {
             "transition-all duration-300 ease-in-out",
             !artifactsOpen && "opacity-0",
           )}
-          defaultSize={artifactsOpen ? 64 : 0}
+          defaultSize={artifactsOpen && artifacts?.length > 0 ? 64 : 0}
           minSize={0}
-          maxSize={artifactsOpen ? undefined : 0}
+          maxSize={artifactsOpen && artifacts?.length > 0 ? undefined : 0}
         >
           <div
             className={cn(
               "h-full p-4 transition-transform duration-300 ease-in-out",
-              artifactsOpen ? "translate-x-0" : "translate-x-full",
+              artifactsOpen && artifacts?.length > 0
+                ? "translate-x-0"
+                : "translate-x-full",
             )}
           >
             {selectedArtifact ? (

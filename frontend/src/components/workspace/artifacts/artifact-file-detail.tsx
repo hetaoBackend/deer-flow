@@ -1,6 +1,8 @@
 import {
+  Code2Icon,
   CopyIcon,
   DownloadIcon,
+  EyeIcon,
   SquareArrowOutUpRightIcon,
   XIcon,
 } from "lucide-react";
@@ -115,8 +117,12 @@ export function ArtifactFileDetail({
                 setViewMode(value as "code" | "preview")
               }
             >
-              <ToggleGroupItem value="code">Code</ToggleGroupItem>
-              <ToggleGroupItem value="preview">Preview</ToggleGroupItem>
+              <ToggleGroupItem value="code">
+                <Code2Icon />
+              </ToggleGroupItem>
+              <ToggleGroupItem value="preview">
+                <EyeIcon />
+              </ToggleGroupItem>
             </ToggleGroup>
           )}
         </div>

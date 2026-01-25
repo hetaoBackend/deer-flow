@@ -47,7 +47,6 @@ export function SettingsDialog({
       t.settings.sections.skills,
     ],
   );
-
   return (
     <Dialog {...dialogProps}>
       <DialogContent

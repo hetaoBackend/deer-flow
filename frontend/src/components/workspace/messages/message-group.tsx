@@ -35,6 +35,7 @@ import { cn } from "@/lib/utils";
 
 import { useArtifacts } from "../artifacts";
 import { FlipDisplay } from "../flip-display";
+import { env } from "@/env";
 
 export function MessageGroup({
   className,
@@ -46,8 +47,12 @@ export function MessageGroup({
   isLoading?: boolean;
 }) {
   const { t } = useI18n();
-  const [showAbove, setShowAbove] = useState(false);
-  const [showLastThinking, setShowLastThinking] = useState(false);
+  const [showAbove, setShowAbove] = useState(
+    env.NEXT_PUBLIC_STATIC_WEBSITE_ONLY === "true",
+  );
+  const [showLastThinking, setShowLastThinking] = useState(
+    env.NEXT_PUBLIC_STATIC_WEBSITE_ONLY === "true",
+  );
   const steps = useMemo(() => convertToSteps(messages), [messages]);
   const lastToolCallStep = useMemo(() => {
     const filteredSteps = steps.filter((step) => step.type === "toolCall");

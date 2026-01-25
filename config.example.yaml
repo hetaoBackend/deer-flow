@@ -147,6 +147,14 @@ sandbox:
 #   #   - host_path: /path/on/host
 #   #     container_path: /home/user/shared
 #   #     read_only: false
+#
+#   # Optional: Environment variables to inject into the sandbox container
+#   # Values starting with $ will be resolved from host environment variables
+#   # environment:
+#   #   NODE_ENV: production
+#   #   DEBUG: "false"
+#   #   API_KEY: $MY_API_KEY        # Reads from host's MY_API_KEY env var
+#   #   DATABASE_URL: $DATABASE_URL  # Reads from host's DATABASE_URL env var
 
 # ============================================================================
 # Skills Configuration

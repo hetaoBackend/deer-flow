@@ -22,6 +22,7 @@ class SandboxConfig(BaseModel):
         auto_start: Whether to automatically start Docker container (default: true)
         container_prefix: Prefix for container names (default: deer-flow-sandbox)
         mounts: List of volume mounts to share directories with the container
+        environment: Environment variables to inject into the container (values starting with $ are resolved from host env)
     """
 
     use: str = Field(
@@ -51,6 +52,11 @@ class SandboxConfig(BaseModel):
     mounts: list[VolumeMountConfig] = Field(
         default_factory=list,
         description="List of volume mounts to share directories between host and container",
+    )
+    environment: dict[str, str] = Field(
+        default_factory=dict,
+        description="Environment variables to inject into the sandbox container. "
+        "Values starting with $ will be resolved from host environment variables.",
     )
 
     model_config = ConfigDict(extra="allow")

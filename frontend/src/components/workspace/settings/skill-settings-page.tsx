@@ -22,6 +22,7 @@ import { Switch } from "@/components/ui/switch";
 import { useI18n } from "@/core/i18n/hooks";
 import { useEnableSkill, useSkills } from "@/core/skills/hooks";
 import type { Skill } from "@/core/skills/type";
+import { env } from "@/env";
 
 import { SettingsSection } from "./settings-section";
 
@@ -34,7 +35,7 @@ export function SkillSettingsPage() {
       description={t.settings.skills.description}
     >
       {isLoading ? (
-        <div>Loading...</div>
+        <div className="text-muted-foreground text-sm">{t.common.loading}</div>
       ) : error ? (
         <div>Error: {error.message}</div>
       ) : (
@@ -59,10 +60,10 @@ function SkillSettingsList({ skills }: { skills: Skill[] }) {
           <EmptyMedia variant="icon">
             <SparklesIcon />
           </EmptyMedia>
-          <EmptyTitle>No skill yet</EmptyTitle>
+          <EmptyTitle>No agent skill yet</EmptyTitle>
           <EmptyDescription>
-            Put your skill folders under the `/skills/custom` folder under the
-            root folder of DeerFlow.
+            Put your agent skill folders under the `/skills/custom` folder under
+            the root folder of DeerFlow.
           </EmptyDescription>
         </EmptyHeader>
       </Empty>
@@ -116,6 +117,7 @@ function SkillSettingsList({ skills }: { skills: Skill[] }) {
             <ItemActions>
               <Switch
                 checked={skill.enabled}
+                disabled={env.NEXT_PUBLIC_STATIC_WEBSITE_ONLY === "true"}
                 onCheckedChange={(checked) =>
                   enableSkill({ skillName: skill.name, enabled: checked })
                 }

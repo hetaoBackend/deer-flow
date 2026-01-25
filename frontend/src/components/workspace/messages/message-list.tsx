@@ -4,11 +4,15 @@ import {
   Conversation,
   ConversationContent,
 } from "@/components/ai-elements/conversation";
+import { MessageResponse } from "@/components/ai-elements/message";
 import {
+  extractContentFromMessage,
   extractPresentFilesFromMessage,
   groupMessages,
+  hasContent,
   hasPresentFiles,
 } from "@/core/messages/utils";
+import { useRehypeSplitWordsIntoSpans } from "@/core/rehype";
 import type { AgentThreadState } from "@/core/threads";
 import { cn } from "@/lib/utils";
 
@@ -30,6 +34,7 @@ export function MessageList({
   thread: UseStream<AgentThreadState>;
   paddingBottom?: number;
 }) {
+  const rehypePlugins = useRehypeSplitWordsIntoSpans(thread.isLoading);
   if (thread.isThreadLoading) {
     return <MessageListSkeleton />;
   }
@@ -57,11 +62,17 @@ export function MessageList({
               }
             }
             return (
-              <ArtifactFileList
-                key={group.id}
-                files={files}
-                threadId={threadId}
-              />
+              <div className="w-full" key={group.id}>
+                {group.messages[0] && hasContent(group.messages[0]) && (
+                  <MessageResponse
+                    className="mb-4"
+                    rehypePlugins={rehypePlugins}
+                  >
+                    {extractContentFromMessage(group.messages[0])}
+                  </MessageResponse>
+                )}
+                <ArtifactFileList files={files} threadId={threadId} />
+              </div>
             );
           }
           return (

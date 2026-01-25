@@ -33,7 +33,6 @@ export default function WorkspaceLayout({
         open={open}
         onOpenChange={handleOpenChange}
       >
-        <Overscroll behavior="none" overflow="hidden" />
         <WorkspaceSidebar />
         <SidebarInset className="min-w-0">{children}</SidebarInset>
       </SidebarProvider>

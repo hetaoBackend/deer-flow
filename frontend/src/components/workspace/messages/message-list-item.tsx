@@ -1,4 +1,5 @@
 import type { Message } from "@langchain/langgraph-sdk";
+import { useParams } from "next/navigation";
 import { memo, useMemo } from "react";
 
 import {
@@ -7,6 +8,7 @@ import {
   MessageResponse as AIElementMessageResponse,
   MessageToolbar,
 } from "@/components/ai-elements/message";
+import { resolveArtifactURL } from "@/core/artifacts/utils";
 import {
   extractContentFromMessage,
   extractReasoningContentFromMessage,
@@ -74,9 +76,39 @@ function MessageContent_({
     }
     return content;
   }, [isLoading, message]);
+  const { thread_id } = useParams<{ thread_id: string }>();
   return (
     <AIElementMessageContent className={className}>
-      <AIElementMessageResponse rehypePlugins={rehypePlugins}>
+      <AIElementMessageResponse
+        rehypePlugins={rehypePlugins}
+        components={{
+          img: ({ src, alt }: React.ImgHTMLAttributes<HTMLImageElement>) => {
+            if (!src) return null;
+            if (typeof src !== "string") {
+              return (
+                <img
+                  className="max-w-full overflow-hidden rounded-lg"
+                  src={src}
+                  alt={alt}
+                />
+              );
+            }
+            let url = src;
+            if (src.startsWith("/mnt/")) {
+              url = resolveArtifactURL(src, thread_id);
+            }
+            return (
+              <a href={url} target="_blank" rel="noopener noreferrer">
+                <img
+                  className="max-w-full overflow-hidden rounded-lg"
+                  src={url}
+                  alt={alt}
+                />
+              </a>
+            );
+          },
+        }}
+      >
         {content}
       </AIElementMessageResponse>
     </AIElementMessageContent>

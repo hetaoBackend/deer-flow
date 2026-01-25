@@ -12,7 +12,9 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { useI18n } from "@/core/i18n/hooks";
+import { env } from "@/env";
 import { cn } from "@/lib/utils";
+import { Tooltip } from "./tooltip";
 
 export function WorkspaceHeader({ className }: { className?: string }) {
   const { t } = useI18n();
@@ -35,7 +37,7 @@ export function WorkspaceHeader({ className }: { className?: string }) {
           </div>
         ) : (
           <div className="flex items-center justify-between gap-2">
-            <Link href="/workspace" className="text-primary ml-2 font-serif">
+            <Link href="/" className="text-primary ml-2 font-serif">
               DeerFlow
             </Link>
             <SidebarTrigger />

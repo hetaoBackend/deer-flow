@@ -18,6 +18,10 @@ export interface Translations {
     artifacts: string;
     public: string;
     custom: string;
+    notAvailableInDemoMode: string;
+    loading: string;
+    code: string;
+    preview: string;
   };
 
   // Welcome
@@ -52,6 +56,7 @@ export interface Translations {
     recentChats: string;
     newChat: string;
     chats: string;
+    demoChats: string;
   };
 
   // Breadcrumb
@@ -62,6 +67,7 @@ export interface Translations {
 
   // Workspace
   workspace: {
+    officialWebsite: string;
     githubTooltip: string;
     settingsAndMore: string;
     visitGithub: string;

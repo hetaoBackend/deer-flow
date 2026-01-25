@@ -438,6 +438,7 @@ export type PromptInputProps = Omit<
   "onSubmit" | "onError"
 > & {
   accept?: string; // e.g., "image/*" or leave undefined for any
+  disabled?: boolean;
   multiple?: boolean;
   // When true, accepts drops anywhere on document. Default false (opt-in).
   globalDrop?: boolean;
@@ -459,6 +460,7 @@ export type PromptInputProps = Omit<
 export const PromptInput = ({
   className,
   accept,
+  disabled,
   multiple,
   globalDrop,
   syncHiddenInput,

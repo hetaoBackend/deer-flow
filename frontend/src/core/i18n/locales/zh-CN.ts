@@ -20,6 +20,10 @@ export const zhCN: Translations = {
     artifacts: "文件",
     public: "公共",
     custom: "自定义",
+    notAvailableInDemoMode: "在演示模式下不可用",
+    loading: "加载中...",
+    code: "代码",
+    preview: "预览",
   },
 
   // Welcome
@@ -54,7 +58,8 @@ export const zhCN: Translations = {
   sidebar: {
     newChat: "新对话",
     chats: "对话",
-    recentChats: "最近的聊天",
+    recentChats: "最近的对话",
+    demoChats: "演示对话",
   },
 
   // Breadcrumb
@@ -65,7 +70,8 @@ export const zhCN: Translations = {
 
   // Workspace
   workspace: {
-    githubTooltip: "DeerFlow 在 Github",
+    officialWebsite: "访问 DeerFlow 官方网站",
+    githubTooltip: "访问 DeerFlow 的 Github 仓库",
     settingsAndMore: "设置和更多",
     visitGithub: "在 Github 上查看 DeerFlow",
     reportIssue: "报告问题",
@@ -129,7 +135,7 @@ export const zhCN: Translations = {
     },
     skills: {
       title: "技能",
-      description: "管理智能体的技能配置和启用状态。",
+      description: "管理 Agent Skill 配置和启用状态。",
     },
     acknowledge: {
       emptyTitle: "致谢",

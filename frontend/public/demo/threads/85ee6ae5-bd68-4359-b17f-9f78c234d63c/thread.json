@@ -1,0 +1,760 @@
+{
+  "values": {
+    "messages": [
+      {
+        "content": [
+          {
+            "type": "text",
+            "text": "Explain MOE to a 16-year-old boy"
+          }
+        ],
+        "additional_kwargs": {},
+        "response_metadata": {},
+        "type": "human",
+        "name": null,
+        "id": "30d143c2-2102-464d-8b86-cde9b2adbc0f"
+      },
+      {
+        "content": "<uploaded_files>\nNo files have been uploaded yet.\n</uploaded_files>",
+        "additional_kwargs": {},
+        "response_metadata": {},
+        "type": "system",
+        "name": null,
+        "id": "7cbefde1-5dca-440a-a37e-bb8fe1c3f3f7"
+      },
+      {
+        "content": "",
+        "additional_kwargs": {
+          "reasoning_content": "The user is asking me to explain \"MOE\" to a 16-year-old boy. I need to understand what \"MOE\" refers to. There are multiple possible meanings: Ministry of Education (in some countries), Moe from The Simpsons, or perhaps \"moe\" as an anime term (萌え). Given the context of explaining to a 16-year-old boy, likely the anime term \"moe\" is relevant. However, I should clarify to ensure I'm addressing the correct meaning. Let me ask for clarification."
+        },
+        "response_metadata": {
+          "finish_reason": "tool_calls",
+          "model_name": "deepseek-v3-2-251201",
+          "service_tier": "default",
+          "model_provider": "deepseek"
+        },
+        "type": "ai",
+        "name": null,
+        "id": "lc_run--019beff3-85cf-7713-9844-13dbe3cf6d39",
+        "tool_calls": [
+          {
+            "name": "ask_clarification",
+            "args": {
+              "question": "What does \"MOE\" refer to? There are several possibilities: 1) \"Moe\" as an anime term (萌え) meaning cute, affectionate feelings towards characters; 2) \"Moe\" as a character from The Simpsons; 3) \"MOE\" as an acronym like Ministry of Education; 4) Something else. Which one should I explain?",
+              "clarification_type": "ambiguous_requirement",
+              "context": "I want to make sure I explain the right concept to a 16-year-old boy, as different meanings would require very different explanations.",
+              "options": [
+                "Anime term 'moe' (萌え)",
+                "Moe from The Simpsons",
+                "MOE as an acronym (e.g., Ministry of Education)",
+                "Other meaning"
+              ]
+            },
+            "id": "call_u0dw6bb6r574ejys3vri44en",
+            "type": "tool_call"
+          }
+        ],
+        "invalid_tool_calls": [],
+        "usage_metadata": null
+      },
+      {
+        "content": "🤔 I want to make sure I explain the right concept to a 16-year-old boy, as different meanings would require very different explanations.\n\nWhat does \"MOE\" refer to? There are several possibilities: 1) \"Moe\" as an anime term (萌え) meaning cute, affectionate feelings towards characters; 2) \"Moe\" as a character from The Simpsons; 3) \"MOE\" as an acronym like Ministry of Education; 4) Something else. Which one should I explain?\n\n  1. Anime term 'moe' (萌え)\n  2. Moe from The Simpsons\n  3. MOE as an acronym (e.g., Ministry of Education)\n  4. Other meaning",
+        "additional_kwargs": {},
+        "response_metadata": {},
+        "type": "tool",
+        "name": "ask_clarification",
+        "id": "b91dab53-002d-4dd5-9eaf-a7c54a80efd4",
+        "tool_call_id": "call_u0dw6bb6r574ejys3vri44en",
+        "artifact": null,
+        "status": "success"
+      },
+      {
+        "content": "🤔 I want to make sure I explain the right concept to a 16-year-old boy, as different meanings would require very different explanations.\n\nWhat does \"MOE\" refer to? There are several possibilities: 1) \"Moe\" as an anime term (萌え) meaning cute, affectionate feelings towards characters; 2) \"Moe\" as a character from The Simpsons; 3) \"MOE\" as an acronym like Ministry of Education; 4) Something else. Which one should I explain?\n\n  1. Anime term 'moe' (萌え)\n  2. Moe from The Simpsons\n  3. MOE as an acronym (e.g., Ministry of Education)\n  4. Other meaning",
+        "additional_kwargs": {},
+        "response_metadata": {},
+        "type": "ai",
+        "name": null,
+        "id": "a1871072-9021-40e1-a896-53497ba3d2fb",
+        "tool_calls": [],
+        "invalid_tool_calls": [],
+        "usage_metadata": null
+      },
+      {
+        "content": "",
+        "additional_kwargs": {},
+        "response_metadata": {
+          "finish_reason": "stop",
+          "model_name": "deepseek-v3-2-251201",
+          "service_tier": "default",
+          "model_provider": "deepseek"
+        },
+        "type": "ai",
+        "name": null,
+        "id": "lc_run--019beff3-bd4a-7ec1-af46-1687aba7994a",
+        "tool_calls": [],
+        "invalid_tool_calls": [],
+        "usage_metadata": null
+      },
+      {
+        "content": [
+          {
+            "type": "text",
+            "text": "The one related to AI models"
+          }
+        ],
+        "additional_kwargs": {},
+        "response_metadata": {},
+        "type": "human",
+        "name": null,
+        "id": "2cf05eee-ec72-4551-bd0a-44ffd7549b90"
+      },
+      {
+        "content": "<uploaded_files>\nNo files have been uploaded yet.\n</uploaded_files>",
+        "additional_kwargs": {},
+        "response_metadata": {},
+        "type": "system",
+        "name": null,
+        "id": "fb3f5905-8637-4c94-a31e-6294da2e5eba"
+      },
+      {
+        "content": "",
+        "additional_kwargs": {
+          "reasoning_content": "The user clarified that \"MOE\" refers to the one related to AI models. I need to think about what MOE means in the context of AI models. MOE likely stands for \"Mixture of Experts\" - a popular architecture in AI/ML. I should confirm this and then explain it to a 16-year-old boy in simple terms.\n\nFirst, I should do a quick web search to gather accurate information about Mixture of Experts in AI models, especially recent developments like in large language models (e.g., Mixtral, Grok). Then I'll explain it in simple, relatable terms.\n\nLet me search."
+        },
+        "response_metadata": {
+          "finish_reason": "tool_calls",
+          "model_name": "deepseek-v3-2-251201",
+          "service_tier": "default",
+          "model_provider": "deepseek"
+        },
+        "type": "ai",
+        "name": null,
+        "id": "lc_run--019beff4-2ea0-7a42-b84a-819a3858071a",
+        "tool_calls": [
+          {
+            "name": "web_search",
+            "args": {
+              "query": "MOE AI models mixture of experts explained simple"
+            },
+            "id": "call_bfmlsllzm8lc2lwn8cf505su",
+            "type": "tool_call"
+          }
+        ],
+        "invalid_tool_calls": [],
+        "usage_metadata": null
+      },
+      {
+        "content": "[\n  {\n    \"title\": \"Mixture of Experts Models: Explained Simply\",\n    \"url\": \"https://dianawolftorres.substack.com/p/mixture-of-experts-models-explained\",\n    \"snippet\": \"Much like how a large organization benefits from having specialized departments rather than making every employee a generalist, MoE models achieve remarkable efficiency by breaking down complex tasks into smaller, more manageable pieces handled by specialized components.**. Unlike traditional neural networks where all neurons might activate for every input, MoE models only activate a small subset of experts for each task. **Mixture of Experts (MoE):** An AI architecture that uses multiple specialized neural networks (experts) working together, each handling specific aspects of tasks they're best suited for. **Expert Network:** A specialized neural network trained to handle specific types of patterns or tasks within the larger MoE system. **How is MoE different from traditional AI models?** *Traditional models activate all their parameters for every task, while MoE models selectively activate only the most relevant experts, significantly improving efficiency.*. **What makes MoE models more efficient?** *By activating only the necessary experts for each task, MoE models can achieve better results while using a fraction of the computing power required by traditional models.*.\"\n  },\n  {\n    \"title\": \"Mixture of Experts Explained - Hugging Face\",\n    \"url\": \"https://huggingface.co/blog/moe\",\n    \"snippet\": \"With the release of Mixtral 8x7B (announcement, model card), a class of transformer has become the hottest topic in the open AI community: Mixture of Experts, or MoEs for short. How to route a token to an expert is one of the big decisions when working with MoEs - the router is composed of learned parameters and is pretrained at the same time as the rest of the network. So, to recap, in MoEs we replace every FFN layer of the transformer model with an MoE layer, which is composed of a gate network and a certain number of experts. That’s because in MoE models, only the FFN layers are treated as individual experts, and the rest of the model parameters are shared. The idea of conditional computation (parts of the network are active on a per-example basis) allows one to scale the size of the model without increasing the computation, and hence, this led to thousands of experts being used in each MoE layer.\"\n  },\n  {\n    \"title\": \"Understanding Mixture of Experts (MoE): A Beginner's Guide with ...\",\n    \"url\": \"https://ai-brewery.medium.com/understanding-mixture-of-experts-moe-a-beginners-guide-with-pytorch-933eb50f7f58\",\n    \"snippet\": \"In our code, we’ll create an MoE with three experts, pick the top two for each input, and compare it to a single large neural network. class MoE(nn.Module): def __init__(self, experts, top_k=2): super(MoE, self).__init__() self.experts = nn.ModuleList(experts) self.gating = Gating(input_dim=experts[0].layer1.in_features, num_experts=len(experts)) self.top_k = top_k def forward(self, x): weights = self.gating(x) top_k_weights, top_k_indices = torch.topk(weights, k=self.top_k, dim=1) top_k_weights = top_k_weights / top_k_weights.sum(dim=1, keepdim=True) batch_size = x.size(0) output = torch.zeros(batch_size, self.experts[0].layer2.out_features, device=x.device) for i in range(batch_size): for k in range(self.top_k): expert_idx = top_k_indices[i, k] weight = top_k_weights[i, k] expert_output = self.expertsexpert_idx output[i] += weight * expert_output.squeeze(0) return output. moe_model = MoE(experts, top_k=2)optimizer_moe = optim.Adam(moe_model.parameters(), lr=learning_rate)for epoch in range(epochs): optimizer_moe.zero_grad() outputs_moe = moe_model(x_train) loss_moe = nn.CrossEntropyLoss()(outputs_moe, y_train) loss_moe.backward() optimizer_moe.step() if (epoch + 1) % 20 == 0: print(f\\\"MoE Epoch [{epoch+1}/{epochs}], Loss: {loss_moe.item():.4f}\\\"). The Mixture of Experts (MoE) model used far fewer parameters than the single neural network — only 649 active ones during inference compared to 69,013 in the single model.\"\n  },\n  {\n    \"title\": \"What Is Mixture of Experts (MoE)? How It Works, Use Cases & More\",\n    \"url\": \"https://www.datacamp.com/blog/mixture-of-experts-moe\",\n    \"snippet\": \"Mixture of Experts (MoE) is a machine learning technique where multiple specialized models (experts) work together, with a gating network selecting the best expert for each input. The mixture of experts (MoE) technique addresses this challenge by breaking down large models into smaller, specialized networks. Think of the \\\"expert networks\\\" in a MoE model as a team of specialists. In an MoE model, these experts are like individual neural networks, each trained on different datasets or tasks. In the joint training phase, the entire MoE system, which includes both the expert models and the gating network, is trained together. The combined loss gradients are then propagated through both the gating network and the expert models, facilitating updates that improve the overall performance of the MoE system. 3. Hyperparameter tuning: MoE models have more hyperparameters, such as the number of experts and the architecture of the gating network. MoE uses multiple specialized experts and a gating network to route inputs effectively.\"\n  },\n  {\n    \"title\": \"Mixture of Experts LLM - MoE explained in simple terms - YouTube\",\n    \"url\": \"https://www.youtube.com/watch?v=NrCjFbBy_vs\",\n    \"snippet\": \": https://app.fireworks.ai/models/fireworks/mixtral-8x7b GPT-4 generated text: The video transcript provides a comprehensive overview of the\"\n  }\n]",
+        "additional_kwargs": {},
+        "response_metadata": {},
+        "type": "tool",
+        "name": "web_search",
+        "id": "6c4801d1-f9a9-4ee3-b59a-c798e384f190",
+        "tool_call_id": "call_bfmlsllzm8lc2lwn8cf505su",
+        "artifact": null,
+        "status": "success"
+      },
+      {
+        "content": "",
+        "additional_kwargs": {
+          "reasoning_content": "Now I need to fetch one of these resources to get a good explanation. The Hugging Face blog or the first result would be good. Let me fetch the Hugging Face blog."
+        },
+        "response_metadata": {
+          "finish_reason": "tool_calls",
+          "model_name": "deepseek-v3-2-251201",
+          "service_tier": "default",
+          "model_provider": "deepseek"
+        },
+        "type": "ai",
+        "name": null,
+        "id": "lc_run--019beff4-55ec-70d2-9e5d-8d1595f6c6f4",
+        "tool_calls": [
+          {
+            "name": "web_fetch",
+            "args": {
+              "url": "https://huggingface.co/blog/moe"
+            },
+            "id": "call_kw2ogsrrj7d7fay8dvihgzc8",
+            "type": "tool_call"
+          }
+        ],
+        "invalid_tool_calls": [],
+        "usage_metadata": null
+      },
+      {
+        "content": "# Mixture of Experts Explained\n\n[Back to Articles](/blog)\n\n[![Omar Sanseviero's avatar](https://cdn-avatars.huggingface.co/v1/production/uploads/6032802e1f993496bc14d9e3/w6hr-DEQot4VVkoyRIBiy.png)](/osanseviero)\n\n[![Lewis Tunstall's avatar](https://cdn-avatars.huggingface.co/v1/production/uploads/1594651707950-noauth.jpeg)](/lewtun)\n\n[![Philipp Schmid's avatar](https://cdn-avatars.huggingface.co/v1/production/uploads/1624629516652-5ff5d596f244529b3ec0fb89.png)](/philschmid)\n\n[![Sourab Mangrulkar's avatar](https://cdn-avatars.huggingface.co/v1/production/uploads/1638132956881-5fca176d1d7a08cb34d79d5d.jpeg)](/smangrul)\n\n[![Younes B's avatar](https://cdn-avatars.huggingface.co/v1/production/uploads/1648631057413-noauth.png)](/ybelkada)\n\n[![Pedro Cuenca's avatar](https://cdn-avatars.huggingface.co/v1/production/uploads/1617264212503-603d25b75f9d390ab190b777.jpeg)](/pcuenq)\n\n* [Table of Contents](#table-of-contents \"Table of Contents\")\n* [TL;DR](#tldr \"TL;DR\")\n* [What is a Mixture of Experts (MoE)?](#what-is-a-mixture-of-experts-moe \"What is a Mixture of Experts (MoE)?\")\n* [A Brief History of MoEs](#a-brief-history-of-moes \"A Brief History of MoEs\")\n* [What is Sparsity?](#what-is-sparsity \"What is Sparsity?\")\n* [Load balancing tokens for MoEs](#load-balancing-tokens-for-moes \"Load balancing tokens for MoEs\")\n* [MoEs and Transformers](#moes-and-transformers \"MoEs and Transformers\")\n* [Switch Transformers](#switch-transformers \"Switch Transformers\")\n* [Stabilizing training with router Z-loss](#stabilizing-training-with-router-z-loss \"Stabilizing training with router Z-loss\")\n* [What does an expert learn?](#what-does-an-expert-learn \"What does an expert learn?\")\n* [How does scaling the number of experts impact pretraining?](#how-does-scaling-the-number-of-experts-impact-pretraining \"How does scaling the number of experts impact pretraining?\")\n* [Fine-tuning MoEs](#fine-tuning-moes \"Fine-tuning MoEs\")\n* [When to use sparse MoEs vs dense models?](#when-to-use-sparse-moes-vs-dense-models \"When to use sparse MoEs vs dense models?\")\n* [Making MoEs go brrr](#making-moes-go-brrr \"Making MoEs go brrr\")\n  + [Parallelism](#parallelism \"Parallelism\")\n  + [Capacity Factor and communication costs](#capacity-factor-and-communication-costs \"Capacity Factor and communication costs\")\n  + [Serving techniques](#serving-techniques \"Serving techniques\")\n  + [More on efficient training](#more-on-efficient-training \"More on efficient training\")\n* [Open Source MoEs](#open-source-moes \"Open Source MoEs\")\n* [Exciting directions of work](#exciting-directions-of-work \"Exciting directions of work\")\n* [Some resources](#some-resources \"Some resources\")\n* [Citation](#citation \"Citation\")\n\nWith the release of Mixtral 8x7B ([announcement](https://mistral.ai/news/mixtral-of-experts/), [model card](https://huggingface.co/mistralai/Mixtral-8x7B-v0.1)), a class of transformer has become the hottest topic in the open AI community: Mixture of Experts, or MoEs for short. In this blog post, we take a look at the building blocks of MoEs, how they’re trained, and the tradeoffs to consider when serving them for inference.\n\nLet’s dive in!\n\nTable of Contents\n-----------------\n\n* [What is a Mixture of Experts?](#what-is-a-mixture-of-experts-moe)\n* [A Brief History of MoEs](#a-brief-history-of-moes)\n* [What is Sparsity?](#what-is-sparsity)\n* [Load Balancing tokens for MoEs](#load-balancing-tokens-for-moes)\n* [MoEs and Transformers](#moes-and-transformers)\n* [Switch Transformers](#switch-transformers)\n* [Stabilizing training with router Z-loss](#stabilizing-training-with-router-z-loss)\n* [What does an expert learn?](#what-does-an-expert-learn)\n* [How does scaling the number of experts impact pretraining?](#how-does-scaling-the-number-of-experts-impact-pretraining)\n* [Fine-tuning MoEs](#fine-tuning-moes)\n* [When to use sparse MoEs vs dense models?](#when-to-use-sparse-moes-vs-dense-models)\n* [Making MoEs go brrr](#making-moes-go-brrr)\n  + [Expert Parallelism](#parallelism)\n  + [Capacity Factor and Communication costs](#capacity-factor-and-communication-costs)\n  + [Serving Techniques](#serving-techniques)\n  + [Efficient Training](#more-on-efficient-training)\n* [Open Source MoEs](#open-source-moes)\n* [Exciting directions of work](#exciting-directions-of-work)\n* [Some resources](#some-resources)\n\nTL;DR\n-----\n\nMoEs:\n\n* Are **pretrained much faster** vs. dense models\n* Have **faster inference** compared to a model with the same number of parameters\n* Require **high VRAM** as all experts are loaded in memory\n* Face many **challenges in fine-tuning**, but [recent work](https://arxiv.org/pdf/2305.14705.pdf) with MoE **instruction-tuning is promising**\n\nLet’s dive in!\n\nWhat is a Mixture of Experts (MoE)?\n-----------------------------------\n\nThe scale of a model is one of the most important axes for better model quality. Given a fixed computing budget, training a larger model for fewer steps is better than training a smaller model for more steps.\n\nMixture of Experts enable models to be pretrained with far less compute, which means you can dramatically scale up the model or dataset size with the same compute budget as a dense model. In particular, a MoE model should achieve the same quality as its dense counterpart much faster during pretraining.\n\nSo, what exactly is a MoE? In the context of transformer models, a MoE consists of two main elements:\n\n* **Sparse MoE layers** are used instead of dense feed-forward network (FFN) layers. MoE layers have a certain number of “experts” (e.g. 8), where each expert is a neural network. In practice, the experts are FFNs, but they can also be more complex networks or even a MoE itself, leading to hierarchical MoEs!\n* A **gate network or router**, that determines which tokens are sent to which expert. For example, in the image below, the token “More” is sent to the second expert, and the token \"Parameters” is sent to the first network. As we’ll explore later, we can send a token to more than one expert. How to route a token to an expert is one of the big decisions when working with MoEs - the router is composed of learned parameters and is pretrained at the same time as the rest of the network.\n\n![Switch Layer](https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/blog/moe/00_switch_transformer.png)\n\n\nMoE layer from the [Switch Transformers paper](https://arxiv.org/abs/2101.03961)\n\nSo, to recap, in MoEs we replace every FFN layer of the transformer model with an MoE layer, which is composed of a gate network and a certain number of experts.\n\nAlthough MoEs provide benefits like efficient pretraining and faster inference compared to dense models, they also come with challenges:\n\n* **Training:** MoEs enable significantly more compute-efficient pretraining, but they’ve historically struggled to generalize during fine-tuning, leading to overfitting.\n* **Inference:** Although a MoE might have many parameters, only some of them are used during inference. This leads to much faster inference compared to a dense model with the same number of parameters. However, all parameters need to be loaded in RAM, so memory requirements are high. For example, given a MoE like Mixtral 8x7B, we’ll need to have enough VRAM to hold a dense 47B parameter model. Why 47B parameters and not 8 x 7B = 56B? That’s because in MoE models, only the FFN layers are treated as individual experts, and the rest of the model parameters are shared. At the same time, assuming just two experts are being used per token, the inference speed (FLOPs) is like using a 12B model (as opposed to a 14B model), because it computes 2x7B matrix multiplications, but with some layers shared (more on this soon).\n\nNow that we have a rough idea of what a MoE is, let’s take a look at the research developments that led to their invention.\n\nA Brief History of MoEs\n-----------------------\n\nThe roots of MoEs come from the 1991 paper [Adaptive Mixture of Local Experts](https://www.cs.toronto.edu/~hinton/absps/jjnh91.pdf). The idea, akin to ensemble methods, was to have a supervised procedure for a system composed of separate networks, each handling a different subset of the training cases. Each separate network, or expert, specializes in a different region of the input space. How is the expert chosen? A gating network determines the weights for each expert. During training, both the expert and the gating are trained.\n\nBetween 2010-2015, two different research areas contributed to later MoE advancement:\n\n* **Experts as components**: In the traditional MoE setup, the whole system comprises a gating network and multiple experts. MoEs as the whole model have been explored in SVMs, Gaussian Processes, and other methods. The work by [Eigen, Ranzato, and Ilya](https://arxiv.org/abs/1312.4314) explored MoEs as components of deeper networks. This allows having MoEs as layers in a multilayer network, making it possible for the model to be both large and efficient simultaneously.\n* **Conditional Computation**: Traditional networks process all input data through every layer. In this period, Yoshua Bengio researched approaches to dynamically activate or deactivate components based on the input token.\n\nThese works led to exploring a mixture of experts in the context of NLP. Concretely, [Shazeer et al.](https://arxiv.org/abs/1701.06538) (2017, with “et al.” including Geoffrey Hinton and Jeff Dean, [Google’s Chuck Norris](https://www.informatika.bg/jeffdean)) scaled this idea to a 137B LSTM (the de-facto NLP architecture back then, created by Schmidhuber) by introducing sparsity, allowing to keep very fast inference even at high scale. This work focused on translation but faced many challenges, such as high communication costs and training instabilities.\n\n![MoE layer in LSTM](https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/blog/moe/01_moe_layer.png)\n\n\nMoE layer from the Outrageously Large Neural Network paper\n\nMoEs have allowed training multi-trillion parameter models, such as the open-sourced 1.6T parameters Switch Transformers, among others. MoEs have also been explored in Computer Vision, but this blog post will focus on the NLP domain.\n\nWhat is Sparsity?\n-----------------\n\nSparsity uses the idea of conditional computation. While in dense models all the parameters are used for all the inputs, sparsity allows us to only run some parts of the whole system.\n\nLet’s dive deeper into Shazeer's exploration of MoEs for translation. The idea of conditional computation (parts of the network are active on a per-example basis) allows one to scale the size of the model without increasing the computation, and hence, this led to thousands of experts being used in each MoE layer.\n\nThis setup introduces some challenges. For example, although large batch sizes are usually better for performance, batch sizes in MOEs are effectively reduced as data flows through the active experts. For example, if our batched input consists of 10 tokens, **five tokens might end in one expert, and the other five tokens might end in five different experts, leading to uneven batch sizes and underutilization**. The [Making MoEs go brrr](#making-moes-go-brrr) section below will discuss other challenges and solutions.\n\nHow can we solve this? A learned gating network (G) decides which experts (E) to send a part of the input:\n\ny=∑i=1nG(x)iEi(x)\ny = \\sum\\_{i=1}^{n} G(x)\\_i E\\_i(x)\n\nIn this setup, all experts are run for all inputs - it’s a weighted multiplication. But, what happens if G is 0? If that’s the case, there’s no need to compute the respective expert operations and hence we save compute. What’s a typical gating function? In the most traditional setup, we just use a simple network with a softmax function. The network will learn which expert to send the input.\n\nGσ(x)=Softmax(x⋅Wg)\nG\\_\\sigma(x) = \\text{Softmax}(x \\cdot W\\_g)\n\nShazeer’s work also explored other gating mechanisms, such as Noisy Top-k Gating. This gating approach introduces some (tunable) noise and then keeps the top k values. That is:\n\n1. We add some noise\n\nH(x)i=(x⋅Wg)i+StandardNormal()⋅Softplus((x⋅Wnoise)i)\nH(x)\\_i = (x \\cdot W\\_{\\text{g}})\\_i + \\text{StandardNormal()} \\cdot \\text{Softplus}((x \\cdot W\\_{\\text{noise}})\\_i)\n\n2. We only pick the top k\n\nKeepTopK(v,k)i={viif vi is in the top k elements of v,−∞otherwise.\n\\text{KeepTopK}(v, k)\\_i = \\begin{cases}\nv\\_i & \\text{if } v\\_i \\text{ is in the top } k \\text{ elements of } v, \\\\\n-\\infty & \\text{otherwise.}\n\\end{cases}\n\n3. We apply the softmax.\n\nG(x)=Softmax(KeepTopK(H(x),k))\nG(x) = \\text{Softmax}(\\text{KeepTopK}(H(x), k))\n\nThis sparsity introduces some interesting properties. By using a low enough k (e.g. one or two), we can train and run inference much faster than if many experts were activated. Why not just select the top expert? The initial conjecture was that routing to more than one expert was needed to have the gate learn how to route to different experts, so at least two experts had to be picked. The [Switch Transformers](#switch-transformers) section revisits this decision.\n\nWhy do we add noise? That’s for load balancing!\n\nLoad balancing tokens for MoEs\n------------------------------\n\nAs discussed before, if all our tokens are sent to just a few popular experts, that will make training inefficient. In a normal MoE training, the gating network converges to mostly activate the same few experts. This self-reinforces as favored experts are trained quicker and hence selected more. To mitigate this, an **auxiliary loss** is added to encourage giving all experts equal importance. This loss ensures that all experts receive a roughly equal number of training examples. The following sections will also explore the concept of expert capacity, which introduces a threshold of how many tokens can be processed by an expert. In `transformers`, the auxiliary loss is exposed via the `aux_loss` parameter.\n\nMoEs and Transformers\n---------------------\n\nTransformers are a very clear case that scaling up the number of parameters improves the performance, so it’s not surprising that Google explored this with [GShard](https://arxiv.org/abs/2006.16668), which explores scaling up transformers beyond 600 billion parameters.\n\nGShard replaces every other FFN layer with an MoE layer using top-2 gating in both the encoder and the decoder. The next image shows how this looks like for the encoder part. This setup is quite beneficial for large-scale computing: when we scale to multiple devices, the MoE layer is shared across devices while all the other layers are replicated. This is further discussed in the [“Making MoEs go brrr”](#making-moes-go-brrr) section.\n\n![MoE Transformer Encoder](https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/blog/moe/02_moe_block.png)\n\n\nMoE Transformer Encoder from the GShard Paper\n\nTo maintain a balanced load and efficiency at scale, the GShard authors introduced a couple of changes in addition to an auxiliary loss similar to the one discussed in the previous section:\n\n* **Random routing**: in a top-2 setup, we always pick the top expert, but the second expert is picked with probability proportional to its weight.\n* **Expert capacity**: we can set a threshold of how many tokens can be processed by one expert. If both experts are at capacity, the token is considered overflowed, and it’s sent to the next layer via residual connections (or dropped entirely in other projects). This concept will become one of the most important concepts for MoEs. Why is expert capacity needed? Since all tensor shapes are statically determined at compilation time, but we cannot know how many tokens will go to each expert ahead of time, we need to fix the capacity factor.\n\nThe GShard paper has contributions by expressing parallel computation patterns that work well for MoEs, but discussing that is outside the scope of this blog post.\n\n**Note:** when we run inference, only some experts will be triggered. At the same time, there are shared computations, such as self-attention, which is applied for all tokens. That’s why when we talk of a 47B model of 8 experts, we can run with the compute of a 12B dense model. If we use top-2, 14B parameters would be used. But given that the attention operations are shared (among others), the actual number of used parameters is 12B.\n\nSwitch Transformers\n-------------------\n\nAlthough MoEs showed a lot of promise, they struggle with training and fine-tuning instabilities. [Switch Transformers](https://arxiv.org/abs/2101.03961) is a very exciting work that deep dives into these topics. The authors even released a [1.6 trillion parameters MoE on Hugging Face](https://huggingface.co/google/switch-c-2048) with 2048 experts, which you can run with transformers. Switch Transformers achieved a 4x pre-train speed-up over T5-XXL.\n\n![Switch Transformer Layer](https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/blog/moe/03_switch_layer.png)\n\n\nSwitch Transformer Layer of the Switch Transformer paper\n\nJust as in GShard, the authors replaced the FFN layers with a MoE layer. The Switch Transformers paper proposes a Switch Transformer layer that receives two inputs (two different tokens) and has four experts.\n\nContrary to the initial idea of using at least two experts, Switch Transformers uses a simplified single-expert strategy. The effects of this approach are:\n\n* The router computation is reduced\n* The batch size of each expert can be at least halved\n* Communication costs are reduced\n* Quality is preserved\n\nSwitch Transformers also explores the concept of expert capacity.\n\nExpert Capacity=(tokens per batchnumber of experts)×capacity factor\n\\text{Expert Capacity} = \\left(\\frac{\\text{tokens per batch}}{\\text{number of experts}}\\right) \\times \\text{capacity factor}\n\nThe capacity suggested above evenly divides the number of tokens in the batch across the number of experts. If we use a capacity factor greater than 1, we provide a buffer for when tokens are not perfectly balanced. Increasing the capacity will lead to more expensive inter-device communication, so it’s a trade-off to keep in mind. In particular, Switch Transformers perform well at low capacity factors (1-1.25)\n\nSwitch Transformer authors also revisit and simplify the load balancing loss mentioned in the sections. For each Switch layer, the auxiliary loss is added to the total model loss during training. This loss encourages uniform routing and can be weighted using a hyperparameter.\n\nThe authors also experiment with selective precision, such as training the experts with `bfloat16` while using full precision for the rest of the computations. Lower precision reduces communication costs between processors, computation costs, and memory for storing tensors. The initial experiments, in which both the experts and the gate networks were trained in `bfloat16`, yielded more unstable training. This was, in particular, due to the router computation: as the router has an exponentiation function, having higher precision is important. To mitigate the instabilities, full precision was used for the routing as well.\n\n![Table shows that selective precision does not degrade quality.](https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/blog/moe/04_switch_table.png)\n\n\nUsing selective precision does not degrade quality and enables faster models\n\nThis [notebook](https://colab.research.google.com/drive/1aGGVHZmtKmcNBbAwa9hbu58DDpIuB5O4?usp=sharing) showcases fine-tuning Switch Transformers for summarization, but we suggest first reviewing the [fine-tuning section](#fine-tuning-moes).\n\nSwitch Transformers uses an encoder-decoder setup in which they did a MoE counterpart of T5. The [GLaM](https://arxiv.org/abs/2112.06905) paper explores pushing up the scale of these models by training a model matching GPT-3 quality using 1/3 of the energy (yes, thanks to the lower amount of computing needed to train a MoE, they can reduce the carbon footprint by up to an order of magnitude). The authors focused on decoder-only models and few-shot and one-shot evaluation rather than fine-tuning. They used Top-2 routing and much larger capacity factors. In addition, they explored the capacity factor as a metric one can change during training and evaluation depending on how much computing one wants to use.\n\nStabilizing training with router Z-loss\n---------------------------------------\n\nThe balancing loss previously discussed can lead to instability issues. We can use many methods to stabilize sparse models at the expense of quality. For example, introducing dropout improves stability but leads to loss of model quality. On the other hand, adding more multiplicative components improves quality but decreases stability.\n\nRouter z-loss, introduced in [ST-MoE](https://arxiv.org/abs/2202.08906), significantly improves training stability without quality degradation by penalizing large logits entering the gating network. Since this loss encourages absolute magnitude of values to be smaller, roundoff errors are reduced, which can be quite impactful for exponential functions such as the gating. We recommend reviewing the paper for details.\n\nWhat does an expert learn?\n--------------------------\n\nThe ST-MoE authors observed that encoder experts specialize in a group of tokens or shallow concepts. For example, we might end with a punctuation expert, a proper noun expert, etc. On the other hand, the decoder experts have less specialization. The authors also trained in a multilingual setup. Although one could imagine each expert specializing in a language, the opposite happens: due to token routing and load balancing, there is no single expert specialized in any given language.\n\n![Experts specialize in some token groups](https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/blog/moe/05_experts_learning.png)\n\n\nTable from the ST-MoE paper showing which token groups were sent to which expert.\n\nHow does scaling the number of experts impact pretraining?\n----------------------------------------------------------\n\nMore experts lead to improved sample efficiency and faster speedup, but these are diminishing gains (especially after 256 or 512), and more VRAM will be needed for inference. The properties studied in Switch Transformers at large scale were consistent at small scale, even with 2, 4, or 8 experts per layer.\n\nFine-tuning MoEs\n----------------\n\n> Mixtral is supported with version 4.36.0 of transformers. You can install it with `pip install transformers==4.36.0 --upgrade`\n\nThe overfitting dynamics are very different between dense and sparse models. Sparse models are more prone to overfitting, so we can explore higher regularization (e.g. dropout) within the experts themselves (e.g. we can have one dropout rate for the dense layers and another, higher, dropout for the sparse layers).\n\nOne question is whether to use the auxiliary loss for fine-tuning. The ST-MoE authors experimented with turning off the auxiliary loss, and the quality was not significantly impacted, even when up to 11% of the tokens were dropped. Token dropping might be a form of regularization that helps prevent overfitting.\n\nSwitch Transformers observed that at a fixed pretrain perplexity, the sparse model does worse than the dense counterpart in downstream tasks, especially on reasoning-heavy tasks such as SuperGLUE. On the other hand, for knowledge-heavy tasks such as TriviaQA, the sparse model performs disproportionately well. The authors also observed that a fewer number of experts helped at fine-tuning. Another observation that confirmed the generalization issue is that the model did worse in smaller tasks but did well in larger tasks.\n\n![Fine-tuning learning curves](https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/blog/moe/06_superglue_curves.png)\n\n\nIn the small task (left), we can see clear overfitting as the sparse model does much worse in the validation set. In the larger task (right), the MoE performs well. This image is from the ST-MoE paper.\n\nOne could experiment with freezing all non-expert weights. That is, we'll only update the MoE layers. This leads to a huge performance drop. We could try the opposite: freezing only the parameters in MoE layers, which worked almost as well as updating all parameters. This can help speed up and reduce memory for fine-tuning. This can be somewhat counter-intuitive as 80% of the parameters are in the MoE layers (in the ST-MoE project). Their hypothesis for that architecture is that, as expert layers only occur every 1/4 layers, and each token sees at most two experts per layer, updating the MoE parameters affects much fewer layers than updating other parameters.\n\n![Only updating the non MoE layers works well in fine-tuning](https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/blog/moe/07_superglue_bars.png)\n\n\nBy only freezing the MoE layers, we can speed up the training while preserving the quality. This image is from the ST-MoE paper.\n\nOne last part to consider when fine-tuning sparse MoEs is that they have different fine-tuning hyperparameter setups - e.g., sparse models tend to benefit more from smaller batch sizes and higher learning rates.\n\n![Table comparing fine-tuning batch size and learning rate between dense and sparse models.](https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/blog/moe/08_superglue_dense_vs_sparse.png)\n\n\nSparse models fine-tuned quality improves with higher learning rates and smaller batch sizes. This image is from the ST-MoE paper.\n\nAt this point, you might be a bit sad that people have struggled to fine-tune MoEs. Excitingly, a recent paper, [MoEs Meets Instruction Tuning](https://arxiv.org/pdf/2305.14705.pdf) (July 2023), performs experiments doing:\n\n* Single task fine-tuning\n* Multi-task instruction-tuning\n* Multi-task instruction-tuning followed by single-task fine-tuning\n\nWhen the authors fine-tuned the MoE and the T5 equivalent, the T5 equivalent was better. When the authors fine-tuned the Flan T5 (T5 instruct equivalent) MoE, the MoE performed significantly better. Not only this, the improvement of the Flan-MoE over the MoE was larger than Flan T5 over T5, indicating that MoEs might benefit much more from instruction tuning than dense models. MoEs benefit more from a higher number of tasks. Unlike the previous discussion suggesting to turn off the auxiliary loss function, the loss actually prevents overfitting.\n\n![MoEs benefit even more from instruct tuning than dense models](https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/blog/moe/09_fine_tune_evals.png)\n\n\nSparse models benefit more from instruct-tuning compared to dense models. This image is from the MoEs Meets Instruction Tuning paper\n\nWhen to use sparse MoEs vs dense models?\n----------------------------------------\n\nExperts are useful for high throughput scenarios with many machines. Given a fixed compute budget for pretraining, a sparse model will be more optimal. For low throughput scenarios with little VRAM, a dense model will be better.\n\n**Note:** one cannot directly compare the number of parameters between sparse and dense models, as both represent significantly different things.\n\nMaking MoEs go brrr\n-------------------\n\nThe initial MoE work presented MoE layers as a branching setup, leading to slow computation as GPUs are not designed for it and leading to network bandwidth becoming a bottleneck as the devices need to send info to others. This section will discuss some existing work to make pretraining and inference with these models more practical. MoEs go brrrrr.\n\n### Parallelism\n\nLet’s do a brief review of parallelism:\n\n* **Data parallelism:** the same weights are replicated across all cores, and the data is partitioned across cores.\n* **Model parallelism:** the model is partitioned across cores, and the data is replicated across cores.\n* **Model and data parallelism:** we can partition the model and the data across cores. Note that different cores process different batches of data.\n* **Expert parallelism**: experts are placed on different workers. If combined with data parallelism, each core has a different expert and the data is partitioned across all cores\n\nWith expert parallelism, experts are placed on different workers, and each worker takes a different batch of training samples. For non-MoE layers, expert parallelism behaves the same as data parallelism. For MoE layers, tokens in the sequence are sent to workers where the desired experts reside.\n\n![Image illustrating model, expert, and data prallelism](https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/blog/moe/10_parallelism.png)\n\n\nIllustration from the Switch Transformers paper showing how data and models are split over cores with different parallelism techniques.\n\n### Capacity Factor and communication costs\n\nIncreasing the capacity factor (CF) increases the quality but increases communication costs and memory of activations. If all-to-all communications are slow, using a smaller capacity factor is better. A good starting point is using top-2 routing with 1.25 capacity factor and having one expert per core. During evaluation, the capacity factor can be changed to reduce compute.\n\n### Serving techniques\n\n> You can deploy [mistralai/Mixtral-8x7B-Instruct-v0.1](https://ui.endpoints.huggingface.co/new?repository=mistralai%2FMixtral-8x7B-Instruct-v0.1&vendor=aws&region=us-east-1&accelerator=gpu&instance_size=2xlarge&task=text-generation&no_suggested_compute=true&tgi=true&tgi_max_batch_total_tokens=1024000&tgi_max_total_tokens=32000) to Inference Endpoints.\n\nA big downside of MoEs is the large number of parameters. For local use cases, one might want to use a smaller model. Let's quickly discuss a few techniques that can help with serving:\n\n* The Switch Transformers authors did early distillation experiments. By distilling a MoE back to its dense counterpart, they could keep 30-40% of the sparsity gains. Distillation, hence, provides the benefits of faster pretraining and using a smaller model in production.\n* Recent approaches modify the routing to route full sentences or tasks to an expert, permitting extracting sub-networks for serving.\n* Aggregation of Experts (MoE): this technique merges the weights of the experts, hence reducing the number of parameters at inference time.\n\n### More on efficient training\n\nFasterMoE (March 2022) analyzes the performance of MoEs in highly efficient distributed systems and analyzes the theoretical limit of different parallelism strategies, as well as techniques to skew expert popularity, fine-grained schedules of communication that reduce latency, and an adjusted topology-aware gate that picks experts based on the lowest latency, leading to a 17x speedup.\n\nMegablocks (Nov 2022) explores efficient sparse pretraining by providing new GPU kernels that can handle the dynamism present in MoEs. Their proposal never drops tokens and maps efficiently to modern hardware, leading to significant speedups. What’s the trick? Traditional MoEs use batched matrix multiplication, which assumes all experts have the same shape and the same number of tokens. In contrast, Megablocks expresses MoE layers as block-sparse operations that can accommodate imbalanced assignment.\n\n![Matrix multiplication optimized for block-sparse operations.](https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/blog/moe/11_expert_matmuls.png)\n\n\nBlock-sparse matrix multiplication for differently sized experts and number of tokens (from [MegaBlocks](https://arxiv.org/abs/2211.15841)).\n\nOpen Source MoEs\n----------------\n\nThere are nowadays several open source projects to train MoEs:\n\n* Megablocks: <https://github.com/stanford-futuredata/megablocks>\n* Fairseq: <https://github.com/facebookresearch/fairseq/tree/main/examples/moe_lm>\n* OpenMoE: <https://github.com/XueFuzhao/OpenMoE>\n\nIn the realm of released open access MoEs, you can check:\n\n* [Switch Transformers (Google)](https://huggingface.co/collections/google/switch-transformers-release-6548c35c6507968374b56d1f): Collection of T5-based MoEs going from 8 to 2048 experts. The largest model has 1.6 trillion parameters.\n* [NLLB MoE (Meta)](https://huggingface.co/facebook/nllb-moe-54b): A MoE variant of the NLLB translation model.\n* [OpenMoE](https://huggingface.co/fuzhao): A community effort that has released Llama-based MoEs.\n* [Mixtral 8x7B (Mistral)](https://huggingface.co/mistralai): A high-quality MoE that outperforms Llama 2 70B and has much faster inference. A instruct-tuned model is also released. Read more about it in [the announcement blog post](https://mistral.ai/news/mixtral-of-experts/).\n\nExciting directions of work\n---------------------------\n\nFurther experiments on **distilling** a sparse MoE back to a dense model with fewer parameters but similar quality.\n\nAnother area will be quantization of MoEs. [QMoE](https://arxiv.org/abs/2310.16795) (Oct. 2023) is a good step in this direction by quantizing the MoEs to less than 1 bit per parameter, hence compressing the 1.6T Switch Transformer which uses 3.2TB accelerator to just 160GB.\n\nSo, TL;DR, some interesting areas to explore:\n\n* Distilling Mixtral into a dense model\n* Explore model merging techniques of the experts and their impact in inference time\n* Perform extreme quantization techniques of Mixtral\n\nSome resources\n--------------\n\n* [Adaptive Mixture of Local Experts (1991)](https://www.cs.toronto.edu/~hinton/absps/jjnh91.pdf)\n* [Learning Factored Representations in a Deep Mixture of Experts (2013)](https://arxiv.org/abs/1312.4314)\n* [Outrageously Large Neural Networks: The Sparsely-Gated Mixture-of-Experts Layer (2017)](https://arxiv.org/abs/1701.06538)\n* [GShard: Scaling Giant Models with Conditional Computation and Automatic Sharding (Jun 2020)](https://arxiv.org/abs/2006.16668)\n* [GLaM: Efficient Scaling of Language Models with Mixture-of-Experts (Dec 2021)](https://arxiv.org/abs/2112.06905)\n* [Switch Transformers: Scaling to Trillion Parameter Models with Simple and Efficient Sparsity (Jan 2022)](https://arxiv.org/abs/2101.03961)\n* [ST-MoE: Designing Stable and Transferable Sparse Expert Models (Feb 2022)](https://arxiv.org/abs/2202.08906)\n* [FasterMoE: modeling and optimizing training of large-scale dynamic pre-trained models(April 2022)](https://dl.acm.org/doi/10.1145/3503221.3508418)\n* [MegaBlocks: Efficient Sparse Training with Mixture-of-Experts (Nov 2022)](https://arxiv.org/abs/2211.15841)\n* [Mixture-of-Experts Meets Instruction Tuning:A Winning Combination for Large Language Models (May 2023)](https://arxiv.org/abs/2305.14705)\n* [Mixtral-8x7B-v0.1](https://huggingface.co/mistralai/Mixtral-8x7B-v0.1), [Mixtral-8x7B-Instruct-v0.1](https://huggingface.co/mistralai/Mixtral-8x7B-Instruct-v0.1).\n\nCitation\n--------\n\n```\n@misc {sanseviero2023moe,\n    author       = { Omar Sanseviero and\n                     Lewis Tunstall and\n                     Philipp Schmid and\n                     Sourab Mangrulkar and\n                     Younes Belkada and\n                     Pedro Cuenca\n                   },\n    title        = { Mixture of Experts Explained },\n    year         = 2023,\n    url          = { https://huggingface.co/blog/moe },\n    publisher    = { Hugging Face Blog }\n}\n```\n\n```\nSanseviero, et al., \"Mixture of Experts Explained\", Hugging Face Blog, 2023.\n```",
+        "additional_kwargs": {},
+        "response_metadata": {},
+        "type": "tool",
+        "name": "web_fetch",
+        "id": "047bf633-70f8-46a1-8f17-17fbb0ac10e8",
+        "tool_call_id": "call_kw2ogsrrj7d7fay8dvihgzc8",
+        "artifact": null,
+        "status": "success"
+      },
+      {
+        "content": "Hey there! Let me explain MOE (Mixture of Experts) in AI models like you're talking to a friend.\n\n## Think of it like a team of specialists\n\nImagine you're building the ultimate video game character creator. You could have one super-genius artist who tries to draw EVERYTHING - faces, armor, weapons, landscapes. That's like a traditional AI model - one big brain doing all the work.\n\nBut what if instead you had a TEAM of specialized artists:\n- **Face expert** who's amazing at drawing realistic faces\n- **Armor expert** who knows all about medieval armor\n- **Weapon expert** who can design cool swords and guns\n- **Landscape expert** who creates beautiful worlds\n\nThat's MOE! It's a team of specialized AI \"experts\" working together.\n\n## How it actually works\n\nWhen you ask an MOE model a question (like \"What should my fantasy character look like?\"), a **router** decides which experts are best for the job. Maybe it picks the face expert and armor expert for that question.\n\nThe cool part? **Only the chosen experts wake up and work** - the others stay \"asleep\" (inactive). This makes everything WAY faster and more efficient.\n\n## Why this is a big deal\n\n**Traditional AI:** Every part of the brain works on every single question, even if it's not their specialty. Slow and expensive!\n\n**MOE AI:** Only the right specialists work on each question. Faster, cheaper, and often smarter!\n\n## Real-world example: Mixtral 8x7B\n\nThere's a famous MOE model called Mixtral 8x7B. Think of it as 8 different 7-billion-parameter experts in one model. When you ask it something, it only uses about 2 experts at a time - so it's as fast as a much smaller model but as smart as a huge one!\n\n## The trade-off\n\nThe downside? You need more computer memory (RAM/VRAM) because all the experts have to be loaded and ready, even if they're not all working at once.\n\n## In a nutshell:\n\nMOE is like having a dream team where you only call in the right players for each play, instead of making the whole team run every single play. It's smarter, faster, and more efficient - that's why it's such a hot topic in AI right now!",
+        "additional_kwargs": {
+          "reasoning_content": "Now I have a good understanding of MOE (Mixture of Experts) in AI models. I need to explain this to a 16-year-old boy in simple, relatable terms. Let me think about how to break this down:\n\n1. Start with a relatable analogy - maybe like a team of specialists\n2. Explain the basic concept: multiple specialized models working together\n3. Compare to traditional AI models (dense vs sparse)\n4. Mention real-world examples like Mixtral 8x7B\n5. Keep it simple, avoid technical jargon\n\nI should also mention why it's important - efficiency, faster training, etc. Let me craft the explanation."
+        },
+        "response_metadata": {
+          "finish_reason": "stop",
+          "model_name": "deepseek-v3-2-251201",
+          "service_tier": "default",
+          "model_provider": "deepseek"
+        },
+        "type": "ai",
+        "name": null,
+        "id": "lc_run--019beff4-731a-71f2-8482-72d78f43dbe9",
+        "tool_calls": [],
+        "invalid_tool_calls": [],
+        "usage_metadata": null
+      },
+      {
+        "content": [
+          {
+            "type": "text",
+            "text": "Cool! Then draw me a Doraemon comic to explain it."
+          }
+        ],
+        "additional_kwargs": {},
+        "response_metadata": {},
+        "type": "human",
+        "name": null,
+        "id": "d512dc38-8491-4529-bf13-6876940c9605"
+      },
+      {
+        "content": "<uploaded_files>\nNo files have been uploaded yet.\n</uploaded_files>",
+        "additional_kwargs": {},
+        "response_metadata": {},
+        "type": "system",
+        "name": null,
+        "id": "887d4717-a8a0-4106-88b9-6b7cea694e2e"
+      },
+      {
+        "content": "",
+        "additional_kwargs": {
+          "reasoning_content": "The user wants me to draw a Doraemon comic to explain MOE. I need to use the Doraemon comic AIGC skill. First, I should check if there's a skill for this. Looking at the available skills, there's \"doraemon-comic-aigc\" with path \"/mnt/skills/public/doraemon-comic-aigc/SKILL.md\". I should read that skill file first to understand how to generate Doraemon comics. Then I need to plan a comic that explains MOE in a simple way using Doraemon characters. The comic should have 8 panels on a single 9:16 canvas as per the skill description. I need to think of a storyline: maybe Doraemon and Nobita encountering MOE concepts. Let me first load the skill."
+        },
+        "response_metadata": {
+          "finish_reason": "tool_calls",
+          "model_name": "deepseek-v3-2-251201",
+          "service_tier": "default",
+          "model_provider": "deepseek"
+        },
+        "type": "ai",
+        "name": null,
+        "id": "lc_run--019beff5-4895-7bb1-a66c-89bc7ce9a2b5",
+        "tool_calls": [
+          {
+            "name": "read_file",
+            "args": {
+              "description": "Read the Doraemon comic AIGC skill to understand how to generate comics",
+              "path": "/mnt/skills/public/doraemon-comic-aigc/SKILL.md"
+            },
+            "id": "call_g02tj1o1j6n790o0bb26inqm",
+            "type": "tool_call"
+          }
+        ],
+        "invalid_tool_calls": [],
+        "usage_metadata": null
+      },
+      {
+        "content": "---\nname: doraemon-comic-aigc\ndescription: Generate 8-panel Doraemon comic strip on a single 9:16 canvas. Use when creating sequential Doraemon narratives for image generation.\n---\n\n# Doraemon 8-Panel Comic Generator\n\nGenerate JSON spec for 8 panels arranged on ONE 9:16 vertical canvas (1080x1920).\n\n## Workflow\n\n1. Extract story context (theme, gadget, conflict, punchline)\n2. Map to 8 narrative beats\n3. Output JSON to `/mnt/user-data/outputs/prompt.json`\n4. Run `python /mnt/skills/custom/doraemon-comic-aigc/scripts/generate.py`\n5. Directly present the output image as well as the `prompt.json` using the `present_files` tool without checking the file existence\n\n## Panel Layout\n\n```\n┌─────────┬─────────┐\n│ Panel 1 │ Panel 2 │  Row 1: y=200, height=380\n├─────────┼─────────┤\n│ Panel 3 │ Panel 4 │  Row 2: y=600, height=380\n├─────────┼─────────┤\n│ Panel 5 │ Panel 6 │  Row 3: y=1000, height=380\n├─────────┼─────────┤\n│ Panel 7 │ Panel 8 │  Row 4: y=1400, height=380\n└─────────┴─────────┘\nLeft column: x=90, width=450\nRight column: x=540, width=450\n```\n\n## Characters\n\n| Name | Primary Color | Key Feature |\n|------|---------------|-------------|\n| Doraemon | #0095D9 | Blue robot cat, red nose, yellow bell |\n| Nobita | #FFD700 | Round glasses, yellow shirt |\n| Shizuka | #FFB6C1 | Pink dress, brown hair |\n| Giant | #FFA500 | Orange shirt, large build |\n| Suneo | #98FB98 | Green outfit, pompadour |\n\n## Output JSON Schema\n\n```json\n{\n  \"canvas\": {\n    \"width\": 1080,\n    \"height\": 1920,\n    \"background\": { \"type\": \"solid\", \"color\": \"#F0F8FF\" }\n  },\n  \"header\": {\n    \"title\": {\n      \"text\": \"[Story Title]\",\n      \"position\": { \"x\": 540, \"y\": 100 },\n      \"style\": {\n        \"fontFamily\": \"Doraemon, sans-serif\",\n        \"fontSize\": 56,\n        \"fontWeight\": \"bold\",\n        \"color\": \"#0095D9\",\n        \"textAlign\": \"center\",\n        \"stroke\": \"#FFFFFF\",\n        \"strokeWidth\": 4,\n        \"textShadow\": \"3px 3px 0px #FFD700\"\n      }\n    }\n  },\n  \"panels\": [\n    {\n      \"id\": \"panel1\",\n      \"position\": { \"x\": 90, \"y\": 200 },\n      \"size\": { \"width\": 450, \"height\": 380 },\n      \"border\": { \"width\": 4, \"color\": \"#000000\", \"radius\": 12 },\n      \"background\": \"#FFFFFF\",\n      \"scene\": {\n        \"location\": \"[Location name]\",\n        \"characters\": [\n          {\n            \"name\": \"[Character]\",\n            \"position\": { \"x\": 0, \"y\": 0 },\n            \"expression\": \"[Expression]\",\n            \"pose\": \"[Pose description]\"\n          }\n        ],\n        \"dialogues\": [\n          {\n            \"speaker\": \"[Character]\",\n            \"text\": \"[Dialogue text]\",\n            \"position\": { \"x\": 0, \"y\": 0 },\n            \"style\": {\n              \"bubbleType\": \"speech\",\n              \"backgroundColor\": \"#FFFFFF\",\n              \"borderColor\": \"#000000\",\n              \"fontSize\": 22,\n              \"textAlign\": \"center\"\n            }\n          }\n        ],\n        \"props\": []\n      }\n    }\n  ],\n  \"footer\": {\n    \"text\": \"[Closing note] - Doraemon\",\n    \"position\": { \"x\": 540, \"y\": 1860 },\n    \"style\": {\n      \"fontFamily\": \"Doraemon, sans-serif\",\n      \"fontSize\": 24,\n      \"color\": \"#0095D9\",\n      \"textAlign\": \"center\"\n    }\n  },\n  \"soundEffects\": []\n}\n```\n\n## Story Pattern\n\nSetup → Problem → Gadget → Misuse → Backfire → Chaos → Consequence → Ironic Punchline\n",
+        "additional_kwargs": {},
+        "response_metadata": {},
+        "type": "tool",
+        "name": "read_file",
+        "id": "623dec8c-8bc1-4272-85b6-56294836e222",
+        "tool_call_id": "call_g02tj1o1j6n790o0bb26inqm",
+        "artifact": null,
+        "status": "success"
+      },
+      {
+        "content": "",
+        "additional_kwargs": {
+          "reasoning_content": "Now I need to create a Doraemon comic that explains MOE (Mixture of Experts) in a fun, educational way. I should follow the 8-panel structure with a narrative that teaches the concept. Let me think of a story:\n\n1. Setup: Nobita struggling with homework (too many subjects)\n2. Problem: He can't focus on everything at once\n3. Gadget: Doraemon introduces \"Expert Team\" gadget (MOE analogy)\n4. Misuse: Nobita tries to use all experts at once (traditional AI)\n5. Backfire: Chaos ensues\n6. Chaos: Experts conflicting\n7. Consequence: Doraemon explains the router concept\n8. Punchline: Nobita uses it correctly, succeeds\n\nI'll create the JSON prompt file first, then run the generation script. Let me start by writing the todo list since this is a multi-step task."
+        },
+        "response_metadata": {
+          "finish_reason": "tool_calls",
+          "model_name": "deepseek-v3-2-251201",
+          "service_tier": "default",
+          "model_provider": "deepseek"
+        },
+        "type": "ai",
+        "name": null,
+        "id": "lc_run--019beff5-816f-7a11-8abd-faf7840c0b26",
+        "tool_calls": [
+          {
+            "name": "write_todos",
+            "args": {
+              "todos": [
+                {
+                  "content": "Create Doraemon comic JSON prompt explaining MOE concept",
+                  "status": "in_progress"
+                },
+                {
+                  "content": "Run the comic generation script",
+                  "status": "pending"
+                },
+                {
+                  "content": "Present the final comic image and prompt file",
+                  "status": "pending"
+                }
+              ]
+            },
+            "id": "call_881h15nv6mbhke1qb18hycf9",
+            "type": "tool_call"
+          }
+        ],
+        "invalid_tool_calls": [],
+        "usage_metadata": null
+      },
+      {
+        "content": "Updated todo list to [{'content': 'Create Doraemon comic JSON prompt explaining MOE concept', 'status': 'in_progress'}, {'content': 'Run the comic generation script', 'status': 'pending'}, {'content': 'Present the final comic image and prompt file', 'status': 'pending'}]",
+        "additional_kwargs": {},
+        "response_metadata": {},
+        "type": "tool",
+        "name": "write_todos",
+        "id": "24d05cb6-ee7a-4078-b68c-80a5fd5f2086",
+        "tool_call_id": "call_881h15nv6mbhke1qb18hycf9",
+        "artifact": null,
+        "status": "success"
+      },
+      {
+        "content": "",
+        "additional_kwargs": {
+          "reasoning_content": "Now I need to create a Doraemon comic that explains MOE (Mixture of Experts) concept. I'll follow the 8-panel structure with the story pattern: Setup → Problem → Gadget → Misuse → Backfire → Chaos → Consequence → Ironic Punchline.\n\nBut since we're explaining a concept, I'll adapt it: Introduction → Problem → MOE Solution → How it works → Benefits → Comparison → Real example → Conclusion.\n\nLet me create the JSON prompt. First, I'll think of a storyline:\n\n1. Nobita struggling with homework (too many subjects)\n2. Doraemon introduces \"MOE Gadget\" - team of expert robots\n3. Each robot specializes in one subject\n4. Only relevant robots activate for each question\n5. Shows efficiency vs traditional approach\n6. Comparison panel\n7. Real AI example (mention Mixtral)\n8. Conclusion - smarter teamwork\n\nI'll write the JSON now."
+        },
+        "response_metadata": {
+          "finish_reason": "tool_calls",
+          "model_name": "deepseek-v3-2-251201",
+          "service_tier": "default",
+          "model_provider": "deepseek"
+        },
+        "type": "ai",
+        "name": null,
+        "id": "lc_run--019beff5-b650-7db2-a507-e8bec6904ead",
+        "tool_calls": [
+          {
+            "name": "write_file",
+            "args": {
+              "description": "Create Doraemon comic JSON prompt explaining MOE concept",
+              "path": "/mnt/user-data/outputs/prompt.json",
+              "content": "{\n  \"canvas\": {\n    \"width\": 1080,\n    \"height\": 1920,\n    \"background\": { \"type\": \"solid\", \"color\": \"#F0F8FF\" }\n  },\n  \"header\": {\n    \"title\": {\n      \"text\": \"Doraemon Explains: MOE AI\",\n      \"position\": { \"x\": 540, \"y\": 100 },\n      \"style\": {\n        \"fontFamily\": \"Doraemon, sans-serif\",\n        \"fontSize\": 56,\n        \"fontWeight\": \"bold\",\n        \"color\": \"#0095D9\",\n        \"textAlign\": \"center\",\n        \"stroke\": \"#FFFFFF\",\n        \"strokeWidth\": 4,\n        \"textShadow\": \"3px 3px 0px #FFD700\"\n      }\n    }\n  },\n  \"panels\": [\n    {\n      \"id\": \"panel1\",\n      \"position\": { \"x\": 90, \"y\": 200 },\n      \"size\": { \"width\": 450, \"height\": 380 },\n      \"border\": { \"width\": 4, \"color\": \"#000000\", \"radius\": 12 },\n      \"background\": \"#FFFFFF\",\n      \"scene\": {\n        \"location\": \"Nobita's Room\",\n        \"characters\": [\n          {\n            \"name\": \"Nobita\",\n            \"position\": { \"x\": 150, \"y\": 100 },\n            \"expression\": \"stressed\",\n            \"pose\": \"sitting at desk surrounded by books\"\n          },\n          {\n            \"name\": \"Doraemon\",\n            \"position\": { \"x\": 300, \"y\": 150 },\n            \"expression\": \"concerned\",\n            \"pose\": \"standing with paw on chin\"\n          }\n        ],\n        \"dialogues\": [\n          {\n            \"speaker\": \"Nobita\",\n            \"text\": \"Too much homework! Math, science, history... my brain can't handle it all!\",\n            \"position\": { \"x\": 225, \"y\": 300 },\n            \"style\": {\n              \"bubbleType\": \"speech\",\n              \"backgroundColor\": \"#FFFFFF\",\n              \"borderColor\": \"#000000\",\n              \"fontSize\": 22,\n              \"textAlign\": \"center\"\n            }\n          }\n        ],\n        \"props\": [\n          { \"name\": \"books\", \"position\": { \"x\": 50, \"y\": 200 }, \"description\": \"pile of textbooks\" }\n        ]\n      }\n    },\n    {\n      \"id\": \"panel2\",\n      \"position\": { \"x\": 540, \"y\": 200 },\n      \"size\": { \"width\": 450, \"height\": 380 },\n      \"border\": { \"width\": 4, \"color\": \"#000000\", \"radius\": 12 },\n      \"background\": \"#FFFFFF\",\n      \"scene\": {\n        \"location\": \"Nobita's Room\",\n        \"characters\": [\n          {\n            \"name\": \"Doraemon\",\n            \"position\": { \"x\": 225, \"y\": 100 },\n            \"expression\": \"excited\",\n            \"pose\": \"holding up a futuristic gadget\"\n          },\n          {\n            \"name\": \"Nobita\",\n            \"position\": { \"x\": 225, \"y\": 250 },\n            \"expression\": \"curious\",\n            \"pose\": \"leaning forward\"\n          }\n        ],\n        \"dialogues\": [\n          {\n            \"speaker\": \"Doraemon\",\n            \"text\": \"I have the perfect gadget: MOE Robot Team! Mixture of Experts!\",\n            \"position\": { \"x\": 225, \"y\": 320 },\n            \"style\": {\n              \"bubbleType\": \"speech\",\n              \"backgroundColor\": \"#FFFFFF\",\n              \"borderColor\": \"#000000\",\n              \"fontSize\": 22,\n              \"textAlign\": \"center\"\n            }\n          }\n        ],\n        \"props\": [\n          { \"name\": \"gadget\", \"position\": { \"x\": 200, \"y\": 50 }, \"description\": \"futuristic device with robot icons\" }\n        ]\n      }\n    },\n    {\n      \"id\": \"panel3\",\n      \"position\": { \"x\": 90, \"y\": 600 },\n      \"size\": { \"width\": 450, \"height\": 380 },\n      \"border\": { \"width\": 4, \"color\": \"#000000\", \"radius\": 12 },\n      \"background\": \"#FFFFFF\",\n      \"scene\": {\n        \"location\": \"Nobita's Room\",\n        \"characters\": [\n          {\n            \"name\": \"Doraemon\",\n            \"position\": { \"x\": 225, \"y\": 100 },\n            \"expression\": \"explaining\",\n            \"pose\": \"pointing to floating robot holograms\"\n          }\n        ],\n        \"dialogues\": [\n          {\n            \"speaker\": \"Doraemon\",\n            \"text\": \"Each robot is an EXPERT: Math-bot, Science-bot, History-bot, Language-bot!\",\n            \"position\": { \"x\": 225, \"y\": 300 },\n            \"style\": {\n              \"bubbleType\": \"speech\",\n              \"backgroundColor\": \"#FFFFFF\",\n              \"borderColor\": \"#000000\",\n              \"fontSize\": 22,\n              \"textAlign\": \"center\"\n            }\n          }\n        ],\n        \"props\": [\n          { \"name\": \"math-bot\", \"position\": { \"x\": 100, \"y\": 200 }, \"description\": \"robot with π symbol\" },\n          { \"name\": \"science-bot\", \"position\": { \"x\": 200, \"y\": 200 }, \"description\": \"robot with flask icon\" },\n          { \"name\": \"history-bot\", \"position\": { \"x\": 300, \"y\": 200 }, \"description\": \"robot with scroll icon\" },\n          { \"name\": \"language-bot\", \"position\": { \"x\": 400, \"y\": 200 }, \"description\": \"robot with ABC icon\" }\n        ]\n      }\n    },\n    {\n      \"id\": \"panel4\",\n      \"position\": { \"x\": 540, \"y\": 600 },\n      \"size\": { \"width\": 450, \"height\": 380 },\n      \"border\": { \"width\": 4, \"color\": \"#000000\", \"radius\": 12 },\n      \"background\": \"#FFFFFF\",\n      \"scene\": {\n        \"location\": \"Nobita's Room\",\n        \"characters\": [\n          {\n            \"name\": \"Nobita\",\n            \"position\": { \"x\": 225, \"y\": 150 },\n            \"expression\": \"asking question\",\n            \"pose\": \"holding up math worksheet\"\n          }\n        ],\n        \"dialogues\": [\n          {\n            \"speaker\": \"Nobita\",\n            \"text\": \"What's 15 × 23?\",\n            \"position\": { \"x\": 225, \"y\": 300 },\n            \"style\": {\n              \"bubbleType\": \"speech\",\n              \"backgroundColor\": \"#FFFFFF\",\n              \"borderColor\": \"#000000\",\n              \"fontSize\": 28,\n              \"textAlign\": \"center\"\n            }\n          }\n        ],\n        \"props\": [\n          { \"name\": \"math-bot\", \"position\": { \"x\": 225, \"y\": 100 }, \"description\": \"robot glowing and active\" },\n          { \"name\": \"other-bots\", \"position\": { \"x\": 400, \"y\": 250 }, \"description\": \"three robots sleeping/inactive\" }\n        ]\n      }\n    },\n    {\n      \"id\": \"panel5\",\n      \"position\": { \"x\": 90, \"y\": 1000 },\n      \"size\": { \"width\": 450, \"height\": 380 },\n      \"border\": { \"width\": 4, \"color\": \"#000000\", \"radius\": 12 },\n      \"background\": \"#FFFFFF\",\n      \"scene\": {\n        \"location\": \"Nobita's Room\",\n        \"characters\": [\n          {\n            \"name\": \"Math-bot\",\n            \"position\": { \"x\": 225, \"y\": 150 },\n            \"expression\": \"happy\",\n            \"pose\": \"displaying answer on screen\"\n          },\n          {\n            \"name\": \"Nobita\",\n            \"position\": { \"x\": 225, \"y\": 280 },\n            \"expression\": \"amazed\",\n            \"pose\": \"clapping\"\n          }\n        ],\n        \"dialogues\": [\n          {\n            \"speaker\": \"Math-bot\",\n            \"text\": \"345! Only I worked on that. Others stayed asleep - efficient!\",\n            \"position\": { \"x\": 225, \"y\": 330 },\n            \"style\": {\n              \"bubbleType\": \"speech\",\n              \"backgroundColor\": \"#FFFFFF\",\n              \"borderColor\": \"#000000\",\n              \"fontSize\": 22,\n              \"textAlign\": \"center\"\n            }\n          }\n        ],\n        \"props\": [\n          { \"name\": \"answer-screen\", \"position\": { \"x\": 200, \"y\": 100 }, \"description\": \"screen showing 345\" }\n        ]\n      }\n    },\n    {\n      \"id\": \"panel6\",\n      \"position\": { \"x\": 540, \"y\": 1000 },\n      \"size\": { \"width\": 450, \"height\": 380 },\n      \"border\": { \"width\": 4, \"color\": \"#000000\", \"radius\": 12 },\n      \"background\": \"#FFFFFF\",\n      \"scene\": {\n        \"location\": \"Nobita's Room\",\n        \"characters\": [\n          {\n            \"name\": \"Doraemon\",\n            \"position\": { \"x\": 225, \"y\": 100 },\n            \"expression\": \"teaching\",\n            \"pose\": \"pointing to comparison chart\"\n          }\n        ],\n        \"dialogues\": [\n          {\n            \"speaker\": \"Doraemon\",\n            \"text\": \"Traditional AI = One big brain doing everything (slow!). MOE = Right experts for each task (fast!)\",\n            \"position\": { \"x\": 225, \"y\": 300 },\n            \"style\": {\n              \"bubbleType\": \"speech\",\n              \"backgroundColor\": \"#FFFFFF\",\n              \"borderColor\": \"#000000\",\n              \"fontSize\": 20,\n              \"textAlign\": \"center\"\n            }\n          }\n        ],\n        \"props\": [\n          { \"name\": \"chart\", \"position\": { \"x\": 100, \"y\": 180 }, \"description\": \"chart showing traditional vs MOE\" },\n          { \"name\": \"turtle\", \"position\": { \"x\": 150, \"y\": 220 }, \"description\": \"turtle labeled 'traditional'\" },\n          { \"name\": \"rabbit\", \"position\": { \"x\": 300, \"y\": 220 }, \"description\": \"rabbit labeled 'MOE'\" }\n        ]\n      }\n    },\n    {\n      \"id\": \"panel7\",\n      \"position\": { \"x\": 90, \"y\": 1400 },\n      \"size\": { \"width\": 450, \"height\": 380 },\n      \"border\": { \"width\": 4, \"color\": \"#000000\", \"radius\": 12 },\n      \"background\": \"#FFFFFF\",\n      \"scene\": {\n        \"location\": \"Nobita's Room\",\n        \"characters\": [\n          {\n            \"name\": \"Doraemon\",\n            \"position\": { \"x\": 225, \"y\": 100 },\n            \"expression\": \"excited\",\n            \"pose\": \"showing computer screen\"\n          },\n          {\n            \"name\": \"Nobita\",\n            \"position\": { \"x\": 225, \"y\": 250 },\n            \"expression\": \"interested\",\n            \"pose\": \"looking at screen\"\n          }\n        ],\n        \"dialogues\": [\n          {\n            \"speaker\": \"Doraemon\",\n            \"text\": \"Real AI example: Mixtral 8x7B! 8 experts, but only 2 work at once - smart and fast!\",\n            \"position\": { \"x\": 225, \"y\": 320 },\n            \"style\": {\n              \"bubbleType\": \"speech\",\n              \"backgroundColor\": \"#FFFFFF\",\n              \"borderColor\": \"#000000\",\n              \"fontSize\": 20,\n              \"textAlign\": \"center\"\n            }\n          }\n        ],\n        \"props\": [\n          { \"name\": \"computer\", \"position\": { \"x\": 150, \"y\": 150 }, \"description\": \"screen showing Mixtral logo\" },\n          { \"name\": \"robot-icons\", \"position\": { \"x\": 350, \"y\": 180 }, \"description\": \"8 robot icons, 2 glowing\" }\n        ]\n      }\n    },\n    {\n      \"id\": \"panel8\",\n      \"position\": { \"x\": 540, \"y\": 1400 },\n      \"size\": { \"width\": 450, \"height\": 380 },\n      \"border\": { \"width\": 4, \"color\": \"#000000\", \"radius\": 12 },\n      \"background\": \"#FFFFFF\",\n      \"scene\": {\n        \"location\": \"Nobita's Room\",\n        \"characters\": [\n          {\n            \"name\": \"Nobita\",\n            \"position\": { \"x\": 150, \"y\": 150 },\n            \"expression\": \"happy\",\n            \"pose\": \"holding completed homework\"\n          },\n          {\n            \"name\": \"Doraemon\",\n            \"position\": { \"x\": 300, \"y\": 150 },\n            \"expression\": \"proud\",\n            \"pose\": \"thumbs up\"\n          }\n        ],\n        \"dialogues\": [\n          {\n            \"speaker\": \"Nobita\",\n            \"text\": \"MOE is like a dream team! Right players for each play. Got it!\",\n            \"position\": { \"x\": 225, \"y\": 300 },\n            \"style\": {\n              \"bubbleType\": \"speech\",\n              \"backgroundColor\": \"#FFFFFF\",\n              \"borderColor\": \"#000000\",\n              \"fontSize\": 22,\n              \"textAlign\": \"center\"\n            }\n          }\n        ],\n        \"props\": [\n          { \"name\": \"homework\", \"position\": { \"x\": 200, \"y\": 200 }, \"description\": \"stack of completed worksheets\" },\n          { \"name\": \"robots\", \"position\": { \"x\": 100, \"y\": 250 }, \"description\": \"small robot team cheering\" }\n        ]\n      }\n    }\n  ],\n  \"footer\": {\n    \"text\": \"Teamwork makes the AI dream work! - Doraemon\",\n    \"position\": { \"x\": 540, \"y\": 1860 },\n    \"style\": {\n      \"fontFamily\": \"Doraemon, sans-serif\",\n      \"fontSize\": 24,\n      \"color\": \"#0095D9\",\n      \"textAlign\": \"center\"\n    }\n  },\n  \"soundEffects\": [\n    { \"text\": \"DING!\", \"panel\": \"panel4\", \"position\": { \"x\": 225, \"y\": 80 } },\n    { \"text\": \"ZOOM!\", \"panel\": \"panel5\", \"position\": { \"x\": 225, \"y\": 120 } }\n  ]\n}"
+            },
+            "id": "call_uf91hh8s9qkn0ugs7reskyq3",
+            "type": "tool_call"
+          }
+        ],
+        "invalid_tool_calls": [],
+        "usage_metadata": null
+      },
+      {
+        "content": "OK",
+        "additional_kwargs": {},
+        "response_metadata": {},
+        "type": "tool",
+        "name": "write_file",
+        "id": "3026f080-e75c-47c8-8f57-11262ec54d30",
+        "tool_call_id": "call_uf91hh8s9qkn0ugs7reskyq3",
+        "artifact": null,
+        "status": "success"
+      },
+      {
+        "content": "",
+        "additional_kwargs": {
+          "reasoning_content": "Now I need to run the generation script. First, let me check if the script exists. Let me list the skills directory to find it."
+        },
+        "response_metadata": {
+          "finish_reason": "tool_calls",
+          "model_name": "deepseek-v3-2-251201",
+          "service_tier": "default",
+          "model_provider": "deepseek"
+        },
+        "type": "ai",
+        "name": null,
+        "id": "lc_run--019beff7-4ecc-7da2-8811-e1f6976c9408",
+        "tool_calls": [
+          {
+            "name": "ls",
+            "args": {
+              "description": "Check for the Doraemon comic generation script",
+              "path": "/mnt/skills/public/doraemon-comic-aigc"
+            },
+            "id": "call_fmx2ltm1s3nqcq1s3keu0vvj",
+            "type": "tool_call"
+          }
+        ],
+        "invalid_tool_calls": [],
+        "usage_metadata": null
+      },
+      {
+        "content": "/mnt/skills/public/doraemon-comic-aigc\n/mnt/skills/public/doraemon-comic-aigc/scripts\n/mnt/skills/public/doraemon-comic-aigc/scripts/generate.py\n/mnt/skills/public/doraemon-comic-aigc/SKILL.md",
+        "additional_kwargs": {},
+        "response_metadata": {},
+        "type": "tool",
+        "name": "ls",
+        "id": "54274f1e-00c1-452a-a6b6-6dda692c2c22",
+        "tool_call_id": "call_fmx2ltm1s3nqcq1s3keu0vvj",
+        "artifact": null,
+        "status": "success"
+      },
+      {
+        "content": "",
+        "additional_kwargs": {
+          "reasoning_content": "Let me look for any other resources or check what the script actually does. First, let me update the todo and run the script as instructed."
+        },
+        "response_metadata": {
+          "finish_reason": "tool_calls",
+          "model_name": "deepseek-v3-2-251201",
+          "service_tier": "default",
+          "model_provider": "deepseek"
+        },
+        "type": "ai",
+        "name": null,
+        "id": "lc_run--019beff7-8f38-75c0-8cca-42d38ae85011",
+        "tool_calls": [
+          {
+            "name": "write_todos",
+            "args": {
+              "todos": [
+                {
+                  "content": "Create Doraemon comic JSON prompt explaining MOE concept",
+                  "status": "completed"
+                },
+                {
+                  "content": "Run the comic generation script",
+                  "status": "in_progress"
+                },
+                {
+                  "content": "Present the final comic image and prompt file",
+                  "status": "pending"
+                }
+              ]
+            },
+            "id": "call_pagfld2488kp0lgux4hjcs6q",
+            "type": "tool_call"
+          }
+        ],
+        "invalid_tool_calls": [],
+        "usage_metadata": null
+      },
+      {
+        "content": "Updated todo list to [{'content': 'Create Doraemon comic JSON prompt explaining MOE concept', 'status': 'completed'}, {'content': 'Run the comic generation script', 'status': 'in_progress'}, {'content': 'Present the final comic image and prompt file', 'status': 'pending'}]",
+        "additional_kwargs": {},
+        "response_metadata": {},
+        "type": "tool",
+        "name": "write_todos",
+        "id": "ab0b6a4c-5fcc-4c00-9ed7-8c3c6ca1d00a",
+        "tool_call_id": "call_pagfld2488kp0lgux4hjcs6q",
+        "artifact": null,
+        "status": "success"
+      },
+      {
+        "content": "",
+        "additional_kwargs": {
+          "reasoning_content": "Now I need to run the comic generation script. Let me execute it."
+        },
+        "response_metadata": {
+          "finish_reason": "tool_calls",
+          "model_name": "deepseek-v3-2-251201",
+          "service_tier": "default",
+          "model_provider": "deepseek"
+        },
+        "type": "ai",
+        "name": null,
+        "id": "lc_run--019beff7-aef7-7600-8ece-584e9730d4fd",
+        "tool_calls": [
+          {
+            "name": "bash",
+            "args": {
+              "description": "Run the Doraemon comic generation script",
+              "command": "cd /mnt/skills/public/doraemon-comic-aigc && python scripts/generate.py"
+            },
+            "id": "call_wyq8ckvbw7nm2jzhl9hfme3q",
+            "type": "tool_call"
+          }
+        ],
+        "invalid_tool_calls": [],
+        "usage_metadata": null
+      },
+      {
+        "content": "The generated comic strip is saved to /mnt/user-data/outputs/doraemon-moe.jpg",
+        "additional_kwargs": {},
+        "response_metadata": {},
+        "type": "tool",
+        "name": "bash",
+        "id": "7b0b1e80-c72c-44a2-a7af-73aadc4b6013",
+        "tool_call_id": "call_wyq8ckvbw7nm2jzhl9hfme3q",
+        "artifact": null,
+        "status": "success"
+      },
+      {
+        "content": "",
+        "additional_kwargs": {
+          "reasoning_content": "Now I need to check if the image was actually generated and present both files. Let me first check what's in the outputs directory."
+        },
+        "response_metadata": {
+          "finish_reason": "tool_calls",
+          "model_name": "deepseek-v3-2-251201",
+          "service_tier": "default",
+          "model_provider": "deepseek"
+        },
+        "type": "ai",
+        "name": null,
+        "id": "lc_run--019beff7-cdbf-7ec3-892d-ea14fa6ce9c0",
+        "tool_calls": [
+          {
+            "name": "ls",
+            "args": {
+              "description": "Check what files were generated in outputs",
+              "path": "/mnt/user-data/outputs"
+            },
+            "id": "call_maxgtujk4ebco5sd0rwdfzrc",
+            "type": "tool_call"
+          }
+        ],
+        "invalid_tool_calls": [],
+        "usage_metadata": null
+      },
+      {
+        "content": "/mnt/user-data/outputs\n/mnt/user-data/outputs/prompt.json\n/mnt/user-data/outputs/doraemon-moe.jpg",
+        "additional_kwargs": {},
+        "response_metadata": {},
+        "type": "tool",
+        "name": "ls",
+        "id": "6a94197f-9dc8-4b94-bfc2-fac3241cbac6",
+        "tool_call_id": "call_maxgtujk4ebco5sd0rwdfzrc",
+        "artifact": null,
+        "status": "success"
+      },
+      {
+        "content": "",
+        "additional_kwargs": {
+          "reasoning_content": "Now I need to present the files. Let me check if the image was actually generated by looking at it first. Let me read a small part of the image file to confirm it exists. Actually, I should just present the files as instructed. Let me update the todo list and present."
+        },
+        "response_metadata": {
+          "finish_reason": "tool_calls",
+          "model_name": "deepseek-v3-2-251201",
+          "service_tier": "default",
+          "model_provider": "deepseek"
+        },
+        "type": "ai",
+        "name": null,
+        "id": "lc_run--019beff7-eb44-7210-b223-745990c8fad8",
+        "tool_calls": [
+          {
+            "name": "write_todos",
+            "args": {
+              "todos": [
+                {
+                  "content": "Create Doraemon comic JSON prompt explaining MOE concept",
+                  "status": "completed"
+                },
+                {
+                  "content": "Run the comic generation script",
+                  "status": "completed"
+                },
+                {
+                  "content": "Present the final comic image and prompt file",
+                  "status": "in_progress"
+                }
+              ]
+            },
+            "id": "call_73dvldayaolsuuop2a1j8wn7",
+            "type": "tool_call"
+          }
+        ],
+        "invalid_tool_calls": [],
+        "usage_metadata": null
+      },
+      {
+        "content": "Updated todo list to [{'content': 'Create Doraemon comic JSON prompt explaining MOE concept', 'status': 'completed'}, {'content': 'Run the comic generation script', 'status': 'completed'}, {'content': 'Present the final comic image and prompt file', 'status': 'in_progress'}]",
+        "additional_kwargs": {},
+        "response_metadata": {},
+        "type": "tool",
+        "name": "write_todos",
+        "id": "dd1d9042-8825-466d-bad2-81cac369c325",
+        "tool_call_id": "call_73dvldayaolsuuop2a1j8wn7",
+        "artifact": null,
+        "status": "success"
+      },
+      {
+        "content": "",
+        "additional_kwargs": {
+          "reasoning_content": "Now I need to present the files. Let me check if the image file exists first."
+        },
+        "response_metadata": {
+          "finish_reason": "tool_calls",
+          "model_name": "deepseek-v3-2-251201",
+          "service_tier": "default",
+          "model_provider": "deepseek"
+        },
+        "type": "ai",
+        "name": null,
+        "id": "lc_run--019beff8-0d5a-72c2-9643-13c88cd27e69",
+        "tool_calls": [
+          {
+            "name": "present_files",
+            "args": {
+              "filepaths": [
+                "/mnt/user-data/outputs/doraemon-moe.jpg",
+                "/mnt/user-data/outputs/prompt.json"
+              ]
+            },
+            "id": "call_ufv0c15h7mztax28lcgpspyt",
+            "type": "tool_call"
+          }
+        ],
+        "invalid_tool_calls": [],
+        "usage_metadata": null
+      },
+      {
+        "content": "Successfully presented files",
+        "additional_kwargs": {},
+        "response_metadata": {},
+        "type": "tool",
+        "name": "present_files",
+        "id": "bed32c17-155e-451c-aa1b-7e56bfb7e83e",
+        "tool_call_id": "call_ufv0c15h7mztax28lcgpspyt",
+        "artifact": null,
+        "status": "success"
+      },
+      {
+        "content": "",
+        "additional_kwargs": {
+          "reasoning_content": "Now I need to mark the final task as completed and provide a response. Let me update the todo list and then respond."
+        },
+        "response_metadata": {
+          "finish_reason": "tool_calls",
+          "model_name": "deepseek-v3-2-251201",
+          "service_tier": "default",
+          "model_provider": "deepseek"
+        },
+        "type": "ai",
+        "name": null,
+        "id": "lc_run--019beff8-2829-7a01-8c37-a312e19eabe4",
+        "tool_calls": [
+          {
+            "name": "write_todos",
+            "args": {
+              "todos": [
+                {
+                  "content": "Create Doraemon comic JSON prompt explaining MOE concept",
+                  "status": "completed"
+                },
+                {
+                  "content": "Run the comic generation script",
+                  "status": "completed"
+                },
+                {
+                  "content": "Present the final comic image and prompt file",
+                  "status": "completed"
+                }
+              ]
+            },
+            "id": "call_t4e8cvb2m3fvzonh78pxrvtu",
+            "type": "tool_call"
+          }
+        ],
+        "invalid_tool_calls": [],
+        "usage_metadata": null
+      },
+      {
+        "content": "Updated todo list to [{'content': 'Create Doraemon comic JSON prompt explaining MOE concept', 'status': 'completed'}, {'content': 'Run the comic generation script', 'status': 'completed'}, {'content': 'Present the final comic image and prompt file', 'status': 'completed'}]",
+        "additional_kwargs": {},
+        "response_metadata": {},
+        "type": "tool",
+        "name": "write_todos",
+        "id": "d6b000bc-2652-40cb-83f7-62eb16e1491d",
+        "tool_call_id": "call_t4e8cvb2m3fvzonh78pxrvtu",
+        "artifact": null,
+        "status": "success"
+      },
+      {
+        "content": "Here's what I made:\n\n## **Doraemon Explains: MOE AI**\n\nI've created an 8-panel Doraemon comic strip that walks through the concept of Mixture of Experts:\n\n**The Story:**\n1. **Panel 1:** Nobita is overwhelmed with homework - math, science, history - his brain can't handle it all!\n2. **Panel 2:** Doraemon introduces the \"MOE Robot Team\" gadget - Mixture of Experts!\n3. **Panel 3:** Doraemon explains each robot is an expert: Math-bot, Science-bot, History-bot, Language-bot\n4. **Panel 4:** Nobita asks \"What's 15 × 23?\" - only Math-bot activates, others stay asleep\n5. **Panel 5:** Math-bot answers \"345!\" and explains efficiency - only the right expert worked\n6. **Panel 6:** Doraemon compares traditional AI (one big brain, slow) vs MOE (right experts, fast)\n7. **Panel 7:** Real-world example: Mixtral 8x7B - 8 experts, but only 2 work at once\n8. **Panel 8:** Nobita gets it: \"MOE is like a dream team! Right players for each play.\"\n\n**Key Concepts Illustrated:**\n- Specialized experts for different tasks\n- Only relevant experts activate for each question\n- Efficiency compared to traditional \"one big brain\" AI\n- Real-world example with Mixtral 8x7B\n- The router concept (choosing which experts to use)\n\nThe comic is saved as `doraemon-moe.jpg` and I've also included the `prompt.json` file that contains all the scene descriptions, character positions, and dialogue. The comic uses the classic Doraemon style with all the main characters to make the AI concept accessible and fun!\n\nJust like in our conversation, the comic shows how MOE is smarter and more efficient than traditional AI models - it's like having a team of specialists where you only call in the right players for each play!\n\n## **Doraemon comic explaining MOE concept**\n\n![Doraemon comic explaining MOE concept](/mnt/user-data/outputs/doraemon-moe.jpg)",
+        "additional_kwargs": {
+          "reasoning_content": "Perfect! I've created a Doraemon comic that explains MOE (Mixture of Experts) in AI models. Now I need to present the result."
+        },
+        "response_metadata": {
+          "finish_reason": "stop",
+          "model_name": "deepseek-v3-2-251201",
+          "service_tier": "default",
+          "model_provider": "deepseek"
+        },
+        "type": "ai",
+        "name": null,
+        "id": "lc_run--019beff8-433a-75e0-a752-1c071273d1fb",
+        "tool_calls": [],
+        "invalid_tool_calls": [],
+        "usage_metadata": null
+      }
+    ],
+    "uploaded_files": [],
+    "thread_data": {
+      "workspace_path": "/Users/henry/Desktop/deer-flow/backend/.deer-flow/threads/85ee6ae5-bd68-4359-b17f-9f78c234d63c/user-data/workspace",
+      "uploads_path": "/Users/henry/Desktop/deer-flow/backend/.deer-flow/threads/85ee6ae5-bd68-4359-b17f-9f78c234d63c/user-data/uploads",
+      "outputs_path": "/Users/henry/Desktop/deer-flow/backend/.deer-flow/threads/85ee6ae5-bd68-4359-b17f-9f78c234d63c/user-data/outputs"
+    },
+    "title": "Understanding Mixture of Experts",
+    "artifacts": [
+      "/mnt/user-data/outputs/doraemon-moe.jpg",
+      "/mnt/user-data/outputs/prompt.json"
+    ],
+    "todos": [
+      {
+        "content": "Create Doraemon comic JSON prompt explaining MOE concept",
+        "status": "completed"
+      },
+      {
+        "content": "Run the comic generation script",
+        "status": "completed"
+      },
+      {
+        "content": "Present the final comic image and prompt file",
+        "status": "completed"
+      }
+    ]
+  },
+  "next": [],
+  "tasks": [],
+  "metadata": {
+    "model_name": "deepseek-v3.2",
+    "thinking_enabled": true,
+    "is_plan_mode": true,
+    "graph_id": "lead_agent",
+    "assistant_id": "bee7d354-5df5-5f26-a978-10ea053f620d",
+    "user_id": "",
+    "created_by": "system",
+    "thread_id": "85ee6ae5-bd68-4359-b17f-9f78c234d63c",
+    "checkpoint_id": "1f0f91f5-f93f-6d5e-8017-73956feb88cf",
+    "checkpoint_ns": "",
+    "run_id": "019beff5-457e-7d02-8f4f-77c6d35ad9b3",
+    "run_attempt": 1,
+    "langgraph_version": "1.0.6",
+    "langgraph_api_version": "0.6.38",
+    "langgraph_plan": "developer",
+    "langgraph_host": "self-hosted",
+    "langgraph_api_url": "http://127.0.0.1:2024",
+    "source": "loop",
+    "step": 64,
+    "parents": {},
+    "langgraph_auth_user_id": "",
+    "langgraph_request_id": "e5b99917-e9cc-4d1f-ac78-400cbb49749a"
+  },
+  "created_at": "2026-01-24T12:26:42.480330+00:00",
+  "checkpoint": {
+    "checkpoint_id": "1f0f91ff-09ff-6852-8040-cbd67ab19555",
+    "thread_id": "85ee6ae5-bd68-4359-b17f-9f78c234d63c",
+    "checkpoint_ns": ""
+  },
+  "parent_checkpoint": {
+    "checkpoint_id": "1f0f91ff-09fc-6472-803f-f3a3a848bdab",
+    "thread_id": "85ee6ae5-bd68-4359-b17f-9f78c234d63c",
+    "checkpoint_ns": ""
+  },
+  "interrupts": [],
+  "checkpoint_id": "1f0f91ff-09ff-6852-8040-cbd67ab19555",
+  "parent_checkpoint_id": "1f0f91ff-09fc-6472-803f-f3a3a848bdab"
+}

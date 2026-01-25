@@ -20,6 +20,10 @@ export const enUS: Translations = {
     artifacts: "Artifacts",
     public: "Public",
     custom: "Custom",
+    notAvailableInDemoMode: "Not available in demo mode",
+    loading: "Loading...",
+    code: "Code",
+    preview: "Preview",
   },
 
   // Welcome
@@ -57,6 +61,7 @@ export const enUS: Translations = {
     newChat: "New chat",
     chats: "Chats",
     recentChats: "Recent chats",
+    demoChats: "Demo chats",
   },
 
   // Breadcrumb
@@ -67,9 +72,10 @@ export const enUS: Translations = {
 
   // Workspace
   workspace: {
+    officialWebsite: "DeerFlow's official website",
     githubTooltip: "DeerFlow on Github",
     settingsAndMore: "Settings and more",
-    visitGithub: "Visit DeerFlow on GitHub",
+    visitGithub: "DeerFlow on GitHub",
     reportIssue: "Report a issue",
     contactUs: "Contact us",
     about: "About DeerFlow",
@@ -131,8 +137,9 @@ export const enUS: Translations = {
       description: "Manage the configuration and enabled status of MCP tools.",
     },
     skills: {
-      title: "Skills",
-      description: "Manage the configuration and enabled status of the skills.",
+      title: "Agent Skills",
+      description:
+        "Manage the configuration and enabled status of the agent skills.",
     },
     acknowledge: {
       emptyTitle: "Acknowledgements",

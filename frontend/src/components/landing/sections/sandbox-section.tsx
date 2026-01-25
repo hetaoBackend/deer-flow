@@ -12,11 +12,12 @@ export function SandboxSection({ className }: { className?: string }) {
   return (
     <Section
       className={className}
-      title="Sandbox"
+      title="Agent Runtime Environment"
       subtitle={
         <p>
-          We gave DeerFlow a computer. It can execute code, manage files, and
-          run long tasks — all in a secure Docker sandbox
+          We give DeerFlow a &quot;computer&quot;, which can execute commands,
+          manage files, and run long tasks — all in a secure Docker-based
+          sandbox
         </p>
       }
     >

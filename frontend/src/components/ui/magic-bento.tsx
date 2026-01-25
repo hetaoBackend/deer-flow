@@ -23,58 +23,13 @@ export interface BentoProps {
   glowColor?: string;
   clickEffect?: boolean;
   enableMagnetism?: boolean;
+  data: BentoCardProps[];
 }
 
 const DEFAULT_PARTICLE_COUNT = 12;
 const DEFAULT_SPOTLIGHT_RADIUS = 300;
 const DEFAULT_GLOW_COLOR = "132, 0, 255";
 const MOBILE_BREAKPOINT = 768;
-
-const cardData: BentoCardProps[] = [
-  {
-    color: "#0a0015",
-    title: "Long/Short-term Memory",
-    description: (
-      <div>
-        <div>Now the agent can better understand you</div>
-        <div className="text-muted-foreground">Coming soon</div>
-      </div>
-    ),
-    label: "Context Engineering",
-  },
-  {
-    color: "#0a0015",
-    title: "Planning and Reasoning",
-    description: "Plans ahead, reasons through complexity, then acts",
-    label: "Long Task Running",
-  },
-  {
-    color: "#0a0015",
-    title: "Skills and Tools",
-    description:
-      "Plug, play, or even swap built-in tools. Build the agent you want.",
-    label: "Extensible",
-  },
-
-  {
-    color: "#0a0015",
-    title: "Sandbox with File System",
-    description: "Read, write, run — like a real computer",
-    label: "Persistent",
-  },
-  {
-    color: "#0a0015",
-    title: "Multi-Model Support",
-    description: "Doubao, DeepSeek, OpenAI, Gemini, etc.",
-    label: "Flexible",
-  },
-  {
-    color: "#0a0015",
-    title: "Open Source",
-    description: "MIT License, self-hosted, full control",
-    label: "Free",
-  },
-];
 
 const createParticleElement = (
   x: number,
@@ -571,6 +526,7 @@ const MagicBento: React.FC<BentoProps> = ({
   glowColor = DEFAULT_GLOW_COLOR,
   clickEffect = true,
   enableMagnetism = true,
+  data: cardData,
 }) => {
   const gridRef = useRef<HTMLDivElement>(null);
   const isMobile = useMobileDetection();

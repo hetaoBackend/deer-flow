@@ -43,6 +43,9 @@ class AioSandboxProvider(SandboxProvider):
           - host_path: /path/on/host
             container_path: /path/in/container
             read_only: false
+        environment:  # Environment variables to inject (values starting with $ are resolved from host env)
+          NODE_ENV: production
+          API_KEY: $MY_API_KEY
     """
 
     def __init__(self):
@@ -94,7 +97,28 @@ class AioSandboxProvider(SandboxProvider):
             "auto_start": sandbox_config.auto_start if sandbox_config.auto_start is not None else True,
             "container_prefix": sandbox_config.container_prefix or DEFAULT_CONTAINER_PREFIX,
             "mounts": sandbox_config.mounts or [],
+            "environment": self._resolve_env_vars(sandbox_config.environment or {}),
         }
+
+    def _resolve_env_vars(self, env_config: dict[str, str]) -> dict[str, str]:
+        """Resolve environment variable references in configuration.
+
+        Values starting with $ are resolved from host environment variables.
+
+        Args:
+            env_config: Dictionary of environment variable names to values.
+
+        Returns:
+            Dictionary with resolved environment variable values.
+        """
+        resolved = {}
+        for key, value in env_config.items():
+            if isinstance(value, str) and value.startswith("$"):
+                env_name = value[1:]  # Remove $ prefix
+                resolved[key] = os.environ.get(env_name, "")
+            else:
+                resolved[key] = str(value)
+        return resolved
 
     def _is_sandbox_ready(self, base_url: str, timeout: int = 30) -> bool:
         """Check if sandbox is ready to accept connections.
@@ -190,6 +214,10 @@ class AioSandboxProvider(SandboxProvider):
             "--name",
             container_name,
         ]
+
+        # Add configured environment variables
+        for key, value in self._config["environment"].items():
+            cmd.extend(["-e", f"{key}={value}"])
 
         # Add configured volume mounts
         for mount in self._config["mounts"]:

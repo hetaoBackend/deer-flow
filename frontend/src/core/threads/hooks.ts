@@ -90,7 +90,10 @@ export function useSubmitThread({
                   type: fileUIPart.mediaType || blob.type,
                 });
               } catch (error) {
-                console.error(`Failed to fetch file ${fileUIPart.filename}:`, error);
+                console.error(
+                  `Failed to fetch file ${fileUIPart.filename}:`,
+                  error,
+                );
                 return null;
               }
             }
@@ -130,7 +133,7 @@ export function useSubmitThread({
           streamSubgraphs: true,
           streamResumable: true,
           config: {
-            recursion_limit: 100,
+            recursion_limit: 1000,
           },
           context: {
             ...threadContext,

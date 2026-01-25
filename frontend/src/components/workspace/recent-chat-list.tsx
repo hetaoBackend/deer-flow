@@ -23,6 +23,7 @@ import {
 import { useI18n } from "@/core/i18n/hooks";
 import { useDeleteThread, useThreads } from "@/core/threads/hooks";
 import { pathOfThread, titleOfThread } from "@/core/threads/utils";
+import { env } from "@/env";
 
 export function RecentChatList() {
   const { t } = useI18n();
@@ -54,7 +55,11 @@ export function RecentChatList() {
   }
   return (
     <SidebarGroup>
-      <SidebarGroupLabel>{t.sidebar.recentChats}</SidebarGroupLabel>
+      <SidebarGroupLabel>
+        {env.NEXT_PUBLIC_STATIC_WEBSITE_ONLY !== "true"
+          ? t.sidebar.recentChats
+          : t.sidebar.demoChats}
+      </SidebarGroupLabel>
       <SidebarGroupContent className="group-data-[collapsible=icon]:pointer-events-none group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0">
         <SidebarMenu>
           <div className="flex w-full flex-col gap-1">
@@ -73,29 +78,31 @@ export function RecentChatList() {
                       >
                         {titleOfThread(thread)}
                       </Link>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <SidebarMenuAction
-                            showOnHover
-                            className="bg-background/50 hover:bg-background"
+                      {env.NEXT_PUBLIC_STATIC_WEBSITE_ONLY !== "true" && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <SidebarMenuAction
+                              showOnHover
+                              className="bg-background/50 hover:bg-background"
+                            >
+                              <MoreHorizontal />
+                              <span className="sr-only">{t.common.more}</span>
+                            </SidebarMenuAction>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent
+                            className="w-48 rounded-lg"
+                            side={"right"}
+                            align={"start"}
                           >
-                            <MoreHorizontal />
-                            <span className="sr-only">{t.common.more}</span>
-                          </SidebarMenuAction>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent
-                          className="w-48 rounded-lg"
-                          side={"right"}
-                          align={"start"}
-                        >
-                          <DropdownMenuItem
-                            onSelect={() => handleDelete(thread.thread_id)}
-                          >
-                            <Trash2 className="text-muted-foreground" />
-                            <span>{t.common.delete}</span>
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                            <DropdownMenuItem
+                              onSelect={() => handleDelete(thread.thread_id)}
+                            >
+                              <Trash2 className="text-muted-foreground" />
+                              <span>{t.common.delete}</span>
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
                     </div>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

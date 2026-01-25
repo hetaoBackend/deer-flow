@@ -1,0 +1,357 @@
+{
+  "canvas": {
+    "width": 1080,
+    "height": 1920,
+    "background": { "type": "solid", "color": "#F0F8FF" }
+  },
+  "header": {
+    "title": {
+      "text": "Doraemon Explains: MOE AI",
+      "position": { "x": 540, "y": 100 },
+      "style": {
+        "fontFamily": "Doraemon, sans-serif",
+        "fontSize": 56,
+        "fontWeight": "bold",
+        "color": "#0095D9",
+        "textAlign": "center",
+        "stroke": "#FFFFFF",
+        "strokeWidth": 4,
+        "textShadow": "3px 3px 0px #FFD700"
+      }
+    }
+  },
+  "panels": [
+    {
+      "id": "panel1",
+      "position": { "x": 90, "y": 200 },
+      "size": { "width": 450, "height": 380 },
+      "border": { "width": 4, "color": "#000000", "radius": 12 },
+      "background": "#FFFFFF",
+      "scene": {
+        "location": "Nobita's Room",
+        "characters": [
+          {
+            "name": "Nobita",
+            "position": { "x": 150, "y": 100 },
+            "expression": "stressed",
+            "pose": "sitting at desk surrounded by books"
+          },
+          {
+            "name": "Doraemon",
+            "position": { "x": 300, "y": 150 },
+            "expression": "concerned",
+            "pose": "standing with paw on chin"
+          }
+        ],
+        "dialogues": [
+          {
+            "speaker": "Nobita",
+            "text": "Too much homework! Math, science, history... my brain can't handle it all!",
+            "position": { "x": 225, "y": 300 },
+            "style": {
+              "bubbleType": "speech",
+              "backgroundColor": "#FFFFFF",
+              "borderColor": "#000000",
+              "fontSize": 22,
+              "textAlign": "center"
+            }
+          }
+        ],
+        "props": [
+          { "name": "books", "position": { "x": 50, "y": 200 }, "description": "pile of textbooks" }
+        ]
+      }
+    },
+    {
+      "id": "panel2",
+      "position": { "x": 540, "y": 200 },
+      "size": { "width": 450, "height": 380 },
+      "border": { "width": 4, "color": "#000000", "radius": 12 },
+      "background": "#FFFFFF",
+      "scene": {
+        "location": "Nobita's Room",
+        "characters": [
+          {
+            "name": "Doraemon",
+            "position": { "x": 225, "y": 100 },
+            "expression": "excited",
+            "pose": "holding up a futuristic gadget"
+          },
+          {
+            "name": "Nobita",
+            "position": { "x": 225, "y": 250 },
+            "expression": "curious",
+            "pose": "leaning forward"
+          }
+        ],
+        "dialogues": [
+          {
+            "speaker": "Doraemon",
+            "text": "I have the perfect gadget: MOE Robot Team! Mixture of Experts!",
+            "position": { "x": 225, "y": 320 },
+            "style": {
+              "bubbleType": "speech",
+              "backgroundColor": "#FFFFFF",
+              "borderColor": "#000000",
+              "fontSize": 22,
+              "textAlign": "center"
+            }
+          }
+        ],
+        "props": [
+          { "name": "gadget", "position": { "x": 200, "y": 50 }, "description": "futuristic device with robot icons" }
+        ]
+      }
+    },
+    {
+      "id": "panel3",
+      "position": { "x": 90, "y": 600 },
+      "size": { "width": 450, "height": 380 },
+      "border": { "width": 4, "color": "#000000", "radius": 12 },
+      "background": "#FFFFFF",
+      "scene": {
+        "location": "Nobita's Room",
+        "characters": [
+          {
+            "name": "Doraemon",
+            "position": { "x": 225, "y": 100 },
+            "expression": "explaining",
+            "pose": "pointing to floating robot holograms"
+          }
+        ],
+        "dialogues": [
+          {
+            "speaker": "Doraemon",
+            "text": "Each robot is an EXPERT: Math-bot, Science-bot, History-bot, Language-bot!",
+            "position": { "x": 225, "y": 300 },
+            "style": {
+              "bubbleType": "speech",
+              "backgroundColor": "#FFFFFF",
+              "borderColor": "#000000",
+              "fontSize": 22,
+              "textAlign": "center"
+            }
+          }
+        ],
+        "props": [
+          { "name": "math-bot", "position": { "x": 100, "y": 200 }, "description": "robot with π symbol" },
+          { "name": "science-bot", "position": { "x": 200, "y": 200 }, "description": "robot with flask icon" },
+          { "name": "history-bot", "position": { "x": 300, "y": 200 }, "description": "robot with scroll icon" },
+          { "name": "language-bot", "position": { "x": 400, "y": 200 }, "description": "robot with ABC icon" }
+        ]
+      }
+    },
+    {
+      "id": "panel4",
+      "position": { "x": 540, "y": 600 },
+      "size": { "width": 450, "height": 380 },
+      "border": { "width": 4, "color": "#000000", "radius": 12 },
+      "background": "#FFFFFF",
+      "scene": {
+        "location": "Nobita's Room",
+        "characters": [
+          {
+            "name": "Nobita",
+            "position": { "x": 225, "y": 150 },
+            "expression": "asking question",
+            "pose": "holding up math worksheet"
+          }
+        ],
+        "dialogues": [
+          {
+            "speaker": "Nobita",
+            "text": "What's 15 × 23?",
+            "position": { "x": 225, "y": 300 },
+            "style": {
+              "bubbleType": "speech",
+              "backgroundColor": "#FFFFFF",
+              "borderColor": "#000000",
+              "fontSize": 28,
+              "textAlign": "center"
+            }
+          }
+        ],
+        "props": [
+          { "name": "math-bot", "position": { "x": 225, "y": 100 }, "description": "robot glowing and active" },
+          { "name": "other-bots", "position": { "x": 400, "y": 250 }, "description": "three robots sleeping/inactive" }
+        ]
+      }
+    },
+    {
+      "id": "panel5",
+      "position": { "x": 90, "y": 1000 },
+      "size": { "width": 450, "height": 380 },
+      "border": { "width": 4, "color": "#000000", "radius": 12 },
+      "background": "#FFFFFF",
+      "scene": {
+        "location": "Nobita's Room",
+        "characters": [
+          {
+            "name": "Math-bot",
+            "position": { "x": 225, "y": 150 },
+            "expression": "happy",
+            "pose": "displaying answer on screen"
+          },
+          {
+            "name": "Nobita",
+            "position": { "x": 225, "y": 280 },
+            "expression": "amazed",
+            "pose": "clapping"
+          }
+        ],
+        "dialogues": [
+          {
+            "speaker": "Math-bot",
+            "text": "345! Only I worked on that. Others stayed asleep - efficient!",
+            "position": { "x": 225, "y": 330 },
+            "style": {
+              "bubbleType": "speech",
+              "backgroundColor": "#FFFFFF",
+              "borderColor": "#000000",
+              "fontSize": 22,
+              "textAlign": "center"
+            }
+          }
+        ],
+        "props": [
+          { "name": "answer-screen", "position": { "x": 200, "y": 100 }, "description": "screen showing 345" }
+        ]
+      }
+    },
+    {
+      "id": "panel6",
+      "position": { "x": 540, "y": 1000 },
+      "size": { "width": 450, "height": 380 },
+      "border": { "width": 4, "color": "#000000", "radius": 12 },
+      "background": "#FFFFFF",
+      "scene": {
+        "location": "Nobita's Room",
+        "characters": [
+          {
+            "name": "Doraemon",
+            "position": { "x": 225, "y": 100 },
+            "expression": "teaching",
+            "pose": "pointing to comparison chart"
+          }
+        ],
+        "dialogues": [
+          {
+            "speaker": "Doraemon",
+            "text": "Traditional AI = One big brain doing everything (slow!). MOE = Right experts for each task (fast!)",
+            "position": { "x": 225, "y": 300 },
+            "style": {
+              "bubbleType": "speech",
+              "backgroundColor": "#FFFFFF",
+              "borderColor": "#000000",
+              "fontSize": 20,
+              "textAlign": "center"
+            }
+          }
+        ],
+        "props": [
+          { "name": "chart", "position": { "x": 100, "y": 180 }, "description": "chart showing traditional vs MOE" },
+          { "name": "turtle", "position": { "x": 150, "y": 220 }, "description": "turtle labeled 'traditional'" },
+          { "name": "rabbit", "position": { "x": 300, "y": 220 }, "description": "rabbit labeled 'MOE'" }
+        ]
+      }
+    },
+    {
+      "id": "panel7",
+      "position": { "x": 90, "y": 1400 },
+      "size": { "width": 450, "height": 380 },
+      "border": { "width": 4, "color": "#000000", "radius": 12 },
+      "background": "#FFFFFF",
+      "scene": {
+        "location": "Nobita's Room",
+        "characters": [
+          {
+            "name": "Doraemon",
+            "position": { "x": 225, "y": 100 },
+            "expression": "excited",
+            "pose": "showing computer screen"
+          },
+          {
+            "name": "Nobita",
+            "position": { "x": 225, "y": 250 },
+            "expression": "interested",
+            "pose": "looking at screen"
+          }
+        ],
+        "dialogues": [
+          {
+            "speaker": "Doraemon",
+            "text": "Real AI example: Mixtral 8x7B! 8 experts, but only 2 work at once - smart and fast!",
+            "position": { "x": 225, "y": 320 },
+            "style": {
+              "bubbleType": "speech",
+              "backgroundColor": "#FFFFFF",
+              "borderColor": "#000000",
+              "fontSize": 20,
+              "textAlign": "center"
+            }
+          }
+        ],
+        "props": [
+          { "name": "computer", "position": { "x": 150, "y": 150 }, "description": "screen showing Mixtral logo" },
+          { "name": "robot-icons", "position": { "x": 350, "y": 180 }, "description": "8 robot icons, 2 glowing" }
+        ]
+      }
+    },
+    {
+      "id": "panel8",
+      "position": { "x": 540, "y": 1400 },
+      "size": { "width": 450, "height": 380 },
+      "border": { "width": 4, "color": "#000000", "radius": 12 },
+      "background": "#FFFFFF",
+      "scene": {
+        "location": "Nobita's Room",
+        "characters": [
+          {
+            "name": "Nobita",
+            "position": { "x": 150, "y": 150 },
+            "expression": "happy",
+            "pose": "holding completed homework"
+          },
+          {
+            "name": "Doraemon",
+            "position": { "x": 300, "y": 150 },
+            "expression": "proud",
+            "pose": "thumbs up"
+          }
+        ],
+        "dialogues": [
+          {
+            "speaker": "Nobita",
+            "text": "MOE is like a dream team! Right players for each play. Got it!",
+            "position": { "x": 225, "y": 300 },
+            "style": {
+              "bubbleType": "speech",
+              "backgroundColor": "#FFFFFF",
+              "borderColor": "#000000",
+              "fontSize": 22,
+              "textAlign": "center"
+            }
+          }
+        ],
+        "props": [
+          { "name": "homework", "position": { "x": 200, "y": 200 }, "description": "stack of completed worksheets" },
+          { "name": "robots", "position": { "x": 100, "y": 250 }, "description": "small robot team cheering" }
+        ]
+      }
+    }
+  ],
+  "footer": {
+    "text": "Teamwork makes the AI dream work! - Doraemon",
+    "position": { "x": 540, "y": 1860 },
+    "style": {
+      "fontFamily": "Doraemon, sans-serif",
+      "fontSize": 24,
+      "color": "#0095D9",
+      "textAlign": "center"
+    }
+  },
+  "soundEffects": [
+    { "text": "DING!", "panel": "panel4", "position": { "x": 225, "y": 80 } },
+    { "text": "ZOOM!", "panel": "panel5", "position": { "x": 225, "y": 120 } }
+  ]
+}

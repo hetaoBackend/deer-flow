@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "demo:save": "node scripts/save-demo.js",
     "build": "next build",
     "check": "next lint && tsc --noEmit",
     "dev": "next dev --turbo",
@@ -56,6 +57,7 @@
     "cmdk": "^1.1.1",
     "codemirror": "^6.0.2",
     "date-fns": "^4.1.0",
+    "dotenv": "^17.2.3",
     "embla-carousel-react": "^8.6.0",
     "gsap": "^3.13.0",
     "hast": "^1.0.0",

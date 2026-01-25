@@ -51,9 +51,11 @@ export default function ChatsPage() {
                       <div>
                         <div>{titleOfThread(thread)}</div>
                       </div>
-                      <div className="text-muted-foreground text-sm">
-                        {formatTimeAgo(thread.updated_at)}
-                      </div>
+                      {thread.updated_at && (
+                        <div className="text-muted-foreground text-sm">
+                          {formatTimeAgo(thread.updated_at)}
+                        </div>
+                      )}
                     </div>
                   </Link>
                 ))}

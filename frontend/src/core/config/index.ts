@@ -4,8 +4,6 @@ export function getBackendBaseURL() {
   if (env.NEXT_PUBLIC_BACKEND_BASE_URL) {
     return env.NEXT_PUBLIC_BACKEND_BASE_URL;
   } else {
-    // Use empty string for same-origin requests through nginx
-    // Paths like /api/models will be handled by nginx proxy
     return "";
   }
 }

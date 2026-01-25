@@ -48,6 +48,7 @@ import {
 
 export function InputBox({
   className,
+  disabled,
   autoFocus,
   status = "ready",
   context,
@@ -60,6 +61,7 @@ export function InputBox({
 }: Omit<ComponentProps<typeof PromptInput>, "onSubmit"> & {
   assistantId?: string | null;
   status?: ChatStatus;
+  disabled?: boolean;
   context: Omit<AgentThreadContext, "thread_id">;
   extraHeader?: React.ReactNode;
   isNewThread?: boolean;
@@ -142,6 +144,7 @@ export function InputBox({
         "bg-background/85 rounded-2xl backdrop-blur-sm transition-all duration-300 ease-out *:data-[slot='input-group']:rounded-2xl",
         className,
       )}
+      disabled={disabled}
       globalDrop
       multiple
       onSubmit={handleSubmit}
@@ -160,6 +163,7 @@ export function InputBox({
       <PromptInputBody className="absolute top-0 right-0 left-0 z-3">
         <PromptInputTextarea
           className={cn("size-full")}
+          disabled={disabled}
           placeholder={t.inputBox.placeholder}
           autoFocus={autoFocus}
         />
@@ -303,6 +307,7 @@ export function InputBox({
           </ModelSelector>
           <PromptInputSubmit
             className="rounded-full"
+            disabled={disabled}
             variant="outline"
             status={status}
           />
