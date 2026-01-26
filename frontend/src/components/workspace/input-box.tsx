@@ -72,10 +72,18 @@ export function InputBox({
   const { t } = useI18n();
   const [modelDialogOpen, setModelDialogOpen] = useState(false);
   const { models } = useModels();
-  const selectedModel = useMemo(
-    () => models.find((m) => m.name === context.model_name),
-    [context.model_name, models],
-  );
+  const selectedModel = useMemo(() => {
+    if (!context.model_name && models.length > 0) {
+      setTimeout(() => {
+        onContextChange?.({
+          ...context,
+          model_name: models[0]!.name,
+        });
+      }, 0);
+      return models[0]!;
+    }
+    return models.find((m) => m.name === context.model_name);
+  }, [context, models, onContextChange]);
   const supportThinking = useMemo(
     () => selectedModel?.supports_thinking ?? false,
     [selectedModel],

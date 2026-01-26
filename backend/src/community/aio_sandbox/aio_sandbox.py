@@ -23,7 +23,7 @@ class AioSandbox(Sandbox):
         """
         super().__init__(id)
         self._base_url = base_url
-        self._client = AioSandboxClient(base_url=base_url)
+        self._client = AioSandboxClient(base_url=base_url, timeout=600)
         self._home_dir = home_dir
 
     @property
