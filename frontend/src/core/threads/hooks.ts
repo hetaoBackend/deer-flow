@@ -8,6 +8,7 @@ import type { PromptInputMessage } from "@/components/ai-elements/prompt-input";
 
 import { getAPIClient } from "../api";
 import { uploadFiles } from "../uploads";
+import type { UploadedFileInfo } from "../uploads";
 
 import type {
   AgentThread,
@@ -72,6 +73,7 @@ export function useSubmitThread({
   const queryClient = useQueryClient();
   const callback = useCallback(
     async (message: PromptInputMessage) => {
+    let uploadedFilesInfo: UploadedFileInfo[] = [];
       const text = message.text.trim();
 
       // Upload files first if any
@@ -104,8 +106,12 @@ export function useSubmitThread({
             (file): file is File => file !== null,
           );
 
-          if (files.length > 0 && threadId) {
-            await uploadFiles(threadId, files);
+          if (files.length > 0) {
+            if (!threadId) {
+              throw new Error("Thread ID is required for file upload");
+            }
+            const uploadResult = await uploadFiles(threadId, files);
+            uploadedFilesInfo = uploadResult.files;
           }
         } catch (error) {
           console.error("Failed to upload files:", error);
@@ -114,17 +120,39 @@ export function useSubmitThread({
         }
       }
 
+      // Build message text with image markdown if images were uploaded
+      let messageText = text;
+      const fileMap = new Map(
+        uploadedFilesInfo.map(f => [f.filename, f])
+      );
+
+      // Append image markdown for any uploaded images
+      if (message.files && message.files.length > 0) {
+        const imageMarkdownParts: string[] = [];
+        for (const originalFile of message.files) {
+          const filename = originalFile.filename;
+          if (!filename) continue;
+          const uploadedInfo = fileMap.get(filename);
+          if (uploadedInfo) {
+            const isImage = originalFile.mediaType?.startsWith("image/");
+            if (isImage) {
+              // For images, add markdown format so frontend can display them
+              // Use virtual_path which starts with /mnt/ and will be resolved to artifact URL
+              imageMarkdownParts.push(`![${uploadedInfo.filename}](${uploadedInfo.virtual_path})`);
+            }
+          }
+        }
+        if (imageMarkdownParts.length > 0) {
+          messageText = text ? (text + "\n\n" + imageMarkdownParts.join("\n")) : imageMarkdownParts.join("\n");
+        }
+      }
+
       await thread.submit(
         {
           messages: [
             {
               type: "human",
-              content: [
-                {
-                  type: "text",
-                  text,
-                },
-              ],
+              content: messageText,
             },
           ] as HumanMessage[],
         },
