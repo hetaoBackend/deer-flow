@@ -301,15 +301,40 @@ export const MessageBranchPage = ({
   );
 };
 
+const MarkdownH2 = memo(
+  ({ children, className, ...props }: HTMLAttributes<HTMLHeadingElement>) => (
+    <>
+      <hr className="my-6 border-border" data-streamdown="horizontal-rule" />
+      <h2
+        className={cn(
+          "mt-6 mb-2 font-semibold text-2xl",
+          className
+        )}
+        data-streamdown="heading-2"
+        {...props}
+      >
+        {children}
+      </h2>
+    </>
+  ),
+  (prevProps, nextProps) => prevProps.children === nextProps.children,
+);
+
+MarkdownH2.displayName = "MarkdownH2WithDivider";
+
 export type MessageResponseProps = ComponentProps<typeof Streamdown>;
 
 export const MessageResponse = memo(
-  ({ className, ...props }: MessageResponseProps) => (
+  ({ className, components, ...props }: MessageResponseProps) => (
     <Streamdown
       className={cn(
         "size-full [&>*:first-child]:mt-0 [&>*:last-child]:mb-0",
         className,
       )}
+      components={{
+        h2: MarkdownH2,
+        ...components, // allow external overrides
+      }}
       {...props}
     />
   ),
