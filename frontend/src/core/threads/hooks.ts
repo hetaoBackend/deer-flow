@@ -1,4 +1,4 @@
-import type { HumanMessage } from "@langchain/core/messages";
+import { HumanMessage } from "@langchain/core/messages";
 import type { ThreadsClient } from "@langchain/langgraph-sdk/client";
 import { useStream, type UseStream } from "@langchain/langgraph-sdk/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -73,7 +73,7 @@ export function useSubmitThread({
   const queryClient = useQueryClient();
   const callback = useCallback(
     async (message: PromptInputMessage) => {
-    let uploadedFilesInfo: UploadedFileInfo[] = [];
+      let uploadedFilesInfo: UploadedFileInfo[] = [];
       const text = message.text.trim();
 
       // Upload files first if any
@@ -120,15 +120,15 @@ export function useSubmitThread({
         }
       }
 
-      // Build message text with image markdown if images were uploaded
-      let messageText = text;
       const fileMap = new Map(
         uploadedFilesInfo.map(f => [f.filename, f])
       );
 
-      // Append image markdown for any uploaded images
+      const messages: HumanMessage[] = [];
+
+      // Add image as structured content first as a separate message if images were uploaded
       if (message.files && message.files.length > 0) {
-        const imageMarkdownParts: string[] = [];
+        const imageContent: Array<{ type: "image_url"; image_url: { url: string } }> = [];
         for (const originalFile of message.files) {
           const filename = originalFile.filename;
           if (!filename) continue;
@@ -136,25 +136,35 @@ export function useSubmitThread({
           if (uploadedInfo) {
             const isImage = originalFile.mediaType?.startsWith("image/");
             if (isImage) {
-              // For images, add markdown format so frontend can display them
               // Use virtual_path which starts with /mnt/ and will be resolved to artifact URL
-              imageMarkdownParts.push(`![${uploadedInfo.filename}](${uploadedInfo.virtual_path})`);
+              imageContent.push({
+                type: "image_url",
+                image_url: { url: uploadedInfo.virtual_path },
+              });
             }
           }
         }
-        if (imageMarkdownParts.length > 0) {
-          messageText = text ? (text + "\n\n" + imageMarkdownParts.join("\n")) : imageMarkdownParts.join("\n");
+        if (imageContent.length > 0) {
+          messages.push(new HumanMessage({
+            content: imageContent,
+          }));
         }
+      }
+
+      // Add the text prompt as a separate message
+      if (text) {
+        messages.push(new HumanMessage({
+          content: text,
+        }));
+      }
+
+      if (messages.length === 0) {
+        return;
       }
 
       await thread.submit(
         {
-          messages: [
-            {
-              type: "human",
-              content: messageText,
-            },
-          ] as HumanMessage[],
+          messages: messages,
         },
         {
           threadId: isNewThread ? threadId! : undefined,
