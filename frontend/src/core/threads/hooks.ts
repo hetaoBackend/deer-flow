@@ -16,6 +16,11 @@ import type {
   AgentThreadState,
 } from "./types";
 
+interface ThreadMessage {
+  type: string;
+  content: string | Array<{ type: string; [key: string]: unknown }>;
+}
+
 export function useThreadStream({
   threadId,
   isNewThread,
@@ -124,7 +129,7 @@ export function useSubmitThread({
         uploadedFilesInfo.map(f => [f.filename, f])
       );
 
-      const messages: HumanMessage[] = [];
+      const messages: ThreadMessage[] = [];
 
       // Add image as structured content first as a separate message if images were uploaded
       if (message.files && message.files.length > 0) {
@@ -145,17 +150,19 @@ export function useSubmitThread({
           }
         }
         if (imageContent.length > 0) {
-          messages.push(new HumanMessage({
+          messages.push({
+            type: "human",
             content: imageContent,
-          }));
+          });
         }
       }
 
       // Add the text prompt as a separate message
       if (text) {
-        messages.push(new HumanMessage({
+        messages.push({
+          type: "human",
           content: text,
-        }));
+        });
       }
 
       if (messages.length === 0) {
@@ -164,7 +171,7 @@ export function useSubmitThread({
 
       await thread.submit(
         {
-          messages: messages,
+          messages: messages as HumanMessage[],
         },
         {
           threadId: isNewThread ? threadId! : undefined,
