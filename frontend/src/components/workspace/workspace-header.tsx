@@ -12,9 +12,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { useI18n } from "@/core/i18n/hooks";
-import { env } from "@/env";
 import { cn } from "@/lib/utils";
-import { Tooltip } from "./tooltip";
 
 export function WorkspaceHeader({ className }: { className?: string }) {
   const { t } = useI18n();

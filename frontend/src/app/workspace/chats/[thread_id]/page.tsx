@@ -135,7 +135,7 @@ export default function ChatPage() {
                 "absolute top-0 right-0 left-0 z-30 flex h-12 shrink-0 items-center px-4",
                 isNewThread
                   ? "bg-background/0 backdrop-blur-none"
-                  : "bg-background/80 backdrop-blur",
+                  : "bg-background/80 shadow-xs backdrop-blur",
               )}
             >
               <div className="flex w-full items-center text-sm font-medium">
@@ -163,7 +163,7 @@ export default function ChatPage() {
             <main className="flex min-h-0 grow flex-col">
               <div className="flex size-full justify-center">
                 <MessageList
-                  className="size-full"
+                  className={cn("size-full", !isNewThread && "pt-10")}
                   threadId={threadId}
                   thread={thread}
                   paddingBottom={todoListCollapsed ? 160 : 280}

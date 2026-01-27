@@ -50,7 +50,7 @@ export const ConversationEmptyState = ({
   <div
     className={cn(
       "flex size-full flex-col items-center justify-center gap-3 p-8 text-center",
-      className
+      className,
     )}
     {...props}
   >
@@ -58,7 +58,7 @@ export const ConversationEmptyState = ({
       <>
         {icon && <div className="text-muted-foreground">{icon}</div>}
         <div className="space-y-1">
-          <h3 className="font-medium text-sm">{title}</h3>
+          <h3 className="text-sm font-medium">{title}</h3>
           {description && (
             <p className="text-muted-foreground text-sm">{description}</p>
           )}
@@ -85,7 +85,7 @@ export const ConversationScrollButton = ({
       <Button
         className={cn(
           "absolute bottom-4 left-[50%] translate-x-[-50%] rounded-full",
-          className
+          className,
         )}
         onClick={handleScrollToBottom}
         size="icon"

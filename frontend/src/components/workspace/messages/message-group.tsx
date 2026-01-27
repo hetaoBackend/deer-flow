@@ -31,11 +31,11 @@ import {
 } from "@/core/messages/utils";
 import { useRehypeSplitWordsIntoSpans } from "@/core/rehype";
 import { extractTitleFromMarkdown } from "@/core/utils/markdown";
+import { env } from "@/env";
 import { cn } from "@/lib/utils";
 
 import { useArtifacts } from "../artifacts";
 import { FlipDisplay } from "../flip-display";
-import { env } from "@/env";
 
 export function MessageGroup({
   className,
@@ -106,7 +106,7 @@ export function MessageGroup({
           ></ChainOfThoughtStep>
         </Button>
       )}
-      {aboveLastToolCallSteps.length > 0 && (
+      {lastToolCallStep && (
         <ChainOfThoughtContent className="px-4 pb-2">
           {showAbove &&
             aboveLastToolCallSteps.map((step) =>
