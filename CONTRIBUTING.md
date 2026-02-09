@@ -43,7 +43,7 @@ Docker provides a consistent, isolated environment with all dependencies pre-con
 
 3. **Start development services**:
    ```bash
-   make docker-dev
+   make docker-start
    ```
    All services will start with hot-reload enabled:
    - Frontend changes are automatically reloaded
@@ -59,20 +59,16 @@ Docker provides a consistent, isolated environment with all dependencies pre-con
 
 ```bash
 # View all logs
-make docker-dev-logs
-
-# View specific service logs
-./scripts/docker.sh logs --web      # Frontend only
-./scripts/docker.sh logs --api      # Backend only
+make docker-logs
 
 # Restart services
-./scripts/docker.sh restart
+make docker-restart
 
 # Stop services
-make docker-dev-stop
+make docker-stop
 
 # Get help
-./scripts/docker.sh help
+make docker-help
 ```
 
 #### Docker Architecture

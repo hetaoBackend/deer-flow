@@ -34,11 +34,12 @@ services:
       args:
         PNPM_STORE_PATH: ${PNPM_STORE_PATH:-/root/.local/share/pnpm/store}
     container_name: deer-flow-web
-    command: sh -c "cd frontend && pnpm run dev"
+    command: sh -c "cd frontend && pnpm run dev > /app/logs/frontend.log 2>&1"
     volumes:
       - ../frontend/src:/app/frontend/src
       - ../frontend/public:/app/frontend/public
       - ../frontend/next.config.js:/app/frontend/next.config.js:ro
+      - ../logs:/app/logs
       # Mount pnpm store for caching
       - ${PNPM_STORE_PATH:-~/.local/share/pnpm/store}:/root/.local/share/pnpm/store
     working_dir: /app
@@ -58,17 +59,21 @@ services:
       context: ../
       dockerfile: backend/Dockerfile
     container_name: deer-flow-api
-    command: sh -c "cd backend && uv run uvicorn src.gateway.app:app --host 0.0.0.0 --port 8001 --reload --reload-include='*.yaml .env'"
+    command: sh -c "cd backend && uv run uvicorn src.gateway.app:app --host 0.0.0.0 --port 8001 --reload --reload-include='*.yaml .env' > /app/logs/gateway.log 2>&1"
     volumes:
       - ../backend/src:/app/backend/src
       - ../backend/.env:/app/backend/.env
       - ../config.yaml:/app/config.yaml
       - ../skills:/app/skills
+      - ../logs:/app/logs
     working_dir: /app
     environment:
       - CI=true
     env_file:
       - ../backend/.env
+    extra_hosts:
+      # For Linux: map host.docker.internal to host gateway
+      - "host.docker.internal:host-gateway"
     networks:
       - deer-flow-dev
     restart: unless-stopped
@@ -79,12 +84,13 @@ services:
       context: ../
       dockerfile: backend/Dockerfile
     container_name: deer-flow-langgraph
-    command: sh -c "cd backend && uv run langgraph dev --no-browser --allow-blocking --host 0.0.0.0 --port 2024"
+    command: sh -c "cd backend && uv run langgraph dev --no-browser --allow-blocking --host 0.0.0.0 --port 2024 > /app/logs/langgraph.log 2>&1"
     volumes:
       - ../backend/src:/app/backend/src
       - ../backend/.env:/app/backend/.env
       - ../config.yaml:/app/config.yaml
       - ../skills:/app/skills
+      - ../logs:/app/logs
     working_dir: /app
     environment:
       - CI=true

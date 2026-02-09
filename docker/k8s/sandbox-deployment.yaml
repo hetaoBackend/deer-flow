@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: deer-flow-sandbox
+  namespace: deer-flow
+  labels:
+    app.kubernetes.io/name: deer-flow
+    app.kubernetes.io/component: sandbox
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: deer-flow-sandbox
+  template:
+    metadata:
+      labels:
+        app: deer-flow-sandbox
+        app.kubernetes.io/name: deer-flow
+        app.kubernetes.io/component: sandbox
+    spec:
+      containers:
+        - name: sandbox
+          image: enterprise-public-cn-beijing.cr.volces.com/vefaas-public/all-in-one-sandbox:latest
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /v1/sandbox
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /v1/sandbox
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 1000m
+              memory: 1Gi
+          volumeMounts:
+            - name: skills
+              mountPath: /mnt/skills
+              readOnly: true
+          securityContext:
+            privileged: false
+            allowPrivilegeEscalation: true
+      volumes:
+        - name: skills
+          hostPath:
+            # Path to skills directory on the host machine
+            # This will be replaced by setup.sh with the actual path
+            path: __SKILLS_PATH__
+            type: Directory
+      restartPolicy: Always

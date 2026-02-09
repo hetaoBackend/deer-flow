@@ -228,7 +228,11 @@ def _build_middlewares(config: RunnableConfig):
 
 def make_lead_agent(config: RunnableConfig):
     # Lazy import to avoid circular dependency
+    import logging
+
     from src.tools import get_available_tools
+
+    logging.basicConfig(level=logging.INFO)
 
     thinking_enabled = config.get("configurable", {}).get("thinking_enabled", True)
     model_name = config.get("configurable", {}).get("model_name") or config.get("configurable", {}).get("model")

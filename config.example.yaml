@@ -21,7 +21,7 @@ models:
     api_key: $OPENAI_API_KEY # Use environment variable
     max_tokens: 4096
     temperature: 0.7
-    supports_vision: true  # Enable vision support for view_image tool
+    supports_vision: true # Enable vision support for view_image tool
 
   # Example: Anthropic Claude model
   # - name: claude-3-5-sonnet
@@ -185,15 +185,6 @@ sandbox:
 #   #   API_KEY: $MY_API_KEY        # Reads from host's MY_API_KEY env var
 #   #   DATABASE_URL: $DATABASE_URL  # Reads from host's DATABASE_URL env var
 
-# Option 3: Kubernetes-based Sandbox
-# Executes commands in isolated Kubernetes pods, refer to setup instructions in `docker/k8s/README.md`
-# Uncomment to use:
-# sandbox:
-#   use: src.community.aio_sandbox:KubernetesSandboxProvider
-#   image: enterprise-public-cn-beijing.cr.volces.com/vefaas-public/all-in-one-sandbox:latest
-#   k8s_namespace: deer-flow
-#   ttl_seconds: 3600
-
 # ============================================================================
 # Skills Configuration
 # ============================================================================
@@ -298,10 +289,10 @@ summarization:
 # Stores user context and conversation history for personalized responses
 memory:
   enabled: true
-  storage_path: .deer-flow/memory.json  # Path relative to backend directory
-  debounce_seconds: 30  # Wait time before processing queued updates
-  model_name: null  # Use default model
-  max_facts: 100  # Maximum number of facts to store
-  fact_confidence_threshold: 0.7  # Minimum confidence for storing facts
-  injection_enabled: true  # Whether to inject memory into system prompt
-  max_injection_tokens: 2000  # Maximum tokens for memory injection
+  storage_path: .deer-flow/memory.json # Path relative to backend directory
+  debounce_seconds: 30 # Wait time before processing queued updates
+  model_name: null # Use default model
+  max_facts: 100 # Maximum number of facts to store
+  fact_confidence_threshold: 0.7 # Minimum confidence for storing facts
+  injection_enabled: true # Whether to inject memory into system prompt
+  max_injection_tokens: 2000 # Maximum tokens for memory injection

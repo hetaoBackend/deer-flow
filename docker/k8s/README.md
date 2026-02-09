@@ -1,73 +1,61 @@
-# Kubernetes Sandbox Deployment Guide
+# Kubernetes Sandbox Setup
 
-This guide explains how to deploy the deer-flow sandbox system on Kubernetes for multi-instance concurrent support.
+This guide explains how to deploy and configure the DeerFlow sandbox execution environment on Kubernetes.
 
-## Architecture Overview
+## Overview
 
-The Kubernetes-based sandbox replaces the single Docker container approach with dynamic Pod management:
+The Kubernetes sandbox deployment allows you to run DeerFlow's code execution sandbox in a Kubernetes cluster, providing:
 
-- **Pods**: Created on-demand per sandbox acquisition (one Pod per thread)
-- **Networking**: Headless Service for DNS-based Pod access (no port conflicts)
-- **Storage**: 
-  - hostPath volumes for thread-specific data (`.deer-flow/threads/{thread-id}/user-data/`)
-  - Shared ReadOnlyMany PV for skills directory
-- **Cleanup**: TTL-based background cleanup (default 1 hour after release)
+- **Isolated Execution**: Sandbox runs in dedicated Kubernetes pods
+- **Scalability**: Easy horizontal scaling with replica configuration
+- **Cluster Integration**: Seamless integration with existing Kubernetes infrastructure
+- **Persistent Skills**: Skills directory mounted from host or PersistentVolume
 
 ## Prerequisites
 
-### 1. Kubernetes Cluster
+Before you begin, ensure you have:
 
-Choose one of the following options:
+1. **Kubernetes Cluster**: One of the following:
+   - Docker Desktop with Kubernetes enabled
+   - OrbStack with Kubernetes enabled
+   - Minikube
+   - Any production Kubernetes cluster
 
-**Option A: Docker Desktop or OrbStack (Recommended for macOS/Windows)**
-```bash
-# Enable Kubernetes in Docker Desktop or OrbStack settings
-# Docker Desktop: Settings → Kubernetes → Enable Kubernetes
-# OrbStack: Settings → Kubernetes → Enable Kubernetes
+2. **kubectl**: Kubernetes command-line tool
+   ```bash
+   # macOS
+   brew install kubectl
+   
+   # Linux
+   # See: https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/
+   ```
+
+3. **Docker**: For pulling the sandbox image (optional, but recommended)
+   ```bash
+   # Verify installation
+   docker version
+   ```
+
+## Quick Start
+
+### 1. Enable Kubernetes
+
+**Docker Desktop:**
+```
+Settings → Kubernetes → Enable Kubernetes → Apply & Restart
 ```
 
-**Option B: Minikube**
-```bash
-# Install Minikube
-brew install minikube  # macOS
-# or visit: https://minikube.sigs.k8s.io/docs/start/
-
-# Start cluster
-minikube start --driver=docker
-
-# Verify
-kubectl cluster-info
+**OrbStack:**
+```
+Settings → Enable Kubernetes
 ```
 
-**Option C: Kind (Kubernetes in Docker)**
+**Minikube:**
 ```bash
-brew install kind  # macOS
-kind create cluster --name deer-flow
-
-# Verify
-kubectl cluster-info --context kind-deer-flow
+minikube start
 ```
 
-### 2. kubectl CLI
-
-```bash
-# Install kubectl (if not already installed)
-brew install kubectl  # macOS
-
-# Verify installation
-kubectl version --client
-```
-
-### 3. Verify Cluster Access
-
-```bash
-kubectl get nodes
-# Should show at least one node in Ready status
-```
-
-## Deployment Steps
-
-### Option A: Automated Setup (Recommended)
+### 2. Run Setup Script
 
 The easiest way to get started:
 
@@ -76,435 +64,364 @@ cd docker/k8s
 ./setup.sh
 ```
 
-The script automatically handles:
-- Path configuration in `skills-pv-pvc.yaml` (replaces `__DEER_FLOW_SKILLS_PATH__` placeholder)
-- Kubernetes resource deployment
-- Backend configuration prompts
-- Image pulling
+This will:
+- ✅ Check kubectl installation and cluster connectivity
+- ✅ Pull the sandbox Docker image (optional, can be skipped)
+- ✅ Create the `deer-flow` namespace
+- ✅ Deploy the sandbox service and deployment
+- ✅ Verify the deployment is running
 
-For other options, see [QUICKSTART.md](QUICKSTART.md).
+### 3. Configure Backend
 
-### Option B: Manual Setup
-
-If you prefer manual control:
-
-#### Step 1: Configure Skills Path
-
-The `setup.sh` script automatically replaces the `__DEER_FLOW_SKILLS_PATH__` placeholder in `skills-pv-pvc.yaml`. 
-
-For manual setup, run just the path update:
-
-```bash
-cd docker/k8s
-
-# Auto-detect and update path
-PROJECT_ROOT=$(cd ../.. && pwd)
-if [[ "$OSTYPE" == "darwin"* ]]; then
-    sed -i '' "s|__DEER_FLOW_SKILLS_PATH__|${PROJECT_ROOT}/skills|g" skills-pv-pvc.yaml
-else
-    sed -i "s|__DEER_FLOW_SKILLS_PATH__|${PROJECT_ROOT}/skills|g" skills-pv-pvc.yaml
-fi
-```
-
-#### Step 2: Apply Kubernetes Resources
-
-```bash
-# Apply in order
-kubectl apply -f namespace.yaml
-kubectl apply -f skills-pv-pvc.yaml
-kubectl apply -f headless-service.yaml
-
-# Verify resources
-kubectl get namespace deer-flow
-kubectl get pv deer-flow-skills-pv
-kubectl get pvc -n deer-flow
-kubectl get service -n deer-flow
-```
-
-Expected output:
-```
-namespace/deer-flow created
-persistentvolume/deer-flow-skills-pv created
-persistentvolumeclaim/deer-flow-skills-pvc created
-service/deer-flow-sandbox created
-```
-
-#### Step 3: Update Backend Configuration
-
-Edit `backend/config.yaml` to use the Kubernetes provider:
+Add the following to `backend/config.yaml`:
 
 ```yaml
-sandbox:
-  # Switch to Kubernetes provider
-  use: src.community.aio_sandbox:KubernetesSandboxProvider
-  
-  # Container image (required)
-  image: enterprise-public-cn-beijing.cr.volces.com/vefaas-public/all-in-one-sandbox:latest
-  
-  # Kubernetes configuration
-  k8s_namespace: deer-flow      # Namespace for sandbox Pods
-  # k8s_context: docker-desktop  # Optional: specify kubeconfig context
-  ttl_seconds: 3600              # Pod cleanup TTL (1 hour)
-  
-  # Optional: Resource limits
-  # cpu_request: "100m"
-  # cpu_limit: "1000m"
-  # memory_request: "256Mi"
-  # memory_limit: "1Gi"
-  
-  # Environment variables (optional)
-  # environment:
-  #   NODE_ENV: production
-  #   API_KEY: $MY_API_KEY
-```
-
-#### Step 4: Install Dependencies
-
-```bash
-cd backend
-
-# Install/update Python dependencies (includes kubernetes>=30.0.0)
-pip install -e .
-# or
-uv sync
-```
-
-#### Step 5: Start the Backend
-
-```bash
-cd backend
-
-# Start the server
-make dev
-# or
-langgraph dev
-```
-
-## Verification
-
-### 1. Check Namespace and Service
-
-```bash
-kubectl get all -n deer-flow
-```
-
-Expected: Headless service should be listed, no Pods yet.
-
-### 2. Test Sandbox Creation
-
-Trigger a sandbox acquisition (e.g., by using a tool that requires sandbox):
-
-```bash
-# Watch Pods being created
-kubectl get pods -n deer-flow -w
-```
-
-You should see Pods like `deer-flow-sandbox-{id}` appearing and transitioning to Running.
-
-### 3. Check Pod Details
-
-```bash
-# List Pods
-kubectl get pods -n deer-flow
-
-# Describe a Pod
-kubectl describe pod deer-flow-sandbox-xxxxx -n deer-flow
-
-# Check logs
-kubectl logs deer-flow-sandbox-xxxxx -n deer-flow
-
-# Verify mounts
-kubectl exec deer-flow-sandbox-xxxxx -n deer-flow -- ls -la /mnt/user-data/
-kubectl exec deer-flow-sandbox-xxxxx -n deer-flow -- ls -la /mnt/skills/
-```
-
-### 4. Test DNS Resolution
-
-```bash
-# From within a Pod, test DNS
-kubectl run test-dns --image=busybox --rm -it --restart=Never -n deer-flow -- \
-  nslookup deer-flow-sandbox-xxxxx.deer-flow-sandbox.deer-flow.svc.cluster.local
-```
-
-### 5. Test Concurrent Access
-
-Run the test script:
-
-```bash
-# From project root
-bash docker/k8s/test-concurrent.sh
-```
-
-This will create multiple sandboxes concurrently and verify they are isolated.
-
-## Configuration Reference
-
-### Kubernetes Provider Settings
-
-| Field | Type | Default | Description |
-|-------|------|---------|-------------|
-| `use` | string | - | Provider class path (required) |
-| `image` | string | See default | Container image for sandbox |
-| `k8s_namespace` | string | `deer-flow` | Kubernetes namespace |
-| `k8s_context` | string | None | Kubeconfig context (optional) |
-| `ttl_seconds` | int | `3600` | Pod cleanup TTL after release |
-| `cpu_request` | string | None | CPU request (e.g., `100m`) |
-| `cpu_limit` | string | None | CPU limit (e.g., `1000m`) |
-| `memory_request` | string | None | Memory request (e.g., `256Mi`) |
-| `memory_limit` | string | None | Memory limit (e.g., `1Gi`) |
-| `environment` | dict | `{}` | Environment variables |
-
-### Resource Limits Guidelines
-
-Based on workload, adjust resource limits:
-
-**Light workload** (development):
-```yaml
-cpu_request: "100m"
-cpu_limit: "500m"
-memory_request: "128Mi"
-memory_limit: "512Mi"
-```
-
-**Medium workload** (testing):
-```yaml
-cpu_request: "250m"
-cpu_limit: "1000m"
-memory_request: "256Mi"
-memory_limit: "1Gi"
-```
-
-**Heavy workload** (production):
-```yaml
-cpu_request: "500m"
-cpu_limit: "2000m"
-memory_request: "512Mi"
-memory_limit: "2Gi"
-```
-
-## Troubleshooting
-
-### Issue: PV Not Binding
-
-**Symptom**: PVC status is `Pending`
-
-```bash
-kubectl get pvc -n deer-flow
-# deer-flow-skills-pvc   Pending   deer-flow-skills   0s
-```
-
-**Solution**: Verify path was correctly configured by setup.sh
-
-```bash
-# Check if placeholder was replaced
-grep -n "__DEER_FLOW_SKILLS_PATH__" skills-pv-pvc.yaml
-# Should return nothing if properly configured
-
-# Check actual path in YAML
-grep "path:" skills-pv-pvc.yaml
-
-# Verify skills directory exists
-ls -la /Users/feng/Projects/deer-flow/skills
-
-# Check PV status
-kubectl describe pv deer-flow-skills-pv
-
-# Re-run setup if path is wrong:
-./setup.sh --skip-config
-```
-
-### Issue: Pod ImagePullBackOff
-
-**Symptom**: Pod stuck in `ImagePullBackOff` or `ErrImagePull`
-
-```bash
-kubectl get pods -n deer-flow
-# NAME                        READY   STATUS             RESTARTS   AGE
-# deer-flow-sandbox-xxxxx    0/1     ImagePullBackOff   0          30s
-```
-
-**Solution**: Check image availability and pull policy
-
-```bash
-# Describe Pod to see error
-kubectl describe pod deer-flow-sandbox-xxxxx -n deer-flow
-
-# If image is private, configure imagePullSecrets
-# Or use a public/local image for testing
-```
-
-### Issue: Pod CrashLoopBackOff
-
-**Symptom**: Pod keeps restarting
-
-```bash
-kubectl get pods -n deer-flow
-# NAME                        READY   STATUS             RESTARTS   AGE
-# deer-flow-sandbox-xxxxx    0/1     CrashLoopBackOff   5          2m
-```
-
-**Solution**: Check Pod logs
-
-```bash
-# View logs
-kubectl logs deer-flow-sandbox-xxxxx -n deer-flow
-
-# Check previous container logs
-kubectl logs deer-flow-sandbox-xxxxx -n deer-flow --previous
-
-# Common causes:
-# - Missing volume mounts (thread directories not created)
-# - Image CMD/ENTRYPOINT issues
-# - Container startup failures
-```
-
-### Issue: Cannot Connect to Pod
-
-**Symptom**: Sandbox acquisition times out waiting for Pod ready
-
-**Solution**: Verify network and readiness probe
-
-```bash
-# Check Pod events
-kubectl describe pod deer-flow-sandbox-xxxxx -n deer-flow
-
-# Test readiness endpoint manually
-kubectl port-forward deer-flow-sandbox-xxxxx -n deer-flow 8080:8080
-curl http://localhost:8080/v1/sandbox
-
-# If DNS not working, check service
-kubectl get endpoints -n deer-flow
-# Should show Pod IPs listed under deer-flow-sandbox service
-```
-
-### Issue: Pods Not Cleaning Up
-
-**Symptom**: Old Pods remain after TTL expires
-
-**Solution**: Check provider logs and cleanup worker
-
-```bash
-# Check backend logs for cleanup worker messages
-# Look for: "Started TTL cleanup worker" and "Cleaned up X expired Pod(s)"
-
-# Manually delete Pods if needed
-kubectl delete pod deer-flow-sandbox-xxxxx -n deer-flow
-
-# Or delete all sandbox Pods
-kubectl delete pods -n deer-flow -l app=deer-flow-sandbox
-```
-
-### Issue: hostPath Mount Permissions
-
-**Symptom**: Pod cannot write to mounted directories
-
-**Solution**: Check directory permissions
-
-```bash
-# Verify directory permissions
-ls -la .deer-flow/threads/
-
-# Ensure directories are writable
-chmod -R 755 .deer-flow/threads/
-
-# Check Pod security context in logs
-kubectl describe pod deer-flow-sandbox-xxxxx -n deer-flow
-```
-
-## Cleanup
-
-### Remove All Sandbox Pods
-
-```bash
-kubectl delete pods -n deer-flow -l app=deer-flow-sandbox
-```
-
-### Remove All Resources
-
-```bash
-cd docker/k8s
-kubectl delete -f headless-service.yaml
-kubectl delete -f skills-pv-pvc.yaml
-kubectl delete -f namespace.yaml
-```
-
-### Stop Cluster (if using Minikube)
-
-```bash
-minikube stop
-# or
-minikube delete
-```
-
-## Migration from Docker Provider
-
-To switch back to Docker provider:
-
-```yaml
-# config.yaml
 sandbox:
   use: src.community.aio_sandbox:AioSandboxProvider
-  image: enterprise-public-cn-beijing.cr.volces.com/vefaas-public/all-in-one-sandbox:latest
-  port: 8080
-  auto_start: true
+  base_url: http://deer-flow-sandbox.deer-flow.svc.cluster.local:8080
 ```
 
-Both providers implement the same `SandboxProvider` interface, so no code changes are needed.
+### 4. Verify Deployment
 
-## Monitoring
-
-### Watch Pod Creation
+Check that the sandbox pod is running:
 
 ```bash
-watch kubectl get pods -n deer-flow
+kubectl get pods -n deer-flow
 ```
 
-### Monitor Resource Usage
-
-```bash
-kubectl top pods -n deer-flow
+You should see:
 ```
-
-### View All Events
-
-```bash
-kubectl get events -n deer-flow --sort-by='.lastTimestamp'
+NAME                                 READY   STATUS    RESTARTS   AGE
+deer-flow-sandbox-xxxxxxxxxx-xxxxx   1/1     Running   0          1m
 ```
 
 ## Advanced Configuration
 
-### Multi-Node Clusters
+### Custom Skills Path
 
-The current implementation uses `hostPath` which only works on single-node clusters. For multi-node clusters, consider:
+By default, the setup script uses `PROJECT_ROOT/skills`. You can specify a custom path:
 
-1. **Add nodeSelector**: Pin Pods to the node where project root is accessible
-2. **Use network storage**: Replace hostPath with NFS/Ceph/Cloud storage
-3. **Use local PV**: Configure local persistent volumes on each node
-
-### Custom Security Context
-
-Edit `k8s_sandbox_provider.py` to modify security settings:
-
-```python
-security_context=client.V1SecurityContext(
-    run_as_non_root=True,
-    run_as_user=1000,
-    allow_privilege_escalation=False,
-    capabilities=client.V1Capabilities(drop=["ALL"])
-)
+**Using command-line argument:**
+```bash
+./setup.sh --skills-path /custom/path/to/skills
 ```
 
-## Support
+**Using environment variable:**
+```bash
+SKILLS_PATH=/custom/path/to/skills ./setup.sh
+```
 
-For issues specific to the Kubernetes implementation, check:
-- Kubernetes cluster logs: `kubectl logs -n kube-system`
-- Provider logs: Check backend console output
-- GitHub Issues: Report bugs with `kubectl describe` output
+### Custom Sandbox Image
+
+To use a different sandbox image:
+
+**Using command-line argument:**
+```bash
+./setup.sh --image your-registry/sandbox:tag
+```
+
+**Using environment variable:**
+```bash
+SANDBOX_IMAGE=your-registry/sandbox:tag ./setup.sh
+```
+
+### Skip Image Pull
+
+If you already have the image locally or want to pull it manually later:
+
+```bash
+./setup.sh --skip-pull
+```
+
+### Combined Options
+
+```bash
+./setup.sh --skip-pull --skills-path /custom/skills --image custom/sandbox:latest
+```
+
+## Manual Deployment
+
+If you prefer manual deployment or need more control:
+
+### 1. Create Namespace
+
+```bash
+kubectl apply -f namespace.yaml
+```
+
+### 2. Create Service
+
+```bash
+kubectl apply -f sandbox-service.yaml
+```
+
+### 3. Deploy Sandbox
+
+First, update the skills path in `sandbox-deployment.yaml`:
+
+```bash
+# Replace __SKILLS_PATH__ with your actual path
+sed 's|__SKILLS_PATH__|/Users/feng/Projects/deer-flow/skills|g' \
+  sandbox-deployment.yaml | kubectl apply -f -
+```
+
+Or manually edit `sandbox-deployment.yaml` and replace `__SKILLS_PATH__` with your skills directory path.
+
+### 4. Verify Deployment
+
+```bash
+# Check all resources
+kubectl get all -n deer-flow
+
+# Check pod status
+kubectl get pods -n deer-flow
+
+# Check pod logs
+kubectl logs -n deer-flow -l app=deer-flow-sandbox
+
+# Describe pod for detailed info
+kubectl describe pod -n deer-flow -l app=deer-flow-sandbox
+```
+
+## Configuration Options
+
+### Resource Limits
+
+Edit `sandbox-deployment.yaml` to adjust resource limits:
+
+```yaml
+resources:
+  requests:
+    cpu: 100m      # Minimum CPU
+    memory: 256Mi  # Minimum memory
+  limits:
+    cpu: 1000m     # Maximum CPU (1 core)
+    memory: 1Gi    # Maximum memory
+```
+
+### Scaling
+
+Adjust the number of replicas:
+
+```yaml
+spec:
+  replicas: 3  # Run 3 sandbox pods
+```
+
+Or scale dynamically:
+
+```bash
+kubectl scale deployment deer-flow-sandbox -n deer-flow --replicas=3
+```
+
+### Health Checks
+
+The deployment includes readiness and liveness probes:
+
+- **Readiness Probe**: Checks if the pod is ready to serve traffic
+- **Liveness Probe**: Restarts the pod if it becomes unhealthy
+
+Configure in `sandbox-deployment.yaml`:
+
+```yaml
+readinessProbe:
+  httpGet:
+    path: /v1/sandbox
+    port: 8080
+  initialDelaySeconds: 5
+  periodSeconds: 5
+  timeoutSeconds: 3
+  failureThreshold: 3
+```
+
+## Troubleshooting
+
+### Pod Not Starting
+
+Check pod status and events:
+
+```bash
+kubectl describe pod -n deer-flow -l app=deer-flow-sandbox
+```
+
+Common issues:
+- **ImagePullBackOff**: Docker image cannot be pulled
+  - Solution: Pre-pull image with `docker pull <image>`
+- **Skills path not found**: HostPath doesn't exist
+  - Solution: Verify the skills path exists on the host
+- **Resource constraints**: Not enough CPU/memory
+  - Solution: Adjust resource requests/limits
+
+### Service Not Accessible
+
+Verify the service is running:
+
+```bash
+kubectl get service -n deer-flow
+kubectl describe service deer-flow-sandbox -n deer-flow
+```
+
+Test connectivity from another pod:
+
+```bash
+kubectl run test-pod -n deer-flow --rm -it --image=curlimages/curl -- \
+  curl http://deer-flow-sandbox.deer-flow.svc.cluster.local:8080/v1/sandbox
+```
+
+### Check Logs
+
+View sandbox logs:
+
+```bash
+# Follow logs in real-time
+kubectl logs -n deer-flow -l app=deer-flow-sandbox -f
+
+# View logs from previous container (if crashed)
+kubectl logs -n deer-flow -l app=deer-flow-sandbox --previous
+```
+
+### Health Check Failures
+
+If pods show as not ready:
+
+```bash
+# Check readiness probe
+kubectl get events -n deer-flow --sort-by='.lastTimestamp'
+
+# Exec into pod to debug
+kubectl exec -it -n deer-flow <pod-name> -- /bin/sh
+```
+
+## Cleanup
+
+### Remove All Resources
+
+Using the setup script:
+
+```bash
+./setup.sh --cleanup
+```
+
+Or manually:
+
+```bash
+kubectl delete -f sandbox-deployment.yaml
+kubectl delete -f sandbox-service.yaml
+kubectl delete namespace deer-flow
+```
+
+### Remove Specific Resources
+
+```bash
+# Delete only the deployment (keeps namespace and service)
+kubectl delete deployment deer-flow-sandbox -n deer-flow
+
+# Delete pods (they will be recreated by deployment)
+kubectl delete pods -n deer-flow -l app=deer-flow-sandbox
+```
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────┐
+│         DeerFlow Backend                    │
+│  (config.yaml: base_url configured)         │
+└────────────────┬────────────────────────────┘
+                 │ HTTP requests
+                 ↓
+┌─────────────────────────────────────────────┐
+│    Kubernetes Service (ClusterIP)           │
+│  deer-flow-sandbox.deer-flow.svc:8080       │
+└────────────────┬────────────────────────────┘
+                 │ Load balancing
+                 ↓
+┌─────────────────────────────────────────────┐
+│         Sandbox Pods (replicas)             │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  │
+│  │  Pod 1   │  │  Pod 2   │  │  Pod 3   │  │
+│  │ Port 8080│  │ Port 8080│  │ Port 8080│  │
+│  └──────────┘  └──────────┘  └──────────┘  │
+└────────────────┬────────────────────────────┘
+                 │ Volume mount
+                 ↓
+┌─────────────────────────────────────────────┐
+│         Host Skills Directory               │
+│    /path/to/deer-flow/skills                │
+└─────────────────────────────────────────────┘
+```
+
+## Setup Script Reference
+
+### Command-Line Options
+
+```bash
+./setup.sh [options]
+
+Options:
+  -h, --help              Show help message
+  -c, --cleanup           Remove all Kubernetes resources
+  -p, --skip-pull         Skip pulling sandbox image
+  --image <image>         Use custom sandbox image
+  --skills-path <path>    Custom skills directory path
+
+Environment Variables:
+  SANDBOX_IMAGE      Custom sandbox image
+  SKILLS_PATH        Custom skills path
+
+Examples:
+  ./setup.sh                                    # Use default settings
+  ./setup.sh --skills-path /custom/path         # Use custom skills path
+  ./setup.sh --skip-pull --image custom:tag     # Custom image, skip pull
+  SKILLS_PATH=/custom/path ./setup.sh           # Use env variable
+```
+
+## Production Considerations
+
+### Security
+
+1. **Network Policies**: Restrict pod-to-pod communication
+2. **RBAC**: Configure appropriate service account permissions
+3. **Pod Security**: Enable pod security standards
+4. **Image Security**: Scan images for vulnerabilities
+
+### High Availability
+
+1. **Multiple Replicas**: Run at least 3 replicas
+2. **Pod Disruption Budget**: Prevent all pods from being evicted
+3. **Node Affinity**: Distribute pods across nodes
+4. **Resource Quotas**: Set namespace resource limits
+
+### Monitoring
+
+1. **Prometheus**: Scrape metrics from pods
+2. **Logging**: Centralized log aggregation
+3. **Alerting**: Set up alerts for pod failures
+4. **Tracing**: Distributed tracing for requests
+
+### Storage
+
+For production, consider using PersistentVolume instead of hostPath:
+
+1. **Create PersistentVolume**: Define storage backend
+2. **Create PersistentVolumeClaim**: Request storage
+3. **Update Deployment**: Use PVC instead of hostPath
+
+See `skills-pv-pvc.yaml.bak` for reference implementation.
 
 ## Next Steps
 
-- Monitor Pod resource usage and adjust limits
-- Set up Prometheus/Grafana for metrics
-- Configure pod autoscaling (HPA) if needed
-- Implement network policies for isolation
-- Set up log aggregation (ELK/Loki)
+After successful deployment:
+
+1. **Start Backend**: `make dev` or `make docker-start`
+2. **Test Sandbox**: Create a conversation and execute code
+3. **Monitor**: Watch pod logs and resource usage
+4. **Scale**: Adjust replicas based on workload
+
+## Support
+
+For issues and questions:
+
+- Check troubleshooting section above
+- Review pod logs: `kubectl logs -n deer-flow -l app=deer-flow-sandbox`
+- See main project documentation: [../../README.md](../../README.md)
+- Report issues on GitHub

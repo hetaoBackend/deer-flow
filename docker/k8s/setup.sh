@@ -66,45 +66,36 @@ check_cluster() {
     success "Connected to Kubernetes cluster"
 }
 
-# Update skills path in PV/PVC configuration
-update_skills_path() {
-    info "Updating skills path in skills-pv-pvc.yaml..."
-    
-    SKILLS_PATH="${PROJECT_ROOT}/skills"
-    PVC_FILE="${SCRIPT_DIR}/skills-pv-pvc.yaml"
-    
-    if [[ ! -f "$PVC_FILE" ]]; then
-        error "skills-pv-pvc.yaml not found at ${PVC_FILE}"
-        exit 1
-    fi
-    
-    # Create backup
-    cp "$PVC_FILE" "${PVC_FILE}.bak"
-    
-    # Update the path
-    if [[ "$OSTYPE" == "darwin"* ]]; then
-        # macOS
-        sed -i '' "s|__DEER_FLOW_SKILLS_PATH__|${SKILLS_PATH}|g" "$PVC_FILE"
-    else
-        # Linux
-        sed -i "s|__DEER_FLOW_SKILLS_PATH__|${SKILLS_PATH}|g" "$PVC_FILE"
-    fi
-    
-    success "Updated skills path to: ${SKILLS_PATH}"
-}
-
 # Apply Kubernetes resources
 apply_resources() {
     info "Applying Kubernetes resources..."
     
+    # Determine skills path
+    SKILLS_PATH="${SKILLS_PATH:-${PROJECT_ROOT}/skills}"
+    info "Using skills path: ${SKILLS_PATH}"
+    
+    # Validate skills path exists
+    if [[ ! -d "${SKILLS_PATH}" ]]; then
+        warn "Skills path does not exist: ${SKILLS_PATH}"
+        warn "Creating directory..."
+        mkdir -p "${SKILLS_PATH}"
+    fi
+    
     echo "  → Creating namespace..."
     kubectl apply -f "${SCRIPT_DIR}/namespace.yaml"
     
-    echo "  → Creating PersistentVolume and PersistentVolumeClaim..."
-    kubectl apply -f "${SCRIPT_DIR}/skills-pv-pvc.yaml"
+    echo "  → Creating sandbox service..."
+    kubectl apply -f "${SCRIPT_DIR}/sandbox-service.yaml"
     
-    echo "  → Creating headless service..."
-    kubectl apply -f "${SCRIPT_DIR}/headless-service.yaml"
+    echo "  → Creating sandbox deployment with skills path: ${SKILLS_PATH}"
+    # Replace __SKILLS_PATH__ placeholder with actual path
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        # macOS
+        sed "s|__SKILLS_PATH__|${SKILLS_PATH}|g" "${SCRIPT_DIR}/sandbox-deployment.yaml" | kubectl apply -f -
+    else
+        # Linux
+        sed "s|__SKILLS_PATH__|${SKILLS_PATH}|g" "${SCRIPT_DIR}/sandbox-deployment.yaml" | kubectl apply -f -
+    fi
     
     success "All Kubernetes resources applied"
 }
@@ -119,8 +110,11 @@ verify_deployment() {
     echo "  → Checking service..."
     kubectl get service -n deer-flow
     
-    echo "  → Checking PVC..."
-    kubectl get pvc -n deer-flow
+    echo "  → Checking deployment..."
+    kubectl get deployment -n deer-flow
+    
+    echo "  → Checking pods..."
+    kubectl get pods -n deer-flow
     
     success "Deployment verified"
 }
@@ -160,26 +154,13 @@ print_next_steps() {
     echo -e "${YELLOW}To enable Kubernetes sandbox, add the following to backend/config.yaml:${NC}"
     echo
     echo -e "${GREEN}sandbox:${NC}"
-    echo -e "${GREEN}  use: src.community.aio_sandbox:KubernetesSandboxProvider${NC}"
-    echo -e "${GREEN}  image: enterprise-public-cn-beijing.cr.volces.com/vefaas-public/all-in-one-sandbox:latest${NC}"
-    echo -e "${GREEN}  k8s_namespace: deer-flow${NC}"
-    echo -e "${GREEN}  ttl_seconds: 3600${NC}"
+    echo -e "${GREEN}  use: src.community.aio_sandbox:AioSandboxProvider${NC}"
+    echo -e "${GREEN}  base_url: http://deer-flow-sandbox.deer-flow.svc.cluster.local:8080${NC}"
     echo
     echo
     echo -e "${GREEN}Next steps:${NC}"
-    echo "  1. Start the backend:"
-    echo "     cd ${PROJECT_ROOT}/backend"
-    echo "     pip install -e ."
-    echo "     make dev"
-    echo
-    echo "  2. Test the setup (in another terminal):"
-    echo "     cd ${SCRIPT_DIR}"
-    echo "     ./test-concurrent.sh"
-    echo
-    echo -e "${GREEN}Useful commands:${NC}"
-    echo "  • Watch pods:    kubectl get pods -n deer-flow -w"
-    echo "  • View logs:     kubectl logs -n deer-flow <pod-name>"
-    echo "  • Delete pods:   kubectl delete pods -n deer-flow -l app=deer-flow-sandbox"
+    echo "  make dev                # Start backend and frontend in development mode"
+    echo "  make docker-start       # Start backend and frontend in Docker containers"
     echo
 }
 
@@ -187,9 +168,8 @@ print_next_steps() {
 cleanup() {
     if [[ "$1" == "--cleanup" ]] || [[ "$1" == "-c" ]]; then
         info "Cleaning up Kubernetes resources..."
-        kubectl delete pods -n deer-flow -l app=deer-flow-sandbox --ignore-not-found=true
-        kubectl delete -f "${SCRIPT_DIR}/headless-service.yaml" --ignore-not-found=true
-        kubectl delete -f "${SCRIPT_DIR}/skills-pv-pvc.yaml" --ignore-not-found=true
+        kubectl delete -f "${SCRIPT_DIR}/sandbox-deployment.yaml" --ignore-not-found=true
+        kubectl delete -f "${SCRIPT_DIR}/sandbox-service.yaml" --ignore-not-found=true
         kubectl delete -f "${SCRIPT_DIR}/namespace.yaml" --ignore-not-found=true
         success "Cleanup complete"
         exit 0
@@ -201,14 +181,20 @@ show_help() {
     echo "Usage: $0 [options]"
     echo
     echo "Options:"
-    echo "  -h, --help         Show this help message"
-    echo "  -c, --cleanup      Remove all Kubernetes resources"
-    echo "  -s, --skip-config  Skip backend configuration step"
-    echo "  -p, --skip-pull    Skip pulling sandbox image"
-    echo "  --image <image>    Use custom sandbox image"
+    echo "  -h, --help              Show this help message"
+    echo "  -c, --cleanup           Remove all Kubernetes resources"
+    echo "  -p, --skip-pull         Skip pulling sandbox image"
+    echo "  --image <image>         Use custom sandbox image"
+    echo "  --skills-path <path>    Custom skills directory path"
     echo
     echo "Environment variables:"
     echo "  SANDBOX_IMAGE      Custom sandbox image (default: $DEFAULT_SANDBOX_IMAGE)"
+    echo "  SKILLS_PATH        Custom skills path (default: PROJECT_ROOT/skills)"
+    echo
+    echo "Examples:"
+    echo "  $0                                    # Use default settings"
+    echo "  $0 --skills-path /custom/path         # Use custom skills path"
+    echo "  SKILLS_PATH=/custom/path $0           # Use env variable"
     echo
     exit 0
 }
@@ -231,6 +217,10 @@ while [[ $# -gt 0 ]]; do
             SANDBOX_IMAGE="$2"
             shift 2
             ;;
+        --skills-path)
+            SKILLS_PATH="$2"
+            shift 2
+            ;;
         *)
             shift
             ;;
@@ -247,7 +237,6 @@ main() {
         pull_image
     fi
     
-    update_skills_path
     apply_resources
     verify_deployment
     print_next_steps

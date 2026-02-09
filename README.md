@@ -18,8 +18,7 @@ The fastest way to get started with a consistent environment:
 
 2. **Initialize and start**:
    ```bash
-   make docker-init  # First time only
-   make docker-dev   # Start all services
+   make docker-start   # Start all services
    ```
 
 3. **Access**: http://localhost:2026
@@ -55,6 +54,35 @@ If you prefer running services locally:
 5. **Access**: http://localhost:2026
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed local development guide.
+
+### Sandbox Configuration
+
+DeerFlow supports multiple sandbox execution modes. Configure your preferred mode in `config.yaml`:
+
+**Local Execution** (runs sandbox code directly on the host machine):
+```yaml
+sandbox:
+   use: src.sandbox.local:LocalSandboxProvider # Local execution
+```
+
+**Docker Execution** (runs sandbox code in isolated Docker containers):
+```yaml
+sandbox:
+   use: src.community.aio_sandbox:AioSandboxProvider # Docker-based sandbox
+```
+
+**Docker Execution with Kubernetes** (runs sandbox code in Kubernetes pods):
+
+Setup Kubernetes sandbox as per [Kubernetes Sandbox Setup](docker/k8s/README.md).
+```bash
+./docker/k8s/setup.sh
+```
+Then configure `config.yaml` with the Kubernetes service URL:
+```yaml
+sandbox:
+   use: src.community.k8s_sandbox:AioSandboxProvider # Kubernetes-based sandbox
+   base_url: http://deer-flow-sandbox.deer-flow.svc.cluster.local:8080 # Kubernetes service URL
+```
 
 ## Features
 
