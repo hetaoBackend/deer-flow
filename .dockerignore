@@ -51,3 +51,20 @@ examples/
 assets/
 tests/
 *.log
+
+# Exclude directories not needed in Docker context
+# Frontend build only needs frontend/
+# Backend build only needs backend/
+scripts/
+logs/
+docker/
+skills/
+frontend/.next
+frontend/node_modules
+backend/.venv
+backend/htmlcov
+backend/.coverage
+*.md
+!README.md
+!frontend/README.md
+!backend/README.md

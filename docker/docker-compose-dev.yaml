@@ -34,10 +34,11 @@ services:
       args:
         PNPM_STORE_PATH: ${PNPM_STORE_PATH:-/root/.local/share/pnpm/store}
     container_name: deer-flow-web
-    command: sh -c "cd frontend && pnpm install && pnpm run dev"
+    command: sh -c "cd frontend && pnpm run dev"
     volumes:
-      - ../:/app
-      - /app/frontend/node_modules # Exclude node_modules from volume mount
+      - ../frontend/src:/app/frontend/src
+      - ../frontend/public:/app/frontend/public
+      - ../frontend/next.config.js:/app/frontend/next.config.js:ro
       # Mount pnpm store for caching
       - ${PNPM_STORE_PATH:-~/.local/share/pnpm/store}:/root/.local/share/pnpm/store
     working_dir: /app
@@ -57,11 +58,12 @@ services:
       context: ../
       dockerfile: backend/Dockerfile
     container_name: deer-flow-api
-    command: sh -c "cd backend && uv sync && uv run uvicorn src.gateway.app:app --host 0.0.0.0 --port 8001 --reload"
+    command: sh -c "cd backend && uv run uvicorn src.gateway.app:app --host 0.0.0.0 --port 8001 --reload --reload-include='*.yaml .env'"
     volumes:
-      - ../:/app
-      - /app/backend/.venv # Exclude .venv from volume mount to avoid conflicts
-      - ../config.yaml:/app/config.yaml:ro
+      - ../backend/src:/app/backend/src
+      - ../backend/.env:/app/backend/.env
+      - ../config.yaml:/app/config.yaml
+      - ../skills:/app/skills
     working_dir: /app
     environment:
       - CI=true
@@ -77,11 +79,12 @@ services:
       context: ../
       dockerfile: backend/Dockerfile
     container_name: deer-flow-langgraph
-    command: sh -c "cd backend && uv sync && uv run langgraph dev --no-browser --allow-blocking --no-reload --host 0.0.0.0 --port 2024"
+    command: sh -c "cd backend && uv run langgraph dev --no-browser --allow-blocking --host 0.0.0.0 --port 2024"
     volumes:
-      - ../:/app
-      - /app/backend/.venv # Exclude .venv from volume mount to avoid conflicts
-      - ../config.yaml:/app/config.yaml:ro
+      - ../backend/src:/app/backend/src
+      - ../backend/.env:/app/backend/.env
+      - ../config.yaml:/app/config.yaml
+      - ../skills:/app/skills
     working_dir: /app
     environment:
       - CI=true

@@ -60,29 +60,11 @@ init() {
 
     echo ""
 
-    # Build containers
+    # Build containers (dependencies are installed during build)
     echo -e "${BLUE}Building containers...${NC}"
+    echo -e "${BLUE}  - Frontend dependencies will be installed via Dockerfile${NC}"
+    echo -e "${BLUE}  - Backend dependencies will be installed via Dockerfile${NC}"
     cd "$DOCKER_DIR" && PNPM_STORE_PATH="$PNPM_STORE" $COMPOSE_CMD build
-
-    echo ""
-
-    # Install frontend dependencies
-    echo -e "${BLUE}Installing frontend dependencies...${NC}"
-    if ! (cd "$DOCKER_DIR" && PNPM_STORE_PATH="$PNPM_STORE" $COMPOSE_CMD run --rm -it --entrypoint "" web pnpm install --frozen-lockfile); then
-        echo -e "${YELLOW}Frontend dependencies installation failed or was interrupted${NC}"
-        exit 1
-    fi
-    echo -e "${GREEN}✓ Frontend dependencies installed${NC}"
-
-    echo ""
-
-    # Install backend dependencies
-    echo -e "${BLUE}Installing backend dependencies...${NC}"
-    if ! (cd "$DOCKER_DIR" && $COMPOSE_CMD run --rm -it --entrypoint "" api uv sync); then
-        echo -e "${YELLOW}Backend dependencies installation failed or was interrupted${NC}"
-        exit 1
-    fi
-    echo -e "${GREEN}✓ Backend dependencies installed${NC}"
 
     echo ""
 
@@ -111,8 +93,8 @@ start() {
     echo "  📡 API Gateway: http://localhost:2026/api/*"
     echo "  🤖 LangGraph:   http://localhost:2026/api/langgraph/*"
     echo ""
-    echo "  📋 View logs: make docker-dev-logs"
-    echo "  🛑 Stop:      make docker-dev-stop"
+    echo "  📋 View logs: make docker-logs"
+    echo "  🛑 Stop:      make docker-stop"
     echo ""
 }
 

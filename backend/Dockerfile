@@ -14,8 +14,8 @@ ENV PATH="/root/.local/bin:$PATH"
 # Set working directory
 WORKDIR /app
 
-# Copy backend files for dependency installation
-COPY backend/pyproject.toml backend/uv.lock ./backend/
+# Copy frontend source code
+COPY backend ./backend
 
 # Install dependencies
 RUN sh -c "cd backend && uv sync"
