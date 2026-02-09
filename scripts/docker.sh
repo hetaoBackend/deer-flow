@@ -129,6 +129,10 @@ logs() {
             service="api"
             echo -e "${BLUE}Viewing backend logs...${NC}"
             ;;
+        --nginx)
+            service="nginx"
+            echo -e "${BLUE}Viewing nginx logs...${NC}"
+            ;;
         "")
             echo -e "${BLUE}Viewing all logs...${NC}"
             ;;
