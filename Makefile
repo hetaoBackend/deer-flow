@@ -1,6 +1,6 @@
 # DeerFlow - Unified Development Environment
 
-.PHONY: help check install dev stop clean docker-init docker-start docker-stop docker-logs docker-logs-web docker-logs-api
+.PHONY: help check install dev stop clean docker-init docker-start docker-stop docker-logs docker-logs-frontend docker-logs-gateway
 
 help:
 	@echo "DeerFlow Development Commands:"
@@ -16,8 +16,8 @@ help:
 	@echo "  make docker-start    - Start all services in Docker (localhost:2026)"
 	@echo "  make docker-stop     - Stop Docker development services"
 	@echo "  make docker-logs     - View Docker development logs"
-	@echo "  make docker-logs-web - View Docker frontend logs"
-	@echo "  make docker-logs-api - View Docker backend logs"
+	@echo "  make docker-logs-frontend - View Docker frontend logs"
+	@echo "  make docker-logs-gateway - View Docker gateway logs"
 
 # Check required tools
 check:
@@ -251,7 +251,7 @@ docker-logs:
 	@./scripts/docker.sh logs
 
 # View Docker development logs
-docker-logs-web:
-	@./scripts/docker.sh logs --web
-docker-logs-api:
-	@./scripts/docker.sh logs --api
+docker-logs-frontend:
+	@./scripts/docker.sh logs --frontend
+docker-logs-gateway:
+	@./scripts/docker.sh logs --gateway

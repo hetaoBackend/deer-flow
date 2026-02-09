@@ -103,13 +103,13 @@ logs() {
     local service=""
     
     case "$1" in
-        --web)
-            service="web"
+        --frontend)
+            service="frontend"
             echo -e "${BLUE}Viewing frontend logs...${NC}"
             ;;
-        --api)
-            service="api"
-            echo -e "${BLUE}Viewing backend logs...${NC}"
+        --gateway)
+            service="gateway"
+            echo -e "${BLUE}Viewing gateway logs...${NC}"
             ;;
         --nginx)
             service="nginx"
@@ -120,7 +120,7 @@ logs() {
             ;;
         *)
             echo -e "${YELLOW}Unknown option: $1${NC}"
-            echo "Usage: $0 logs [--web|--api]"
+            echo "Usage: $0 logs [--frontend|--gateway]"
             exit 1
             ;;
     esac
@@ -162,8 +162,8 @@ help() {
     echo "  start         - Start all services in Docker (localhost:2026)"
     echo "  restart       - Restart all running Docker services"
     echo "  logs [option] - View Docker development logs"
-    echo "                  --web   View frontend logs only"
-    echo "                  --api   View backend logs only"
+    echo "                  --frontend   View frontend logs only"
+    echo "                  --gateway   View gateway logs only"
     echo "  stop          - Stop Docker development services"
     echo "  help          - Show this help message"
     echo ""
