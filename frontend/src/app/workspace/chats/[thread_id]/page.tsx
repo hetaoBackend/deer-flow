@@ -1,10 +1,11 @@
 "use client";
 
 import { FilesIcon, XIcon } from "lucide-react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { ConversationEmptyState } from "@/components/ai-elements/conversation";
+import { usePromptInputController } from "@/components/ai-elements/prompt-input";
 import { Button } from "@/components/ui/button";
 import {
   ResizableHandle,
@@ -25,10 +26,15 @@ import { TodoList } from "@/components/workspace/todo-list";
 import { Tooltip } from "@/components/workspace/tooltip";
 import { Welcome } from "@/components/workspace/welcome";
 import { useI18n } from "@/core/i18n/hooks";
+import { useNotification } from "@/core/notification/hooks";
 import { useLocalSettings } from "@/core/settings";
 import { type AgentThread } from "@/core/threads";
 import { useSubmitThread, useThreadStream } from "@/core/threads/hooks";
-import { pathOfThread, titleOfThread } from "@/core/threads/utils";
+import {
+  pathOfThread,
+  textOfMessage,
+  titleOfThread,
+} from "@/core/threads/utils";
 import { uuid } from "@/core/utils/uuid";
 import { env } from "@/env";
 import { cn } from "@/lib/utils";
@@ -47,6 +53,27 @@ export default function ChatPage() {
     selectedArtifact,
   } = useArtifacts();
   const { thread_id: threadIdFromPath } = useParams<{ thread_id: string }>();
+  const searchParams = useSearchParams();
+  const promptInputController = usePromptInputController();
+  const inputInitialValue = useMemo(() => {
+    if (threadIdFromPath !== "new" || searchParams.get("mode") !== "skill") {
+      return undefined;
+    }
+    return t.inputBox.createSkillPrompt;
+  }, [threadIdFromPath, searchParams, t.inputBox.createSkillPrompt]);
+  useEffect(() => {
+    if (inputInitialValue) {
+      setTimeout(() => {
+        promptInputController.textInput.setInput(inputInitialValue);
+        const textarea = document.querySelector("textarea");
+        if (textarea) {
+          textarea.focus();
+          textarea.selectionStart = textarea.value.length;
+          textarea.selectionEnd = textarea.value.length;
+        }
+      }, 100);
+    }
+  }, [inputInitialValue, promptInputController.textInput]);
   const isNewThread = useMemo(
     () => threadIdFromPath === "new",
     [threadIdFromPath],
@@ -60,10 +87,31 @@ export default function ChatPage() {
     }
   }, [threadIdFromPath]);
 
+  const { showNotification } = useNotification();
   const thread = useThreadStream({
     isNewThread,
     threadId,
+    onFinish: (state) => {
+      if (document.hidden || !document.hasFocus()) {
+        let body = "Conversation finished";
+        const lastMessage = state.messages[state.messages.length - 1];
+        if (lastMessage) {
+          const textContent = textOfMessage(lastMessage);
+          if (textContent) {
+            if (textContent.length > 200) {
+              body = textContent.substring(0, 200) + "...";
+            } else {
+              body = textContent;
+            }
+          }
+        }
+        showNotification(state.title, {
+          body,
+        });
+      }
+    },
   });
+
   const title = useMemo(() => {
     let result = isNewThread
       ? ""
@@ -73,6 +121,26 @@ export default function ChatPage() {
     }
     return result;
   }, [thread, isNewThread]);
+
+  useEffect(() => {
+    const pageTitle = isNewThread
+      ? t.pages.newChat
+      : thread.values?.title && thread.values.title !== "Untitled"
+        ? thread.values.title
+        : t.pages.untitled;
+    if (thread.isThreadLoading) {
+      document.title = `Loading... - ${t.pages.appName}`;
+    } else {
+      document.title = `${pageTitle} - ${t.pages.appName}`;
+    }
+  }, [
+    isNewThread,
+    t.pages.newChat,
+    t.pages.untitled,
+    t.pages.appName,
+    thread.values.title,
+    thread.isThreadLoading,
+  ]);
 
   const [autoSelectFirstArtifact, setAutoSelectFirstArtifact] = useState(true);
   useEffect(() => {
@@ -93,15 +161,26 @@ export default function ChatPage() {
     thread.values.artifacts,
   ]);
 
-  const [todoListCollapsed, setTodoListCollapsed] = useState(
-    env.NEXT_PUBLIC_STATIC_WEBSITE_ONLY !== "true",
-  );
+  const artifactPanelOpen = useMemo(() => {
+    if (env.NEXT_PUBLIC_STATIC_WEBSITE_ONLY === "true") {
+      return artifactsOpen && artifacts?.length > 0;
+    }
+    return artifactsOpen;
+  }, [artifactsOpen, artifacts]);
+
+  const [todoListCollapsed, setTodoListCollapsed] = useState(true);
 
   const handleSubmit = useSubmitThread({
     isNewThread,
     threadId,
     thread,
-    threadContext: settings.context,
+    threadContext: {
+      ...settings.context,
+      thinking_enabled: settings.context.mode !== "flash",
+      is_plan_mode:
+        settings.context.mode === "pro" || settings.context.mode === "ultra",
+      subagent_enabled: settings.context.mode === "ultra",
+    },
     afterSubmit() {
       router.push(pathOfThread(threadId!));
     },
@@ -119,8 +198,8 @@ export default function ChatPage() {
       <ResizablePanelGroup orientation="horizontal">
         <ResizablePanel
           className="relative"
-          defaultSize={artifactsOpen && artifacts?.length > 0 ? 46 : 100}
-          minSize={artifactsOpen && artifacts?.length > 0 ? 30 : 100}
+          defaultSize={artifactPanelOpen ? 46 : 100}
+          minSize={artifactPanelOpen ? 30 : 100}
         >
           <div className="relative flex size-full min-h-0 justify-between">
             <header
@@ -128,7 +207,7 @@ export default function ChatPage() {
                 "absolute top-0 right-0 left-0 z-30 flex h-12 shrink-0 items-center px-4",
                 isNewThread
                   ? "bg-background/0 backdrop-blur-none"
-                  : "bg-background/80 backdrop-blur",
+                  : "bg-background/80 shadow-xs backdrop-blur",
               )}
             >
               <div className="flex w-full items-center text-sm font-medium">
@@ -137,9 +216,10 @@ export default function ChatPage() {
                 )}
               </div>
               <div>
-                {artifacts?.length && !artifactsOpen && (
+                {artifacts?.length > 0 && !artifactsOpen && (
                   <Tooltip content="Show artifacts of this conversation">
                     <Button
+                      className="text-muted-foreground hover:text-foreground"
                       variant="ghost"
                       onClick={() => {
                         setArtifactsOpen(true);
@@ -153,10 +233,10 @@ export default function ChatPage() {
                 )}
               </div>
             </header>
-            <main className="flex min-h-0 grow flex-col">
+            <main className="flex min-h-0 max-w-full grow flex-col">
               <div className="flex size-full justify-center">
                 <MessageList
-                  className="size-full"
+                  className={cn("size-full", !isNewThread && "pt-10")}
                   threadId={threadId}
                   thread={thread}
                   paddingBottom={todoListCollapsed ? 160 : 280}
@@ -166,7 +246,7 @@ export default function ChatPage() {
                 <div
                   className={cn(
                     "relative w-full",
-                    isNewThread && "-translate-y-[calc(50vh-160px)]",
+                    isNewThread && "-translate-y-[calc(50vh-96px)]",
                     isNewThread
                       ? "max-w-(--container-width-sm)"
                       : "max-w-(--container-width-md)",
@@ -194,7 +274,9 @@ export default function ChatPage() {
                     autoFocus={isNewThread}
                     status={thread.isLoading ? "streaming" : "ready"}
                     context={settings.context}
-                    extraHeader={isNewThread && <Welcome />}
+                    extraHeader={
+                      isNewThread && <Welcome mode={settings.context.mode} />
+                    }
                     disabled={env.NEXT_PUBLIC_STATIC_WEBSITE_ONLY === "true"}
                     onContextChange={(context) =>
                       setSettings("context", context)
@@ -203,7 +285,7 @@ export default function ChatPage() {
                     onStop={handleStop}
                   />
                   {env.NEXT_PUBLIC_STATIC_WEBSITE_ONLY === "true" && (
-                    <div className="text-muted-foreground/67 w-full -translate-y-2 text-center text-xs">
+                    <div className="text-muted-foreground/67 w-full translate-y-12 text-center text-xs">
                       {t.common.notAvailableInDemoMode}
                     </div>
                   )}
@@ -215,9 +297,7 @@ export default function ChatPage() {
         <ResizableHandle
           className={cn(
             "opacity-33 hover:opacity-100",
-            !artifactsOpen &&
-              artifacts?.length > 0 &&
-              "pointer-events-none opacity-0",
+            !artifactPanelOpen && "pointer-events-none opacity-0",
           )}
         />
         <ResizablePanel
@@ -225,16 +305,14 @@ export default function ChatPage() {
             "transition-all duration-300 ease-in-out",
             !artifactsOpen && "opacity-0",
           )}
-          defaultSize={artifactsOpen && artifacts?.length > 0 ? 64 : 0}
+          defaultSize={artifactPanelOpen ? 64 : 0}
           minSize={0}
-          maxSize={artifactsOpen && artifacts?.length > 0 ? undefined : 0}
+          maxSize={artifactPanelOpen ? undefined : 0}
         >
           <div
             className={cn(
               "h-full p-4 transition-transform duration-300 ease-in-out",
-              artifactsOpen && artifacts?.length > 0
-                ? "translate-x-0"
-                : "translate-x-full",
+              artifactPanelOpen ? "translate-x-0" : "translate-x-full",
             )}
           >
             {selectedArtifact ? (

@@ -11,7 +11,11 @@ export async function loadArtifactContent({
   filepath: string;
   threadId: string;
 }) {
-  const url = urlOfArtifact({ filepath, threadId });
+  let enhancedFilepath = filepath;
+  if (filepath.endsWith(".skill")) {
+    enhancedFilepath = filepath + "/SKILL.md";
+  }
+  const url = urlOfArtifact({ filepath: enhancedFilepath, threadId });
   const response = await fetch(url);
   const text = await response.text();
   return text;

@@ -37,7 +37,9 @@ export function ArtifactsProvider({ children }: ArtifactsProviderProps) {
 
   const select = (artifact: string, autoSelect = false) => {
     setSelectedArtifact(artifact);
-    setSidebarOpen(false);
+    if (env.NEXT_PUBLIC_STATIC_WEBSITE_ONLY !== "true") {
+      setSidebarOpen(false);
+    }
     if (!autoSelect) {
       setAutoSelect(false);
     }

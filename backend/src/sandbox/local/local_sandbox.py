@@ -142,7 +142,7 @@ class LocalSandbox(Sandbox):
             shell=True,
             capture_output=True,
             text=True,
-            timeout=30,
+            timeout=600,
         )
         output = result.stdout
         if result.stderr:

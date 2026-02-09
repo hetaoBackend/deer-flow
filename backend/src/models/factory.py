@@ -29,6 +29,7 @@ def create_chat_model(name: str | None = None, thinking_enabled: bool = False, *
             "description",
             "supports_thinking",
             "when_thinking_enabled",
+            "supports_vision",
         },
     )
     if thinking_enabled and model_config.when_thinking_enabled is not None:

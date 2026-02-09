@@ -5,7 +5,6 @@ import { useCallback, useEffect, useState } from "react";
 import { Toaster } from "sonner";
 
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
-import { Overscroll } from "@/components/workspace/overscroll";
 import { WorkspaceSidebar } from "@/components/workspace/workspace-sidebar";
 import { useLocalSettings } from "@/core/settings";
 
@@ -15,7 +14,7 @@ export default function WorkspaceLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   const [settings, setSettings] = useLocalSettings();
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(() => !settings.layout.sidebar_collapsed);
   useEffect(() => {
     setOpen(!settings.layout.sidebar_collapsed);
   }, [settings.layout.sidebar_collapsed]);

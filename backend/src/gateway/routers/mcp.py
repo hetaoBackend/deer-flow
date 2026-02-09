@@ -6,7 +6,6 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
 from src.config.extensions_config import ExtensionsConfig, get_extensions_config, reload_extensions_config
-from src.mcp.cache import reset_mcp_tools_cache
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api", tags=["mcp"])
@@ -72,9 +71,7 @@ async def get_mcp_configuration() -> McpConfigResponse:
     """
     config = get_extensions_config()
 
-    return McpConfigResponse(
-        mcp_servers={name: McpServerConfigResponse(**server.model_dump()) for name, server in config.mcp_servers.items()}
-    )
+    return McpConfigResponse(mcp_servers={name: McpServerConfigResponse(**server.model_dump()) for name, server in config.mcp_servers.items()})
 
 
 @router.put(
@@ -139,18 +136,12 @@ async def update_mcp_configuration(request: McpConfigUpdateRequest) -> McpConfig
 
         logger.info(f"MCP configuration updated and saved to: {config_path}")
 
-        # Reload the configuration to update the cache
-        reload_extensions_config()
+        # NOTE: No need to reload/reset cache here - LangGraph Server (separate process)
+        # will detect config file changes via mtime and reinitialize MCP tools automatically
 
-        # Reset MCP tools cache so they will be reinitialized with new config on next use
-        reset_mcp_tools_cache()
-        logger.info("MCP tools cache reset - tools will be reinitialized on next use")
-
-        # Return the updated configuration
-        reloaded_config = get_extensions_config()
-        return McpConfigResponse(
-            mcp_servers={name: McpServerConfigResponse(**server.model_dump()) for name, server in reloaded_config.mcp_servers.items()}
-        )
+        # Reload the configuration and update the global cache
+        reloaded_config = reload_extensions_config()
+        return McpConfigResponse(mcp_servers={name: McpServerConfigResponse(**server.model_dump()) for name, server in reloaded_config.mcp_servers.items()})
 
     except Exception as e:
         logger.error(f"Failed to update MCP configuration: {e}", exc_info=True)

@@ -5,14 +5,19 @@ import {
   ConversationContent,
 } from "@/components/ai-elements/conversation";
 import { MessageResponse } from "@/components/ai-elements/message";
+import { useI18n } from "@/core/i18n/hooks";
 import {
   extractContentFromMessage,
   extractPresentFilesFromMessage,
+  extractTextFromMessage,
   groupMessages,
   hasContent,
   hasPresentFiles,
+  hasReasoning,
 } from "@/core/messages/utils";
 import { useRehypeSplitWordsIntoSpans } from "@/core/rehype";
+import type { Subtask } from "@/core/tasks";
+import { useUpdateSubtask } from "@/core/tasks/context";
 import type { AgentThreadState } from "@/core/threads";
 import { cn } from "@/lib/utils";
 
@@ -22,6 +27,7 @@ import { StreamingIndicator } from "../streaming-indicator";
 import { MessageGroup } from "./message-group";
 import { MessageListItem } from "./message-list-item";
 import { MessageListSkeleton } from "./skeleton";
+import { SubtaskCard } from "./subtask-card";
 
 export function MessageList({
   className,
@@ -34,7 +40,9 @@ export function MessageList({
   thread: UseStream<AgentThreadState>;
   paddingBottom?: number;
 }) {
+  const { t } = useI18n();
   const rehypePlugins = useRehypeSplitWordsIntoSpans(thread.isLoading);
+  const updateSubtask = useUpdateSubtask();
   if (thread.isThreadLoading) {
     return <MessageListSkeleton />;
   }
@@ -42,7 +50,7 @@ export function MessageList({
     <Conversation
       className={cn("flex size-full flex-col justify-center", className)}
     >
-      <ConversationContent className="mx-auto w-full max-w-(--container-width-md) gap-10 pt-12">
+      <ConversationContent className="mx-auto w-full max-w-(--container-width-md) gap-8 pt-12">
         {groupMessages(thread.messages, (group) => {
           if (group.type === "human" || group.type === "assistant") {
             return (
@@ -52,8 +60,17 @@ export function MessageList({
                 isLoading={thread.isLoading}
               />
             );
-          }
-          if (group.type === "assistant:present-files") {
+          } else if (group.type === "assistant:clarification") {
+            const message = group.messages[0];
+            if (message && hasContent(message)) {
+              return (
+                <MessageResponse key={group.id} rehypePlugins={rehypePlugins}>
+                  {extractContentFromMessage(message)}
+                </MessageResponse>
+              );
+            }
+            return null;
+          } else if (group.type === "assistant:present-files") {
             const files: string[] = [];
             for (const message of group.messages) {
               if (hasPresentFiles(message)) {
@@ -72,6 +89,98 @@ export function MessageList({
                   </MessageResponse>
                 )}
                 <ArtifactFileList files={files} threadId={threadId} />
+              </div>
+            );
+          } else if (group.type === "assistant:subagent") {
+            const tasks = new Set<Subtask>();
+            for (const message of group.messages) {
+              if (message.type === "ai") {
+                for (const toolCall of message.tool_calls ?? []) {
+                  if (toolCall.name === "task") {
+                    const task: Subtask = {
+                      id: toolCall.id!,
+                      subagent_type: toolCall.args.subagent_type,
+                      description: toolCall.args.description,
+                      prompt: toolCall.args.prompt,
+                      status: "in_progress",
+                    };
+                    updateSubtask(task);
+                    tasks.add(task);
+                  }
+                }
+              } else if (message.type === "tool") {
+                const taskId = message.tool_call_id;
+                if (taskId) {
+                  const result = extractTextFromMessage(message);
+                  if (result.startsWith("Task Succeeded. Result:")) {
+                    updateSubtask({
+                      id: taskId,
+                      status: "completed",
+                      result: result
+                        .split("Task Succeeded. Result:")[1]
+                        ?.trim(),
+                    });
+                  } else if (result.startsWith("Task failed.")) {
+                    updateSubtask({
+                      id: taskId,
+                      status: "failed",
+                      error: result.split("Task failed.")[1]?.trim(),
+                    });
+                  } else if (result.startsWith("Task timed out")) {
+                    updateSubtask({
+                      id: taskId,
+                      status: "failed",
+                      error: result,
+                    });
+                  } else {
+                    updateSubtask({
+                      id: taskId,
+                      status: "in_progress",
+                    });
+                  }
+                }
+              }
+            }
+            const results: React.ReactNode[] = [];
+            for (const message of group.messages.filter(
+              (message) => message.type === "ai",
+            )) {
+              if (hasReasoning(message)) {
+                results.push(
+                  <MessageGroup
+                    key={"thinking-group-" + message.id}
+                    messages={[message]}
+                    isLoading={thread.isLoading}
+                  />,
+                );
+              }
+              results.push(
+                <div
+                  key="subtask-count"
+                  className="text-muted-foreground font-norma pt-2 text-sm"
+                >
+                  {t.subtasks.executing(tasks.size)}
+                </div>,
+              );
+              const taskIds = message.tool_calls?.map(
+                (toolCall) => toolCall.id,
+              );
+              for (const taskId of taskIds ?? []) {
+                results.push(
+                  <SubtaskCard
+                    key={"task-group-" + taskId}
+                    taskId={taskId!}
+                    isLoading={thread.isLoading}
+                  />,
+                );
+              }
+            }
+            return (
+              <div
+                key={"subtask-group-" + group.id}
+                className="relative z-1 flex flex-col gap-2"
+              >
+                {results}
               </div>
             );
           }

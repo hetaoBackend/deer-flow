@@ -28,15 +28,12 @@ def present_file_tool(
 
     Notes:
     - You should call this tool after creating files and moving them to the `/mnt/user-data/outputs` directory.
-    - Use non-parallel tool calling to present files in a single step.
+    - This tool can be safely called in parallel with other tools. State updates are handled by a reducer to prevent conflicts.
 
     Args:
         filepaths: List of absolute file paths to present to the user. **Only** files in `/mnt/user-data/outputs` can be presented.
     """
-    existing_artifacts = runtime.state.get("artifacts") or []
-    # Use dict.fromkeys to deduplicate while preserving order
-    new_artifacts = list(dict.fromkeys(existing_artifacts + filepaths))
-    runtime.state["artifacts"] = new_artifacts
+    # The merge_artifacts reducer will handle merging and deduplication
     return Command(
-        update={"artifacts": new_artifacts, "messages": [ToolMessage("Successfully presented files", tool_call_id=tool_call_id)]},
+        update={"artifacts": filepaths, "messages": [ToolMessage("Successfully presented files", tool_call_id=tool_call_id)]},
     )

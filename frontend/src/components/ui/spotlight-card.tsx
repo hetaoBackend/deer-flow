@@ -11,9 +11,11 @@ interface Position {
 interface SpotlightCardProps extends React.PropsWithChildren {
   className?: string;
   spotlightColor?: `rgba(${number}, ${number}, ${number}, ${number})`;
+  style?: React.CSSProperties;
 }
 
 const SpotlightCard: React.FC<SpotlightCardProps> = ({
+  style,
   children,
   className = "",
   spotlightColor = "rgba(255, 255, 255, 0.25)",
@@ -37,6 +39,7 @@ const SpotlightCard: React.FC<SpotlightCardProps> = ({
       ref={divRef}
       onMouseMove={handleMouseMove}
       className={`card-spotlight ${className}`}
+      style={style}
     >
       {children}
     </div>

@@ -3,10 +3,13 @@ import {
   CopyIcon,
   DownloadIcon,
   EyeIcon,
+  LoaderIcon,
+  PackageIcon,
   SquareArrowOutUpRightIcon,
   XIcon,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import * as React from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Streamdown } from "streamdown";
 
@@ -18,6 +21,7 @@ import {
   ArtifactHeader,
   ArtifactTitle,
 } from "@/components/ai-elements/artifact";
+import { CitationLink } from "@/components/ai-elements/inline-citation";
 import { Select, SelectItem } from "@/components/ui/select";
 import {
   SelectContent,
@@ -29,9 +33,19 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { CodeEditor } from "@/components/workspace/code-editor";
 import { useArtifactContent } from "@/core/artifacts/hooks";
 import { urlOfArtifact } from "@/core/artifacts/utils";
+import {
+  buildCitationMap,
+  parseCitations,
+  removeAllCitations,
+} from "@/core/citations";
 import { useI18n } from "@/core/i18n/hooks";
+import { installSkill } from "@/core/skills/api";
+import { streamdownPlugins } from "@/core/streamdown";
 import { checkCodeFile, getFileName } from "@/core/utils/files";
+import { env } from "@/env";
 import { cn } from "@/lib/utils";
+
+import { Tooltip } from "../tooltip";
 
 import { useArtifacts } from "./context";
 
@@ -56,14 +70,21 @@ export function ArtifactFileDetail({
     }
     return filepathFromProps;
   }, [filepathFromProps, isWriteFile]);
+  const isSkillFile = useMemo(() => {
+    return filepath.endsWith(".skill");
+  }, [filepath]);
   const { isCodeFile, language } = useMemo(() => {
     if (isWriteFile) {
       let language = checkCodeFile(filepath).language;
       language ??= "text";
       return { isCodeFile: true, language };
     }
+    // Treat .skill files as markdown (they contain SKILL.md)
+    if (isSkillFile) {
+      return { isCodeFile: true, language: "markdown" };
+    }
     return checkCodeFile(filepath);
-  }, [filepath, isWriteFile]);
+  }, [filepath, isWriteFile, isSkillFile]);
   const previewable = useMemo(() => {
     return (language === "html" && !isWriteFile) || language === "markdown";
   }, [isWriteFile, language]);
@@ -72,7 +93,26 @@ export function ArtifactFileDetail({
     filepath: filepathFromProps,
     enabled: isCodeFile && !isWriteFile,
   });
+
+  // Parse citations and get clean content for code editor
+  const cleanContent = useMemo(() => {
+    if (language === "markdown" && content) {
+      return parseCitations(content).cleanContent;
+    }
+    return content;
+  }, [content, language]);
+
+  // Get content without ANY citations for copy/download
+  const contentWithoutCitations = useMemo(() => {
+    if (language === "markdown" && content) {
+      return removeAllCitations(content);
+    }
+    return content;
+  }, [content, language]);
+
   const [viewMode, setViewMode] = useState<"code" | "preview">("code");
+  const [isInstalling, setIsInstalling] = useState(false);
+
   useEffect(() => {
     if (previewable) {
       setViewMode("preview");
@@ -80,6 +120,28 @@ export function ArtifactFileDetail({
       setViewMode("code");
     }
   }, [previewable]);
+
+  const handleInstallSkill = useCallback(async () => {
+    if (isInstalling) return;
+
+    setIsInstalling(true);
+    try {
+      const result = await installSkill({
+        thread_id: threadId,
+        path: filepath,
+      });
+      if (result.success) {
+        toast.success(result.message);
+      } else {
+        toast.error(result.message ?? "Failed to install skill");
+      }
+    } catch (error) {
+      console.error("Failed to install skill:", error);
+      toast.error("Failed to install skill");
+    } finally {
+      setIsInstalling(false);
+    }
+  }, [threadId, filepath, isInstalling]);
   return (
     <Artifact className={cn(className)}>
       <ArtifactHeader className="px-2">
@@ -128,6 +190,20 @@ export function ArtifactFileDetail({
         </div>
         <div className="flex items-center gap-2">
           <ArtifactActions>
+            {!isWriteFile && filepath.endsWith(".skill") && (
+              <Tooltip content={t.toolCalls.skillInstallTooltip}>
+                <ArtifactAction
+                  icon={isInstalling ? LoaderIcon : PackageIcon}
+                  label={t.common.install}
+                  tooltip={t.common.install}
+                  disabled={
+                    isInstalling ||
+                    env.NEXT_PUBLIC_STATIC_WEBSITE_ONLY === "true"
+                  }
+                  onClick={handleInstallSkill}
+                />
+              </Tooltip>
+            )}
             {!isWriteFile && (
               <a href={urlOfArtifact({ filepath, threadId })} target="_blank">
                 <ArtifactAction
@@ -144,7 +220,7 @@ export function ArtifactFileDetail({
                 disabled={!content}
                 onClick={async () => {
                   try {
-                    await navigator.clipboard.writeText(content ?? "");
+                    await navigator.clipboard.writeText(contentWithoutCitations ?? "");
                     toast.success(t.clipboard.copiedToClipboard);
                   } catch (error) {
                     toast.error("Failed to copy to clipboard");
@@ -187,7 +263,7 @@ export function ArtifactFileDetail({
         {isCodeFile && viewMode === "code" && (
           <CodeEditor
             className="size-full resize-none rounded-none border-none"
-            value={content ?? ""}
+            value={cleanContent ?? ""}
             readonly
           />
         )}
@@ -213,10 +289,56 @@ export function ArtifactFilePreview({
   content: string;
   language: string;
 }) {
+  const { cleanContent, citationMap } = React.useMemo(() => {
+    const parsed = parseCitations(content ?? "");
+    const map = buildCitationMap(parsed.citations);
+    return {
+      cleanContent: parsed.cleanContent,
+      citationMap: map,
+    };
+  }, [content]);
+
   if (language === "markdown") {
     return (
       <div className="size-full px-4">
-        <Streamdown className="size-full">{content ?? ""}</Streamdown>
+        <Streamdown
+          className="size-full"
+          {...streamdownPlugins}
+          components={{
+            a: ({
+              href,
+              children,
+            }: React.AnchorHTMLAttributes<HTMLAnchorElement>) => {
+              if (!href) {
+                return <span>{children}</span>;
+              }
+
+              // Only render as CitationLink badge if it's a citation (in citationMap)
+              const citation = citationMap.get(href);
+              if (citation) {
+                return (
+                  <CitationLink citation={citation} href={href}>
+                    {children}
+                  </CitationLink>
+                );
+              }
+
+              // All other links (including project URLs) render as plain links
+              return (
+                <a
+                  href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary underline underline-offset-2 hover:no-underline"
+                >
+                  {children}
+                </a>
+              );
+            },
+          }}
+        >
+          {cleanContent ?? ""}
+        </Streamdown>
       </div>
     );
   }
@@ -230,3 +352,4 @@ export function ArtifactFilePreview({
   }
   return null;
 }
+

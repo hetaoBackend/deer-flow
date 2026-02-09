@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -19,6 +19,11 @@ export default function ChatsPage() {
   const { t } = useI18n();
   const { data: threads } = useThreads();
   const [search, setSearch] = useState("");
+
+  useEffect(() => {
+    document.title = `${t.pages.chats} - ${t.pages.appName}`;
+  }, [t.pages.chats, t.pages.appName]);
+
   const filteredThreads = useMemo(() => {
     return threads?.filter((thread) => {
       return titleOfThread(thread).toLowerCase().includes(search.toLowerCase());

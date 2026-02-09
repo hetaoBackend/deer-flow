@@ -11,18 +11,14 @@ const features: BentoCardProps[] = [
     color: COLOR,
     label: "Context Engineering",
     title: "Long/Short-term Memory",
-    description: (
-      <div>
-        <div>Now the agent can better understand you</div>
-        <div className="text-muted-foreground">Coming soon</div>
-      </div>
-    ),
+    description: "Now the agent can better understand you",
   },
   {
     color: COLOR,
     label: "Long Task Running",
-    title: "Planning and Reasoning",
-    description: "Plans ahead, reasons through complexity, then acts",
+    title: "Planning and Sub-tasking",
+    description:
+      "Plans ahead, reasons through complexity, then executes sequentially or in parallel",
   },
   {
     color: COLOR,

@@ -1,4 +1,5 @@
 import type { HumanMessage } from "@langchain/core/messages";
+import type { AIMessage } from "@langchain/langgraph-sdk";
 import type { ThreadsClient } from "@langchain/langgraph-sdk/client";
 import { useStream, type UseStream } from "@langchain/langgraph-sdk/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -7,6 +8,7 @@ import { useCallback } from "react";
 import type { PromptInputMessage } from "@/components/ai-elements/prompt-input";
 
 import { getAPIClient } from "../api";
+import { useUpdateSubtask } from "../tasks/context";
 import { uploadFiles } from "../uploads";
 
 import type {
@@ -18,18 +20,38 @@ import type {
 export function useThreadStream({
   threadId,
   isNewThread,
+  onFinish,
 }: {
   isNewThread: boolean;
   threadId: string | null | undefined;
+  onFinish?: (state: AgentThreadState) => void;
 }) {
   const queryClient = useQueryClient();
+  const updateSubtask = useUpdateSubtask();
   const thread = useStream<AgentThreadState>({
     client: getAPIClient(),
     assistantId: "lead_agent",
     threadId: isNewThread ? undefined : threadId,
     reconnectOnMount: true,
     fetchStateHistory: true,
+    onCustomEvent(event: unknown) {
+      console.info(event);
+      if (
+        typeof event === "object" &&
+        event !== null &&
+        "type" in event &&
+        event.type === "task_running"
+      ) {
+        const e = event as {
+          type: "task_running";
+          task_id: string;
+          message: AIMessage;
+        };
+        updateSubtask({ id: e.task_id, latestMessage: e.message });
+      }
+    },
     onFinish(state) {
+      onFinish?.(state.values);
       // void queryClient.invalidateQueries({ queryKey: ["threads", "search"] });
       queryClient.setQueriesData(
         {
@@ -132,6 +154,7 @@ export function useSubmitThread({
           threadId: isNewThread ? threadId! : undefined,
           streamSubgraphs: true,
           streamResumable: true,
+          streamMode: ["values", "messages-tuple", "custom"],
           config: {
             recursion_limit: 1000,
           },
@@ -181,6 +204,46 @@ export function useDeleteThread() {
         },
         (oldData: Array<AgentThread>) => {
           return oldData.filter((t) => t.thread_id !== threadId);
+        },
+      );
+    },
+  });
+}
+
+export function useRenameThread() {
+  const queryClient = useQueryClient();
+  const apiClient = getAPIClient();
+  return useMutation({
+    mutationFn: async ({
+      threadId,
+      title,
+    }: {
+      threadId: string;
+      title: string;
+    }) => {
+      await apiClient.threads.updateState(threadId, {
+        values: { title },
+      });
+    },
+    onSuccess(_, { threadId, title }) {
+      queryClient.setQueriesData(
+        {
+          queryKey: ["threads", "search"],
+          exact: false,
+        },
+        (oldData: Array<AgentThread>) => {
+          return oldData.map((t) => {
+            if (t.thread_id === threadId) {
+              return {
+                ...t,
+                values: {
+                  ...t.values,
+                  title,
+                },
+              };
+            }
+            return t;
+          });
         },
       );
     },

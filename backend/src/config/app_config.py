@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 from pydantic import BaseModel, ConfigDict, Field
 
 from src.config.extensions_config import ExtensionsConfig
+from src.config.memory_config import load_memory_config_from_dict
 from src.config.model_config import ModelConfig
 from src.config.sandbox_config import SandboxConfig
 from src.config.skills_config import SkillsConfig
@@ -81,6 +82,10 @@ class AppConfig(BaseModel):
         # Load summarization config if present
         if "summarization" in config_data:
             load_summarization_config_from_dict(config_data["summarization"])
+
+        # Load memory config if present
+        if "memory" in config_data:
+            load_memory_config_from_dict(config_data["memory"])
 
         # Load extensions config separately (it's in a different file)
         extensions_config = ExtensionsConfig.from_file()

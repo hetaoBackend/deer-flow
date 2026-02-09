@@ -43,7 +43,9 @@ export function WordRotate({
           className={cn(className)}
           {...motionProps}
         >
-          <AuroraText>{words[index]}</AuroraText>
+          <AuroraText speed={3} colors={["#efefbb", "#e9c665", "#e3a812"]}>
+            {words[index]}
+          </AuroraText>
         </motion.h1>
       </AnimatePresence>
     </div>

@@ -4,7 +4,7 @@ import logging
 
 from langchain_core.tools import BaseTool
 
-from src.config.extensions_config import get_extensions_config
+from src.config.extensions_config import ExtensionsConfig
 from src.mcp.client import build_servers_config
 
 logger = logging.getLogger(__name__)
@@ -22,7 +22,11 @@ async def get_mcp_tools() -> list[BaseTool]:
         logger.warning("langchain-mcp-adapters not installed. Install it to enable MCP tools: pip install langchain-mcp-adapters")
         return []
 
-    extensions_config = get_extensions_config()
+    # NOTE: We use ExtensionsConfig.from_file() instead of get_extensions_config()
+    # to always read the latest configuration from disk. This ensures that changes
+    # made through the Gateway API (which runs in a separate process) are immediately
+    # reflected when initializing MCP tools.
+    extensions_config = ExtensionsConfig.from_file()
     servers_config = build_servers_config(extensions_config)
 
     if not servers_config:

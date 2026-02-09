@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from src.gateway.config import get_gateway_config
-from src.gateway.routers import artifacts, mcp, models, skills, uploads
+from src.gateway.routers import artifacts, mcp, memory, models, skills, uploads
 
 # Configure logging
 logging.basicConfig(
@@ -23,13 +23,10 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     config = get_gateway_config()
     logger.info(f"Starting API Gateway on {config.host}:{config.port}")
 
-    # Initialize MCP tools at startup
-    try:
-        from src.mcp import initialize_mcp_tools
-
-        await initialize_mcp_tools()
-    except Exception as e:
-        logger.warning(f"Failed to initialize MCP tools: {e}")
+    # NOTE: MCP tools initialization is NOT done here because:
+    # 1. Gateway doesn't use MCP tools - they are used by Agents in the LangGraph Server
+    # 2. Gateway and LangGraph Server are separate processes with independent caches
+    # MCP tools are lazily initialized in LangGraph Server when first needed
 
     yield
     logger.info("Shutting down API Gateway")
@@ -53,6 +50,7 @@ API Gateway for DeerFlow - A LangGraph-based AI agent backend with sandbox execu
 
 - **Models Management**: Query and retrieve available AI models
 - **MCP Configuration**: Manage Model Context Protocol (MCP) server configurations
+- **Memory Management**: Access and manage global memory data for personalized conversations
 - **Skills Management**: Query and manage skills and their enabled status
 - **Artifacts**: Access thread artifacts and generated files
 - **Health Monitoring**: System health check endpoints
@@ -75,6 +73,10 @@ This gateway provides custom endpoints for models, MCP configuration, skills, an
             {
                 "name": "mcp",
                 "description": "Manage Model Context Protocol (MCP) server configurations",
+            },
+            {
+                "name": "memory",
+                "description": "Access and manage global memory data for personalized conversations",
             },
             {
                 "name": "skills",
@@ -103,6 +105,9 @@ This gateway provides custom endpoints for models, MCP configuration, skills, an
 
     # MCP API is mounted at /api/mcp
     app.include_router(mcp.router)
+
+    # Memory API is mounted at /api/memory
+    app.include_router(memory.router)
 
     # Skills API is mounted at /api/skills
     app.include_router(skills.router)

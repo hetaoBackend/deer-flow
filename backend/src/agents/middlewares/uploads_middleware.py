@@ -1,12 +1,13 @@
 """Middleware to inject uploaded files information into agent context."""
 
 import os
+import re
 from pathlib import Path
 from typing import NotRequired, override
 
 from langchain.agents import AgentState
 from langchain.agents.middleware import AgentMiddleware
-from langchain_core.messages import SystemMessage
+from langchain_core.messages import HumanMessage
 from langgraph.runtime import Runtime
 
 from src.agents.middlewares.thread_data_middleware import THREAD_DATA_BASE_DIR
@@ -47,14 +48,15 @@ class UploadsMiddleware(AgentMiddleware[UploadsMiddlewareState]):
         """
         return Path(self._base_dir) / THREAD_DATA_BASE_DIR / thread_id / "user-data" / "uploads"
 
-    def _list_uploaded_files(self, thread_id: str) -> list[dict]:
-        """List all files in the uploads directory.
+    def _list_newly_uploaded_files(self, thread_id: str, last_message_files: set[str]) -> list[dict]:
+        """List only newly uploaded files that weren't in the last message.
 
         Args:
             thread_id: The thread ID.
+            last_message_files: Set of filenames that were already shown in previous messages.
 
         Returns:
-            List of file information dictionaries.
+            List of new file information dictionaries.
         """
         uploads_dir = self._get_uploads_dir(thread_id)
 
@@ -63,7 +65,7 @@ class UploadsMiddleware(AgentMiddleware[UploadsMiddlewareState]):
 
         files = []
         for file_path in sorted(uploads_dir.iterdir()):
-            if file_path.is_file():
+            if file_path.is_file() and file_path.name not in last_message_files:
                 stat = file_path.stat()
                 files.append(
                     {
@@ -106,9 +108,40 @@ class UploadsMiddleware(AgentMiddleware[UploadsMiddlewareState]):
 
         return "\n".join(lines)
 
+    def _extract_files_from_message(self, content: str) -> set[str]:
+        """Extract filenames from uploaded_files tag in message content.
+
+        Args:
+            content: Message content that may contain <uploaded_files> tag.
+
+        Returns:
+            Set of filenames mentioned in the tag.
+        """
+        # Match <uploaded_files>...</uploaded_files> tag
+        match = re.search(r"<uploaded_files>([\s\S]*?)</uploaded_files>", content)
+        if not match:
+            return set()
+
+        files_content = match.group(1)
+
+        # Extract filenames from lines like "- filename.ext (size)"
+        # Need to capture everything before the opening parenthesis, including spaces
+        filenames = set()
+        for line in files_content.split("\n"):
+            # Match pattern: - filename with spaces.ext (size)
+            # Changed from [^\s(]+ to [^(]+ to allow spaces in filename
+            file_match = re.match(r"^-\s+(.+?)\s*\(", line.strip())
+            if file_match:
+                filenames.add(file_match.group(1).strip())
+
+        return filenames
+
     @override
     def before_agent(self, state: UploadsMiddlewareState, runtime: Runtime) -> dict | None:
         """Inject uploaded files information before agent execution.
+
+        Only injects files that weren't already shown in previous messages.
+        Prepends file info to the last human message content.
 
         Args:
             state: Current agent state.
@@ -117,24 +150,70 @@ class UploadsMiddleware(AgentMiddleware[UploadsMiddlewareState]):
         Returns:
             State updates including uploaded files list.
         """
+        import logging
+
+        logger = logging.getLogger(__name__)
+
         thread_id = runtime.context.get("thread_id")
         if thread_id is None:
             return None
 
-        # List uploaded files
-        files = self._list_uploaded_files(thread_id)
-
-        # Create system message with file list
-        files_message = self._create_files_message(files)
-        system_message = SystemMessage(content=files_message)
-
-        # Inject the message into the message history
-        # This will be added after the system prompt but before user messages
         messages = list(state.get("messages", []))
+        if not messages:
+            return None
 
-        # Insert after the first system message (the main prompt)
-        insert_index = 1 if messages and hasattr(messages[0], "type") and messages[0].type == "system" else 0
-        messages.insert(insert_index, system_message)
+        # Track all filenames that have been shown in previous messages (EXCEPT the last one)
+        shown_files: set[str] = set()
+        for msg in messages[:-1]:  # Scan all messages except the last one
+            if isinstance(msg, HumanMessage):
+                content = msg.content if isinstance(msg.content, str) else ""
+                extracted = self._extract_files_from_message(content)
+                shown_files.update(extracted)
+                if extracted:
+                    logger.info(f"Found previously shown files: {extracted}")
+
+        logger.info(f"Total shown files from history: {shown_files}")
+
+        # List only newly uploaded files
+        files = self._list_newly_uploaded_files(thread_id, shown_files)
+        logger.info(f"Newly uploaded files to inject: {[f['filename'] for f in files]}")
+
+        if not files:
+            return None
+
+        # Find the last human message and prepend file info to it
+        last_message_index = len(messages) - 1
+        last_message = messages[last_message_index]
+
+        if not isinstance(last_message, HumanMessage):
+            return None
+
+        # Create files message and prepend to the last human message content
+        files_message = self._create_files_message(files)
+
+        # Extract original content - handle both string and list formats
+        original_content = ""
+        if isinstance(last_message.content, str):
+            original_content = last_message.content
+        elif isinstance(last_message.content, list):
+            # Content is a list of content blocks (e.g., [{"type": "text", "text": "..."}])
+            text_parts = []
+            for block in last_message.content:
+                if isinstance(block, dict) and block.get("type") == "text":
+                    text_parts.append(block.get("text", ""))
+            original_content = "\n".join(text_parts)
+
+        logger.info(f"Original message content: {original_content[:100] if original_content else '(empty)'}")
+
+        # Create new message with combined content
+        updated_message = HumanMessage(
+            content=f"{files_message}\n\n{original_content}",
+            id=last_message.id,
+            additional_kwargs=last_message.additional_kwargs,
+        )
+
+        # Replace the last message
+        messages[last_message_index] = updated_message
 
         return {
             "uploaded_files": files,

@@ -5,13 +5,17 @@ import {
   CheckIcon,
   GraduationCapIcon,
   LightbulbIcon,
+  PaperclipIcon,
+  PlusIcon,
+  SparklesIcon,
+  RocketIcon,
   ZapIcon,
 } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 import { useCallback, useMemo, useState, type ComponentProps } from "react";
 
 import {
   PromptInput,
-  PromptInputActionAddAttachments,
   PromptInputActionMenu,
   PromptInputActionMenuContent,
   PromptInputActionMenuItem,
@@ -24,8 +28,11 @@ import {
   PromptInputSubmit,
   PromptInputTextarea,
   PromptInputTools,
+  usePromptInputAttachments,
+  usePromptInputController,
   type PromptInputMessage,
 } from "@/components/ai-elements/prompt-input";
+import { ConfettiButton } from "@/components/ui/confetti-button";
 import {
   DropdownMenuGroup,
   DropdownMenuLabel,
@@ -45,6 +52,15 @@ import {
   ModelSelectorName,
   ModelSelectorTrigger,
 } from "../ai-elements/model-selector";
+import { Suggestion, Suggestions } from "../ai-elements/suggestion";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "../ui/dropdown-menu";
+
+import { Tooltip } from "./tooltip";
 
 export function InputBox({
   className,
@@ -54,6 +70,7 @@ export function InputBox({
   context,
   extraHeader,
   isNewThread,
+  initialValue,
   onContextChange,
   onSubmit,
   onStop,
@@ -62,66 +79,64 @@ export function InputBox({
   assistantId?: string | null;
   status?: ChatStatus;
   disabled?: boolean;
-  context: Omit<AgentThreadContext, "thread_id">;
+  context: Omit<
+    AgentThreadContext,
+    "thread_id" | "is_plan_mode" | "thinking_enabled" | "subagent_enabled"
+  > & {
+    mode: "flash" | "thinking" | "pro" | "ultra" | undefined;
+  };
   extraHeader?: React.ReactNode;
   isNewThread?: boolean;
-  onContextChange?: (context: Omit<AgentThreadContext, "thread_id">) => void;
+  initialValue?: string;
+  onContextChange?: (
+    context: Omit<
+      AgentThreadContext,
+      "thread_id" | "is_plan_mode" | "thinking_enabled" | "subagent_enabled"
+    > & {
+      mode: "flash" | "thinking" | "pro" | "ultra" | undefined;
+    },
+  ) => void;
   onSubmit?: (message: PromptInputMessage) => void;
   onStop?: () => void;
 }) {
   const { t } = useI18n();
+  const searchParams = useSearchParams();
   const [modelDialogOpen, setModelDialogOpen] = useState(false);
   const { models } = useModels();
-  const selectedModel = useMemo(
-    () => models.find((m) => m.name === context.model_name),
-    [context.model_name, models],
-  );
+  const selectedModel = useMemo(() => {
+    if (!context.model_name && models.length > 0) {
+      const model = models[0]!;
+      setTimeout(() => {
+        onContextChange?.({
+          ...context,
+          model_name: model.name,
+          mode: model.supports_thinking ? "pro" : "flash",
+        });
+      }, 0);
+      return model;
+    }
+    return models.find((m) => m.name === context.model_name);
+  }, [context, models, onContextChange]);
   const supportThinking = useMemo(
     () => selectedModel?.supports_thinking ?? false,
     [selectedModel],
   );
-  const mode = useMemo(() => {
-    if (context.is_plan_mode) {
-      return "pro";
-    }
-    if (context.thinking_enabled) {
-      return "thinking";
-    }
-    return "flash";
-  }, [context.thinking_enabled, context.is_plan_mode]);
   const handleModelSelect = useCallback(
     (model_name: string) => {
-      const supports_thinking = selectedModel?.supports_thinking ?? false;
       onContextChange?.({
         ...context,
         model_name,
-        thinking_enabled: supports_thinking && context.thinking_enabled,
       });
       setModelDialogOpen(false);
     },
-    [selectedModel?.supports_thinking, onContextChange, context],
+    [onContextChange, context],
   );
   const handleModeSelect = useCallback(
-    (mode: "flash" | "thinking" | "pro") => {
-      if (mode === "flash") {
-        onContextChange?.({
-          ...context,
-          thinking_enabled: false,
-          is_plan_mode: false,
-        });
-      } else if (mode === "thinking") {
-        onContextChange?.({
-          ...context,
-          thinking_enabled: true,
-          is_plan_mode: false,
-        });
-      } else if (mode === "pro") {
-        onContextChange?.({
-          ...context,
-          thinking_enabled: true,
-          is_plan_mode: true,
-        });
-      }
+    (mode: "flash" | "thinking" | "pro" | "ultra") => {
+      onContextChange?.({
+        ...context,
+        mode,
+      });
     },
     [onContextChange, context],
   );
@@ -166,17 +181,48 @@ export function InputBox({
           disabled={disabled}
           placeholder={t.inputBox.placeholder}
           autoFocus={autoFocus}
+          defaultValue={initialValue}
         />
       </PromptInputBody>
       <PromptInputFooter className="flex">
         <PromptInputTools>
+          {/* TODO: Add more connectors here
           <PromptInputActionMenu>
-            <PromptInputActionMenuTrigger />
-            <PromptInputActionMenuContent className="w-80">
+            <PromptInputActionMenuTrigger className="px-2!" />
+            <PromptInputActionMenuContent>
               <PromptInputActionAddAttachments
                 label={t.inputBox.addAttachments}
               />
-              <DropdownMenuSeparator />
+            </PromptInputActionMenuContent>
+          </PromptInputActionMenu> */}
+          <AddAttachmentsButton className="px-2!" />
+          <PromptInputActionMenu>
+            <PromptInputActionMenuTrigger className="gap-1! px-2!">
+              <div>
+                {context.mode === "flash" && <ZapIcon className="size-3" />}
+                {context.mode === "thinking" && (
+                  <LightbulbIcon className="size-3" />
+                )}
+                {context.mode === "pro" && (
+                  <GraduationCapIcon className="size-3" />
+                )}
+                {context.mode === "ultra" && (
+                  <RocketIcon className="size-3 text-[#dabb5e]" />
+                )}
+              </div>
+              <div
+                className={cn(
+                  "text-xs font-normal",
+                  context.mode === "ultra" ? "golden-text" : "",
+                )}
+              >
+                {(context.mode === "flash" && t.inputBox.flashMode) ||
+                  (context.mode === "thinking" && t.inputBox.reasoningMode) ||
+                  (context.mode === "pro" && t.inputBox.proMode) ||
+                  (context.mode === "ultra" && t.inputBox.ultraMode)}
+              </div>
+            </PromptInputActionMenuTrigger>
+            <PromptInputActionMenuContent className="w-80">
               <DropdownMenuGroup>
                 <DropdownMenuLabel className="text-muted-foreground text-xs">
                   {t.inputBox.mode}
@@ -184,7 +230,7 @@ export function InputBox({
                 <PromptInputActionMenu>
                   <PromptInputActionMenuItem
                     className={cn(
-                      mode === "flash"
+                      context.mode === "flash"
                         ? "text-accent-foreground"
                         : "text-muted-foreground/65",
                     )}
@@ -195,7 +241,8 @@ export function InputBox({
                         <ZapIcon
                           className={cn(
                             "mr-2 size-4",
-                            mode === "flash" && "text-accent-foreground",
+                            context.mode === "flash" &&
+                              "text-accent-foreground",
                           )}
                         />
                         {t.inputBox.flashMode}
@@ -204,7 +251,7 @@ export function InputBox({
                         {t.inputBox.flashModeDescription}
                       </div>
                     </div>
-                    {mode === "flash" ? (
+                    {context.mode === "flash" ? (
                       <CheckIcon className="ml-auto size-4" />
                     ) : (
                       <div className="ml-auto size-4" />
@@ -213,7 +260,7 @@ export function InputBox({
                   {supportThinking && (
                     <PromptInputActionMenuItem
                       className={cn(
-                        mode === "thinking"
+                        context.mode === "thinking"
                           ? "text-accent-foreground"
                           : "text-muted-foreground/65",
                       )}
@@ -224,7 +271,8 @@ export function InputBox({
                           <LightbulbIcon
                             className={cn(
                               "mr-2 size-4",
-                              mode === "thinking" && "text-accent-foreground",
+                              context.mode === "thinking" &&
+                                "text-accent-foreground",
                             )}
                           />
                           {t.inputBox.reasoningMode}
@@ -233,7 +281,7 @@ export function InputBox({
                           {t.inputBox.reasoningModeDescription}
                         </div>
                       </div>
-                      {mode === "thinking" ? (
+                      {context.mode === "thinking" ? (
                         <CheckIcon className="ml-auto size-4" />
                       ) : (
                         <div className="ml-auto size-4" />
@@ -242,7 +290,7 @@ export function InputBox({
                   )}
                   <PromptInputActionMenuItem
                     className={cn(
-                      mode === "pro"
+                      context.mode === "pro"
                         ? "text-accent-foreground"
                         : "text-muted-foreground/65",
                     )}
@@ -253,7 +301,7 @@ export function InputBox({
                         <GraduationCapIcon
                           className={cn(
                             "mr-2 size-4",
-                            mode === "pro" && "text-accent-foreground",
+                            context.mode === "pro" && "text-accent-foreground",
                           )}
                         />
                         {t.inputBox.proMode}
@@ -262,7 +310,41 @@ export function InputBox({
                         {t.inputBox.proModeDescription}
                       </div>
                     </div>
-                    {mode === "pro" ? (
+                    {context.mode === "pro" ? (
+                      <CheckIcon className="ml-auto size-4" />
+                    ) : (
+                      <div className="ml-auto size-4" />
+                    )}
+                  </PromptInputActionMenuItem>
+                  <PromptInputActionMenuItem
+                    className={cn(
+                      context.mode === "ultra"
+                        ? "text-accent-foreground"
+                        : "text-muted-foreground/65",
+                    )}
+                    onSelect={() => handleModeSelect("ultra")}
+                  >
+                    <div className="flex flex-col gap-2">
+                      <div className="flex items-center gap-1 font-bold">
+                        <RocketIcon
+                          className={cn(
+                            "mr-2 size-4",
+                            context.mode === "ultra" && "text-[#dabb5e]",
+                          )}
+                        />
+                        <div
+                          className={cn(
+                            context.mode === "ultra" && "golden-text",
+                          )}
+                        >
+                          {t.inputBox.ultraMode}
+                        </div>
+                      </div>
+                      <div className="pl-7 text-xs">
+                        {t.inputBox.ultraModeDescription}
+                      </div>
+                    </div>
+                    {context.mode === "ultra" ? (
                       <CheckIcon className="ml-auto size-4" />
                     ) : (
                       <div className="ml-auto size-4" />
@@ -313,9 +395,98 @@ export function InputBox({
           />
         </PromptInputTools>
       </PromptInputFooter>
+      {isNewThread && searchParams.get("mode") !== "skill" && (
+        <div className="absolute right-0 -bottom-20 left-0 z-0 flex items-center justify-center">
+          <SuggestionList />
+        </div>
+      )}
       {!isNewThread && (
         <div className="bg-background absolute right-0 -bottom-[17px] left-0 z-0 h-4"></div>
       )}
     </PromptInput>
+  );
+}
+
+function SuggestionList() {
+  const { t } = useI18n();
+  const { textInput } = usePromptInputController();
+  const handleSuggestionClick = useCallback(
+    (prompt: string | undefined) => {
+      if (!prompt) return;
+      textInput.setInput(prompt);
+      setTimeout(() => {
+        const textarea = document.querySelector<HTMLTextAreaElement>(
+          "textarea[name='message']",
+        );
+        if (textarea) {
+          const selStart = prompt.indexOf("[");
+          const selEnd = prompt.indexOf("]");
+          if (selStart !== -1 && selEnd !== -1) {
+            textarea.setSelectionRange(selStart, selEnd + 1);
+            textarea.focus();
+          }
+        }
+      }, 500);
+    },
+    [textInput],
+  );
+  return (
+    <Suggestions className="min-h-16 w-fit items-start">
+      <ConfettiButton
+        className="text-muted-foreground cursor-pointer rounded-full px-4 text-xs font-normal"
+        variant="outline"
+        size="sm"
+        onClick={() => handleSuggestionClick(t.inputBox.surpriseMePrompt)}
+      >
+        <SparklesIcon className="size-4" /> {t.inputBox.surpriseMe}
+      </ConfettiButton>
+      {t.inputBox.suggestions.map((suggestion) => (
+        <Suggestion
+          key={suggestion.suggestion}
+          icon={suggestion.icon}
+          suggestion={suggestion.suggestion}
+          onClick={() => handleSuggestionClick(suggestion.prompt)}
+        />
+      ))}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Suggestion icon={PlusIcon} suggestion={t.common.create} />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start">
+          <DropdownMenuGroup>
+            {t.inputBox.suggestionsCreate.map((suggestion, index) =>
+              "type" in suggestion && suggestion.type === "separator" ? (
+                <DropdownMenuSeparator key={index} />
+              ) : (
+                !("type" in suggestion) && (
+                  <DropdownMenuItem
+                    key={suggestion.suggestion}
+                    onClick={() => handleSuggestionClick(suggestion.prompt)}
+                  >
+                    {suggestion.icon && <suggestion.icon className="size-4" />}
+                    {suggestion.suggestion}
+                  </DropdownMenuItem>
+                )
+              ),
+            )}
+          </DropdownMenuGroup>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </Suggestions>
+  );
+}
+
+function AddAttachmentsButton({ className }: { className?: string }) {
+  const { t } = useI18n();
+  const attachments = usePromptInputAttachments();
+  return (
+    <Tooltip content={t.inputBox.addAttachments}>
+      <PromptInputButton
+        className={cn("px-2!", className)}
+        onClick={() => attachments.openFileDialog()}
+      >
+        <PaperclipIcon className="size-3" />
+      </PromptInputButton>
+    </Tooltip>
   );
 }

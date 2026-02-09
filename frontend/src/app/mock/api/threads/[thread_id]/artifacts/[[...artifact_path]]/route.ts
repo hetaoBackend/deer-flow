@@ -34,6 +34,14 @@ export async function GET(
           headers,
         });
       }
+      if (artifactPath.endsWith(".mp4")) {
+        return new Response(fs.readFileSync(artifactPath), {
+          status: 200,
+          headers: {
+            "Content-Type": "video/mp4",
+          },
+        });
+      }
       return new Response(fs.readFileSync(artifactPath), { status: 200 });
     }
   }

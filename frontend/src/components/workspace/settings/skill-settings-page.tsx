@@ -1,11 +1,13 @@
 "use client";
 
 import { SparklesIcon } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
   Empty,
+  EmptyContent,
   EmptyDescription,
   EmptyHeader,
   EmptyMedia,
@@ -19,6 +21,7 @@ import {
   ItemDescription,
 } from "@/components/ui/item";
 import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useI18n } from "@/core/i18n/hooks";
 import { useEnableSkill, useSkills } from "@/core/skills/hooks";
 import type { Skill } from "@/core/skills/type";
@@ -26,7 +29,7 @@ import { env } from "@/env";
 
 import { SettingsSection } from "./settings-section";
 
-export function SkillSettingsPage() {
+export function SkillSettingsPage({ onClose }: { onClose?: () => void } = {}) {
   const { t } = useI18n();
   const { skills, isLoading, error } = useSkills();
   return (
@@ -39,69 +42,51 @@ export function SkillSettingsPage() {
       ) : error ? (
         <div>Error: {error.message}</div>
       ) : (
-        <SkillSettingsList skills={skills} />
+        <SkillSettingsList skills={skills} onClose={onClose} />
       )}
     </SettingsSection>
   );
 }
 
-function SkillSettingsList({ skills }: { skills: Skill[] }) {
+function SkillSettingsList({
+  skills,
+  onClose,
+}: {
+  skills: Skill[];
+  onClose?: () => void;
+}) {
   const { t } = useI18n();
-  const [filter, setFilter] = useState<"public" | "custom">("public");
+  const router = useRouter();
+  const [filter, setFilter] = useState<string>("public");
   const { mutate: enableSkill } = useEnableSkill();
   const filteredSkills = useMemo(
     () => skills.filter((skill) => skill.category === filter),
     [skills, filter],
   );
-  if (skills.length === 0) {
-    return (
-      <Empty>
-        <EmptyHeader>
-          <EmptyMedia variant="icon">
-            <SparklesIcon />
-          </EmptyMedia>
-          <EmptyTitle>No agent skill yet</EmptyTitle>
-          <EmptyDescription>
-            Put your agent skill folders under the `/skills/custom` folder under
-            the root folder of DeerFlow.
-          </EmptyDescription>
-        </EmptyHeader>
-      </Empty>
-    );
-  }
+  const handleCreateSkill = () => {
+    onClose?.();
+    router.push("/workspace/chats/new?mode=skill");
+  };
   return (
     <div className="flex w-full flex-col gap-4">
-      <header className="flex gap-2">
-        <Button
-          className="rounded-xl"
-          size="sm"
-          variant={filter === "public" ? "default" : "outline"}
-          onClick={() => setFilter("public")}
-        >
-          {t.common.public}
-        </Button>
-        <Button
-          className="rounded-xl"
-          size="sm"
-          variant={filter === "custom" ? "default" : "outline"}
-          onClick={() => setFilter("custom")}
-        >
-          {t.common.custom}
-        </Button>
+      <header className="flex justify-between">
+        <div className="flex gap-2">
+          <Tabs defaultValue="public" onValueChange={setFilter}>
+            <TabsList variant="line">
+              <TabsTrigger value="public">{t.common.public}</TabsTrigger>
+              <TabsTrigger value="custom">{t.common.custom}</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
+        <div>
+          <Button size="sm" onClick={handleCreateSkill}>
+            <SparklesIcon className="size-4" />
+            {t.settings.skills.createSkill}
+          </Button>
+        </div>
       </header>
       {filteredSkills.length === 0 && (
-        <Empty>
-          <EmptyHeader>
-            <EmptyMedia variant="icon">
-              <SparklesIcon />
-            </EmptyMedia>
-            <EmptyTitle>No skill yet</EmptyTitle>
-            <EmptyDescription>
-              Put your skill folders under the `skills/{filter}` folder under
-              the root folder of DeerFlow.
-            </EmptyDescription>
-          </EmptyHeader>
-        </Empty>
+        <EmptySkill onCreateSkill={handleCreateSkill} />
       )}
       {filteredSkills.length > 0 &&
         filteredSkills.map((skill) => (
@@ -126,5 +111,25 @@ function SkillSettingsList({ skills }: { skills: Skill[] }) {
           </Item>
         ))}
     </div>
+  );
+}
+
+function EmptySkill({ onCreateSkill }: { onCreateSkill: () => void }) {
+  return (
+    <Empty>
+      <EmptyHeader>
+        <EmptyMedia variant="icon">
+          <SparklesIcon />
+        </EmptyMedia>
+        <EmptyTitle>No agent skill yet</EmptyTitle>
+        <EmptyDescription>
+          Put your agent skill folders under the `/skills/custom` folder under
+          the root folder of DeerFlow.
+        </EmptyDescription>
+      </EmptyHeader>
+      <EmptyContent>
+        <Button onClick={onCreateSkill}>Create Your First Skill</Button>
+      </EmptyContent>
+    </Empty>
   );
 }

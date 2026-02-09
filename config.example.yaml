@@ -21,6 +21,7 @@ models:
     api_key: $OPENAI_API_KEY  # Use environment variable
     max_tokens: 4096
     temperature: 0.7
+    supports_vision: true  # Enable vision support for view_image tool
 
   # Example: Anthropic Claude model
   # - name: claude-3-5-sonnet
@@ -29,6 +30,7 @@ models:
   #   model: claude-3-5-sonnet-20241022
   #   api_key: $ANTHROPIC_API_KEY
   #   max_tokens: 8192
+  #   supports_vision: true  # Enable vision support for view_image tool
 
   # Example: DeepSeek model (with thinking support)
   # - name: deepseek-v3
@@ -38,6 +40,7 @@ models:
   #   api_key: $DEEPSEEK_API_KEY
   #   max_tokens: 16384
   #   supports_thinking: true
+  #   supports_vision: false  # DeepSeek V3 does not support vision
   #   when_thinking_enabled:
   #     extra_body:
   #       thinking:
@@ -51,6 +54,22 @@ models:
   #   api_base: https://ark.cn-beijing.volces.com/api/v3
   #   api_key: $VOLCENGINE_API_KEY
   #   supports_thinking: true
+  #   supports_vision: false  # Check your specific model's capabilities
+  #   when_thinking_enabled:
+  #     extra_body:
+  #       thinking:
+  #         type: enabled
+
+  # Example: Kimi K2.5 model
+  # - name: kimi-k2.5
+  #   display_name: Kimi K2.5
+  #   use: src.models.patched_deepseek:PatchedChatDeepSeek
+  #   model: kimi-k2.5
+  #   api_base: https://api.moonshot.cn/v1
+  #   api_key: $MOONSHOT_API_KEY
+  #   max_tokens: 32768
+  #   supports_thinking: true
+  #   supports_vision: true  # Check your specific model's capabilities
   #   when_thinking_enabled:
   #     extra_body:
   #       thinking:
@@ -86,6 +105,13 @@ tools:
     use: src.community.jina_ai.tools:web_fetch_tool
     timeout: 10
 
+  # Image search tool (uses DuckDuckGo)
+  # Use this to find reference images before image generation
+  - name: image_search
+    group: web
+    use: src.community.image_search.tools:image_search_tool
+    max_results: 5
+
   # File operations tools
   - name: ls
     group: file:read
@@ -118,17 +144,20 @@ tools:
 sandbox:
   use: src.sandbox.local:LocalSandboxProvider
 
-# Option 2: Docker-based AIO Sandbox
-# Executes commands in isolated Docker containers
+# Option 2: Container-based AIO Sandbox
+# Executes commands in isolated containers (Docker or Apple Container)
+# On macOS: Automatically prefers Apple Container if available, falls back to Docker
+# On other platforms: Uses Docker
 # Uncomment to use:
 # sandbox:
 #   use: src.community.aio_sandbox:AioSandboxProvider
 #
-#   # Optional: Use existing sandbox at this URL (no Docker container will be started)
+#   # Optional: Use existing sandbox at this URL (no container will be started)
 #   # base_url: http://localhost:8080
 #
-#   # Optional: Docker image to use
+#   # Optional: Container image to use (works with both Docker and Apple Container)
 #   # Default: enterprise-public-cn-beijing.cr.volces.com/vefaas-public/all-in-one-sandbox:latest
+#   # Recommended: enterprise-public-cn-beijing.cr.volces.com/vefaas-public/all-in-one-sandbox:latest (works on both x86_64 and arm64)
 #   # image: enterprise-public-cn-beijing.cr.volces.com/vefaas-public/all-in-one-sandbox:latest
 #
 #   # Optional: Base port for sandbox containers (default: 8080)
@@ -252,3 +281,18 @@ summarization:
 # - Custom MCP server implementations
 #
 # For more information, see: https://modelcontextprotocol.io
+
+# ============================================================================
+# Memory Configuration
+# ============================================================================
+# Global memory mechanism
+# Stores user context and conversation history for personalized responses
+memory:
+  enabled: true
+  storage_path: .deer-flow/memory.json  # Path relative to backend directory
+  debounce_seconds: 30  # Wait time before processing queued updates
+  model_name: null  # Use default model
+  max_facts: 100  # Maximum number of facts to store
+  fact_confidence_threshold: 0.7  # Minimum confidence for storing facts
+  injection_enabled: true  # Whether to inject memory into system prompt
+  max_injection_tokens: 2000  # Maximum tokens for memory injection

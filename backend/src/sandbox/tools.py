@@ -93,6 +93,8 @@ def get_thread_data(runtime: ToolRuntime[ContextT, ThreadState] | None) -> Threa
     """Extract thread_data from runtime state."""
     if runtime is None:
         return None
+    if runtime.state is None:
+        return None
     return runtime.state.get("thread_data")
 
 
@@ -103,6 +105,8 @@ def is_local_sandbox(runtime: ToolRuntime[ContextT, ThreadState] | None) -> bool
     already has /mnt/user-data mounted in the container.
     """
     if runtime is None:
+        return False
+    if runtime.state is None:
         return False
     sandbox_state = runtime.state.get("sandbox")
     if sandbox_state is None:
@@ -122,6 +126,8 @@ def sandbox_from_runtime(runtime: ToolRuntime[ContextT, ThreadState] | None = No
     """
     if runtime is None:
         raise SandboxRuntimeError("Tool runtime not available")
+    if runtime.state is None:
+        raise SandboxRuntimeError("Tool runtime state not available")
     sandbox_state = runtime.state.get("sandbox")
     if sandbox_state is None:
         raise SandboxRuntimeError("Sandbox state not initialized in runtime")
@@ -154,6 +160,9 @@ def ensure_sandbox_initialized(runtime: ToolRuntime[ContextT, ThreadState] | Non
     """
     if runtime is None:
         raise SandboxRuntimeError("Tool runtime not available")
+
+    if runtime.state is None:
+        raise SandboxRuntimeError("Tool runtime state not available")
 
     # Check if sandbox already exists in state
     sandbox_state = runtime.state.get("sandbox")

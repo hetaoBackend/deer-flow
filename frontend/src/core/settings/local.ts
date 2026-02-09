@@ -1,10 +1,12 @@
 import type { AgentThreadContext } from "../threads";
 
 export const DEFAULT_LOCAL_SETTINGS: LocalSettings = {
+  notification: {
+    enabled: true,
+  },
   context: {
-    model_name: "deepseek-v3.2",
-    thinking_enabled: true,
-    is_plan_mode: false,
+    model_name: undefined,
+    mode: undefined,
   },
   layout: {
     sidebar_collapsed: false,
@@ -14,7 +16,15 @@ export const DEFAULT_LOCAL_SETTINGS: LocalSettings = {
 const LOCAL_SETTINGS_KEY = "deerflow.local-settings";
 
 export interface LocalSettings {
-  context: Omit<AgentThreadContext, "thread_id">;
+  notification: {
+    enabled: boolean;
+  };
+  context: Omit<
+    AgentThreadContext,
+    "thread_id" | "is_plan_mode" | "thinking_enabled" | "subagent_enabled"
+  > & {
+    mode: "flash" | "thinking" | "pro" | "ultra" | undefined;
+  };
   layout: {
     sidebar_collapsed: boolean;
   };
@@ -37,6 +47,10 @@ export function getLocalSettings(): LocalSettings {
         layout: {
           ...DEFAULT_LOCAL_SETTINGS.layout,
           ...settings.layout,
+        },
+        notification: {
+          ...DEFAULT_LOCAL_SETTINGS.notification,
+          ...settings.notification,
         },
       };
       return mergedSettings;

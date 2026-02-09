@@ -5,7 +5,7 @@ from typing import override
 
 from langchain.agents import AgentState
 from langchain.agents.middleware import AgentMiddleware
-from langchain_core.messages import AIMessage, ToolMessage
+from langchain_core.messages import ToolMessage
 from langgraph.graph import END
 from langgraph.prebuilt.tool_node import ToolCallRequest
 from langgraph.types import Command
@@ -118,17 +118,13 @@ class ClarificationMiddleware(AgentMiddleware[ClarificationMiddlewareState]):
             name="ask_clarification",
         )
 
-        ai_response_message = AIMessage(content=formatted_message)
-
         # Return a Command that:
-        # 1. Adds the formatted tool message (keeping the AI message intact)
+        # 1. Adds the formatted tool message
         # 2. Interrupts execution by going to __end__
-        # Note: We don't modify the AI message to preserve all fields (reasoning_content, tool_calls, etc.)
-        # This is especially important for thinking mode where reasoning_content is required
-
-        # Return Command to add the tool message and interrupt
+        # Note: We don't add an extra AIMessage here - the frontend will detect
+        # and display ask_clarification tool messages directly
         return Command(
-            update={"messages": [tool_message, ai_response_message]},
+            update={"messages": [tool_message]},
             goto=END,
         )
 

@@ -4,9 +4,11 @@ from langchain_core.runnables import RunnableConfig
 
 from src.agents.lead_agent.prompt import apply_prompt_template
 from src.agents.middlewares.clarification_middleware import ClarificationMiddleware
+from src.agents.middlewares.memory_middleware import MemoryMiddleware
 from src.agents.middlewares.thread_data_middleware import ThreadDataMiddleware
 from src.agents.middlewares.title_middleware import TitleMiddleware
 from src.agents.middlewares.uploads_middleware import UploadsMiddleware
+from src.agents.middlewares.view_image_middleware import ViewImageMiddleware
 from src.agents.thread_state import ThreadState
 from src.config.summarization_config import get_summarization_config
 from src.models import create_chat_model
@@ -174,6 +176,9 @@ Being proactive with task management demonstrates thoroughness and ensures all r
 # UploadsMiddleware should be after ThreadDataMiddleware to access thread_id
 # SummarizationMiddleware should be early to reduce context before other processing
 # TodoListMiddleware should be before ClarificationMiddleware to allow todo management
+# TitleMiddleware generates title after first exchange
+# MemoryMiddleware queues conversation for memory update (after TitleMiddleware)
+# ViewImageMiddleware should be before ClarificationMiddleware to inject image details before LLM
 # ClarificationMiddleware should be last to intercept clarification requests after model calls
 def _build_middlewares(config: RunnableConfig):
     """Build middleware chain based on runtime configuration.
@@ -197,7 +202,27 @@ def _build_middlewares(config: RunnableConfig):
     if todo_list_middleware is not None:
         middlewares.append(todo_list_middleware)
 
-    middlewares.extend([TitleMiddleware(), ClarificationMiddleware()])
+    # Add TitleMiddleware
+    middlewares.append(TitleMiddleware())
+
+    # Add MemoryMiddleware (after TitleMiddleware)
+    middlewares.append(MemoryMiddleware())
+
+    # Add ViewImageMiddleware only if the current model supports vision
+    model_name = config.get("configurable", {}).get("model_name") or config.get("configurable", {}).get("model")
+    from src.config import get_app_config
+
+    app_config = get_app_config()
+    # If no model_name specified, use the first model (default)
+    if model_name is None and app_config.models:
+        model_name = app_config.models[0].name
+
+    model_config = app_config.get_model_config(model_name) if model_name else None
+    if model_config is not None and model_config.supports_vision:
+        middlewares.append(ViewImageMiddleware())
+
+    # ClarificationMiddleware should always be last
+    middlewares.append(ClarificationMiddleware())
     return middlewares
 
 
@@ -208,11 +233,12 @@ def make_lead_agent(config: RunnableConfig):
     thinking_enabled = config.get("configurable", {}).get("thinking_enabled", True)
     model_name = config.get("configurable", {}).get("model_name") or config.get("configurable", {}).get("model")
     is_plan_mode = config.get("configurable", {}).get("is_plan_mode", False)
-    print(f"thinking_enabled: {thinking_enabled}, model_name: {model_name}, is_plan_mode: {is_plan_mode}")
+    subagent_enabled = config.get("configurable", {}).get("subagent_enabled", False)
+    print(f"thinking_enabled: {thinking_enabled}, model_name: {model_name}, is_plan_mode: {is_plan_mode}, subagent_enabled: {subagent_enabled}")
     return create_agent(
         model=create_chat_model(name=model_name, thinking_enabled=thinking_enabled),
-        tools=get_available_tools(),
+        tools=get_available_tools(model_name=model_name, subagent_enabled=subagent_enabled),
         middleware=_build_middlewares(config),
-        system_prompt=apply_prompt_template(),
+        system_prompt=apply_prompt_template(subagent_enabled=subagent_enabled),
         state_schema=ThreadState,
     )

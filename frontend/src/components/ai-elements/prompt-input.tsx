@@ -397,7 +397,9 @@ export function PromptInputAttachments({
       {...props}
     >
       {attachments.files.map((file) => (
-        <Fragment key={file.id}>{children(file)}</Fragment>
+        <Fragment key={file.id}>
+          <div className="max-w-60">{children(file)}</div>
+        </Fragment>
       ))}
     </div>
   );

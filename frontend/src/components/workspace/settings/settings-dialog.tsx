@@ -1,7 +1,14 @@
 "use client";
 
-import { PaletteIcon, SparklesIcon, WrenchIcon } from "lucide-react";
-import { useMemo, useState } from "react";
+import {
+  BellIcon,
+  InfoIcon,
+  BrainIcon,
+  PaletteIcon,
+  SparklesIcon,
+  WrenchIcon,
+} from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 
 import {
   Dialog,
@@ -10,26 +17,40 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { AcknowledgePage } from "@/components/workspace/settings/acknowledge-page";
+import { AboutSettingsPage } from "@/components/workspace/settings/about-settings-page";
 import { AppearanceSettingsPage } from "@/components/workspace/settings/appearance-settings-page";
+import { MemorySettingsPage } from "@/components/workspace/settings/memory-settings-page";
+import { NotificationSettingsPage } from "@/components/workspace/settings/notification-settings-page";
 import { SkillSettingsPage } from "@/components/workspace/settings/skill-settings-page";
 import { ToolSettingsPage } from "@/components/workspace/settings/tool-settings-page";
 import { useI18n } from "@/core/i18n/hooks";
 import { cn } from "@/lib/utils";
 
-type SettingsSection = "appearance" | "tools" | "skills" | "acknowledge";
+type SettingsSection =
+  | "appearance"
+  | "memory"
+  | "tools"
+  | "skills"
+  | "notification"
+  | "about";
 
 type SettingsDialogProps = React.ComponentProps<typeof Dialog> & {
   defaultSection?: SettingsSection;
 };
 
-export function SettingsDialog({
-  defaultSection = "appearance",
-  ...dialogProps
-}: SettingsDialogProps) {
+export function SettingsDialog(props: SettingsDialogProps) {
+  const { defaultSection = "appearance", ...dialogProps } = props;
   const { t } = useI18n();
   const [activeSection, setActiveSection] =
     useState<SettingsSection>(defaultSection);
+
+  useEffect(() => {
+    // When opening the dialog, ensure the active section follows the caller's intent.
+    // This allows triggers like "About" to open the dialog directly on that page.
+    if (dialogProps.open) {
+      setActiveSection(defaultSection);
+    }
+  }, [defaultSection, dialogProps.open]);
 
   const sections = useMemo(
     () => [
@@ -38,17 +59,34 @@ export function SettingsDialog({
         label: t.settings.sections.appearance,
         icon: PaletteIcon,
       },
+      {
+        id: "notification",
+        label: t.settings.sections.notification,
+        icon: BellIcon,
+      },
+      {
+        id: "memory",
+        label: t.settings.sections.memory,
+        icon: BrainIcon,
+      },
       { id: "tools", label: t.settings.sections.tools, icon: WrenchIcon },
       { id: "skills", label: t.settings.sections.skills, icon: SparklesIcon },
+      { id: "about", label: t.settings.sections.about, icon: InfoIcon },
     ],
     [
       t.settings.sections.appearance,
+      t.settings.sections.memory,
       t.settings.sections.tools,
       t.settings.sections.skills,
+      t.settings.sections.notification,
+      t.settings.sections.about,
     ],
   );
   return (
-    <Dialog {...dialogProps}>
+    <Dialog
+      {...dialogProps}
+      onOpenChange={(open) => props.onOpenChange?.(open)}
+    >
       <DialogContent
         className="flex h-[75vh] max-h-[calc(100vh-2rem)] flex-col sm:max-w-5xl md:max-w-6xl"
         aria-describedby={undefined}
@@ -87,9 +125,15 @@ export function SettingsDialog({
           <ScrollArea className="h-full min-h-0 rounded-lg border">
             <div className="space-y-8 p-6">
               {activeSection === "appearance" && <AppearanceSettingsPage />}
+              {activeSection === "memory" && <MemorySettingsPage />}
               {activeSection === "tools" && <ToolSettingsPage />}
-              {activeSection === "skills" && <SkillSettingsPage />}
-              {activeSection === "acknowledge" && <AcknowledgePage />}
+              {activeSection === "skills" && (
+                <SkillSettingsPage
+                  onClose={() => props.onOpenChange?.(false)}
+                />
+              )}
+              {activeSection === "notification" && <NotificationSettingsPage />}
+              {activeSection === "about" && <AboutSettingsPage />}
             </div>
           </ScrollArea>
         </div>

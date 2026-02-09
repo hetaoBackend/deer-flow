@@ -14,7 +14,8 @@ export interface AgentThread extends Thread<AgentThreadState> {}
 
 export interface AgentThreadContext extends Record<string, unknown> {
   thread_id: string;
-  model_name: string;
+  model_name: string | undefined;
   thinking_enabled: boolean;
   is_plan_mode: boolean;
+  subagent_enabled: boolean;
 }

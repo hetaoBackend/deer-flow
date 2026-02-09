@@ -10,6 +10,7 @@ Usage:
 """
 
 import asyncio
+import logging
 import os
 import sys
 
@@ -24,6 +25,12 @@ from src.agents import make_lead_agent
 
 load_dotenv()
 
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
 
 async def main():
     # Initialize MCP tools at startup
@@ -41,7 +48,7 @@ async def main():
             "thinking_enabled": True,
             "is_plan_mode": True,
             # Uncomment to use a specific model
-            "model_name": "deepseek-v3.2",
+            "model_name": "kimi-k2.5",
         }
     }
 

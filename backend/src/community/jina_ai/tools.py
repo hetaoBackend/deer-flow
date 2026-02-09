@@ -25,4 +25,4 @@ def web_fetch_tool(url: str) -> str:
         timeout = config.model_extra.get("timeout")
     html_content = jina_client.crawl(url, return_format="html", timeout=timeout)
     article = readability_extractor.extract_article(html_content)
-    return article.to_markdown()
+    return article.to_markdown()[:4096]

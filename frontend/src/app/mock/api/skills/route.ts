@@ -2,6 +2,14 @@ export function GET() {
   return Response.json({
     skills: [
       {
+        name: "deep-research",
+        description:
+          "Use this skill BEFORE any content generation task (PPT, design, articles, images, videos, reports). Provides a systematic methodology for conducting thorough, multi-angle web research to gather comprehensive information.",
+        license: null,
+        category: "public",
+        enabled: true,
+      },
+      {
         name: "frontend-design",
         description:
           "Create distinctive, production-grade frontend interfaces with high design quality. Use this skill when the user asks to build web components, pages, artifacts, posters, or applications (examples include websites, landing pages, dashboards, React components, HTML/CSS layouts, or when styling/beautifying any web UI). Generates creative, polished code and UI design that avoids generic AI aesthetics.",
@@ -10,10 +18,42 @@ export function GET() {
         enabled: true,
       },
       {
-        name: "pdf-processing",
+        name: "github-deep-research",
         description:
-          "Comprehensive PDF manipulation toolkit for extracting text and tables, creating new PDFs, merging/splitting documents, and handling forms. When Claude needs to fill in a PDF form or programmatically process, generate, or analyze PDF documents at scale.",
-        license: "Proprietary. LICENSE.txt has complete terms",
+          "Conduct multi-round deep research on any GitHub Repo. Use when users request comprehensive analysis, timeline reconstruction, competitive analysis, or in-depth investigation of GitHub. Produces structured markdown reports with executive summaries, chronological timelines, metrics analysis, and Mermaid diagrams. Triggers on Github repository URL or open source projects.",
+        license: null,
+        category: "public",
+        enabled: true,
+      },
+      {
+        name: "image-generation",
+        description:
+          "Use this skill when the user requests to generate, create, imagine, or visualize images including characters, scenes, products, or any visual content. Supports structured prompts and reference images for guided generation.",
+        license: null,
+        category: "public",
+        enabled: true,
+      },
+      {
+        name: "podcast-generation",
+        description:
+          "Use this skill when the user requests to generate, create, or produce podcasts from text content. Converts written content into a two-host conversational podcast audio format with natural dialogue.",
+        license: null,
+        category: "public",
+        enabled: true,
+      },
+      {
+        name: "ppt-generation",
+        description:
+          "Use this skill when the user requests to generate, create, or make presentations (PPT/PPTX). Creates visually rich slides by generating images for each slide and composing them into a PowerPoint file.",
+        license: null,
+        category: "public",
+        enabled: true,
+      },
+      {
+        name: "skill-creator",
+        description:
+          "Guide for creating effective skills. This skill should be used when users want to create a new skill (or update an existing skill) that extends Claude's capabilities with specialized knowledge, workflows, or tool integrations.",
+        license: "Complete terms in LICENSE.txt",
         category: "public",
         enabled: true,
       },
@@ -26,43 +66,19 @@ export function GET() {
         enabled: true,
       },
       {
-        name: "web-design-guidelines",
+        name: "video-generation",
         description:
-          'Review UI code for Web Interface Guidelines compliance. Use when asked to "review my UI", "check accessibility", "audit design", "review UX", or "check my site against best practices".',
+          "Use this skill when the user requests to generate, create, or imagine videos. Supports structured prompts and reference image for guided generation.",
         license: null,
         category: "public",
         enabled: true,
       },
       {
-        name: "cartoon-generator",
+        name: "web-design-guidelines",
         description:
-          'Generate cartoon images based on a description. Use when asked to "generate a cartoon image", "create a cartoon", "draw a cartoon", or "generate a cartoon image based on a description".',
+          'Review UI code for Web Interface Guidelines compliance. Use when asked to "review my UI", "check accessibility", "audit design", "review UX", or "check my site against best practices".',
         license: null,
-        category: "custom",
-        enabled: true,
-      },
-      {
-        name: "podcast-generator",
-        description:
-          'Generate a podcast episode based on a topic. Use when asked to "generate a podcast episode", "create a podcast episode", "generate a podcast episode based on a topic", or "generate a podcast episode based on a description".',
-        license: null,
-        category: "custom",
-        enabled: true,
-      },
-      {
-        name: "advanced-data-analysis",
-        description:
-          'Perform advanced data analysis and visualization. Use when asked to "analyze data", "visualize data", "analyze data based on a description", or "visualize data based on a description".',
-        license: null,
-        category: "custom",
-        enabled: true,
-      },
-      {
-        name: "3d-model-generator",
-        description:
-          'Generate 3D models based on a description. Use when asked to "generate a 3D model", "create a 3D model", "generate a 3D model based on a description", or "generate a 3D model based on a description".',
-        license: null,
-        category: "custom",
+        category: "public",
         enabled: true,
       },
     ],

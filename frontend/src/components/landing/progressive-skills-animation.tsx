@@ -367,19 +367,23 @@ export default function ProgressiveSkillsAnimation() {
 
       {/* Bottom Left Play/Pause Button */}
       <Tooltip content="Play / Pause">
-        <motion.button
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          onClick={handleTogglePlayPause}
-          className="absolute bottom-8 left-8 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-white/10 backdrop-blur-md transition-all hover:scale-110 hover:bg-white/20 active:scale-95"
-          aria-label={isPlaying ? "暂停" : "播放"}
-        >
-          {isPlaying ? (
-            <Pause size={24} className="text-white" fill="white" />
-          ) : (
-            <Play size={24} className="ml-0.5 text-white" fill="white" />
-          )}
-        </motion.button>
+        <div className="absolute bottom-12 left-12 z-40 flex items-center gap-2">
+          <motion.button
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            onClick={handleTogglePlayPause}
+            className="flex h-12 w-12 items-center justify-center rounded-full bg-white/10 backdrop-blur-md transition-all hover:scale-110 hover:bg-white/20 active:scale-95"
+          >
+            {isPlaying ? (
+              <Pause size={24} className="text-white" fill="white" />
+            ) : (
+              <Play size={24} className="ml-0.5 text-white" fill="white" />
+            )}
+          </motion.button>
+          <span className="text-lg font-medium">
+            Click to {isPlaying ? "pause" : "play"}
+          </span>
+        </div>
       </Tooltip>
 
       <div className="flex h-full max-h-[700px] w-full max-w-6xl gap-8">

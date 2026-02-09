@@ -73,10 +73,14 @@ def load_skills(skills_path: Path | None = None, use_config: bool = True, enable
                 skills.append(skill)
 
     # Load skills state configuration and update enabled status
+    # NOTE: We use ExtensionsConfig.from_file() instead of get_extensions_config()
+    # to always read the latest configuration from disk. This ensures that changes
+    # made through the Gateway API (which runs in a separate process) are immediately
+    # reflected in the LangGraph Server when loading skills.
     try:
-        from src.config.extensions_config import get_extensions_config
+        from src.config.extensions_config import ExtensionsConfig
 
-        extensions_config = get_extensions_config()
+        extensions_config = ExtensionsConfig.from_file()
         for skill in skills:
             skill.enabled = extensions_config.is_skill_enabled(skill.name, skill.category)
     except Exception as e:
