@@ -78,7 +78,8 @@ Add the following to `backend/config.yaml`:
 ```yaml
 sandbox:
   use: src.community.aio_sandbox:AioSandboxProvider
-  base_url: http://deer-flow-sandbox.deer-flow.svc.cluster.local:8080
+  base_url: http://deer-flow-sandbox-{pod_index}.deer-flow-sandbox.deer-flow.svc.cluster.local:8080
+  replicas: 1  # Must match the StatefulSet replicas count
 ```
 
 ### 4. Verify Deployment
@@ -91,8 +92,8 @@ kubectl get pods -n deer-flow
 
 You should see:
 ```
-NAME                                 READY   STATUS    RESTARTS   AGE
-deer-flow-sandbox-xxxxxxxxxx-xxxxx   1/1     Running   0          1m
+NAME                    READY   STATUS    RESTARTS   AGE
+deer-flow-sandbox-0     1/1     Running   0          1m
 ```
 
 ## Advanced Configuration
@@ -155,7 +156,7 @@ kubectl apply -f namespace.yaml
 kubectl apply -f sandbox-service.yaml
 ```
 
-### 3. Deploy Sandbox
+### 3. Deploy Sandbox (StatefulSet)
 
 First, update the skills path in `sandbox-deployment.yaml`:
 
@@ -175,6 +176,9 @@ kubectl get all -n deer-flow
 
 # Check pod status
 kubectl get pods -n deer-flow
+
+# Check statefulset status
+kubectl get statefulset -n deer-flow
 
 # Check pod logs
 kubectl logs -n deer-flow -l app=deer-flow-sandbox
@@ -201,7 +205,7 @@ resources:
 
 ### Scaling
 
-Adjust the number of replicas:
+Adjust the number of replicas in `sandbox-deployment.yaml`:
 
 ```yaml
 spec:
@@ -211,8 +215,11 @@ spec:
 Or scale dynamically:
 
 ```bash
-kubectl scale deployment deer-flow-sandbox -n deer-flow --replicas=3
+kubectl scale statefulset deer-flow-sandbox -n deer-flow --replicas=3
 ```
+
+> **Note**: After scaling, update the `replicas` value in `backend/config.yaml` to match,
+> so that the consistent-hashing pod routing covers all pods.
 
 ### Health Checks
 
@@ -265,7 +272,7 @@ Test connectivity from another pod:
 
 ```bash
 kubectl run test-pod -n deer-flow --rm -it --image=curlimages/curl -- \
-  curl http://deer-flow-sandbox.deer-flow.svc.cluster.local:8080/v1/sandbox
+  curl http://deer-flow-sandbox-0.deer-flow-sandbox.deer-flow.svc.cluster.local:8080/v1/sandbox
 ```
 
 ### Check Logs
@@ -313,10 +320,10 @@ kubectl delete namespace deer-flow
 ### Remove Specific Resources
 
 ```bash
-# Delete only the deployment (keeps namespace and service)
-kubectl delete deployment deer-flow-sandbox -n deer-flow
+# Delete only the statefulset (keeps namespace and service)
+kubectl delete statefulset deer-flow-sandbox -n deer-flow
 
-# Delete pods (they will be recreated by deployment)
+# Delete pods (they will be recreated by statefulset)
 kubectl delete pods -n deer-flow -l app=deer-flow-sandbox
 ```
 
@@ -325,22 +332,23 @@ kubectl delete pods -n deer-flow -l app=deer-flow-sandbox
 ```
 ┌─────────────────────────────────────────────┐
 │         DeerFlow Backend                    │
-│  (config.yaml: base_url configured)         │
+│  (config.yaml: base_url with {pod_index})   │
+│  hash(thread_id) % replicas → pod_index     │
 └────────────────┬────────────────────────────┘
-                 │ HTTP requests
+                 │ Direct pod DNS access
                  ↓
 ┌─────────────────────────────────────────────┐
-│    Kubernetes Service (ClusterIP)           │
-│  deer-flow-sandbox.deer-flow.svc:8080       │
+│  Headless Service (DNS-based discovery)      │
+│  deer-flow-sandbox.deer-flow.svc:8080        │
 └────────────────┬────────────────────────────┘
-                 │ Load balancing
+                 │ Pod-specific DNS routing
                  ↓
 ┌─────────────────────────────────────────────┐
-│         Sandbox Pods (replicas)             │
-│  ┌──────────┐  ┌──────────┐  ┌──────────┐  │
-│  │  Pod 1   │  │  Pod 2   │  │  Pod 3   │  │
-│  │ Port 8080│  │ Port 8080│  │ Port 8080│  │
-│  └──────────┘  └──────────┘  └──────────┘  │
+│     StatefulSet Pods (stable identities)     │
+│  ┌────────────┐  ┌────────────┐  ┌────────────┐  │
+│  │ sandbox-0  │  │ sandbox-1  │  │ sandbox-2  │  │
+│  │ Port 8080  │  │ Port 8080  │  │ Port 8080  │  │
+│  └────────────┘  └────────────┘  └────────────┘  │
 └────────────────┬────────────────────────────┘
                  │ Volume mount
                  ↓

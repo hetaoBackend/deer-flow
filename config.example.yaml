@@ -155,6 +155,12 @@ sandbox:
 #   # Optional: Use existing sandbox at this URL (no container will be started)
 #   # base_url: http://localhost:8080
 #
+#   # Optional: Kubernetes StatefulSet mode for pod-sticky routing
+#   # Use {pod_index} placeholder in base_url with replicas to ensure the same
+#   # thread always routes to the same pod (consistent hashing on thread_id).
+#   # base_url: http://deer-flow-sandbox-{pod_index}.deer-flow-sandbox.deer-flow.svc.cluster.local:8080
+#   # replicas: 3  # Must match the StatefulSet replicas count
+#
 #   # Optional: Container image to use (works with both Docker and Apple Container)
 #   # Default: enterprise-public-cn-beijing.cr.volces.com/vefaas-public/all-in-one-sandbox:latest
 #   # Recommended: enterprise-public-cn-beijing.cr.volces.com/vefaas-public/all-in-one-sandbox:latest (works on both x86_64 and arm64)

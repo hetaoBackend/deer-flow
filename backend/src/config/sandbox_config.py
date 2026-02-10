@@ -50,6 +50,10 @@ class SandboxConfig(BaseModel):
         default=None,
         description="Prefix for container names",
     )
+    replicas: int | None = Field(
+        default=None,
+        description="Number of StatefulSet replicas for Kubernetes pod-sticky routing. Used with {pod_index} placeholder in base_url to enable consistent routing of the same thread to the same pod.",
+    )
     idle_timeout: int | None = Field(
         default=None,
         description="Idle timeout in seconds before sandbox is released (default: 600 = 10 minutes). Set to 0 to disable.",

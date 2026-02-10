@@ -80,8 +80,9 @@ Setup Kubernetes sandbox as per [Kubernetes Sandbox Setup](docker/k8s/README.md)
 Then configure `config.yaml` with the Kubernetes service URL:
 ```yaml
 sandbox:
-   use: src.community.k8s_sandbox:AioSandboxProvider # Kubernetes-based sandbox
-   base_url: http://deer-flow-sandbox.deer-flow.svc.cluster.local:8080 # Kubernetes service URL
+   use: src.community.aio_sandbox:AioSandboxProvider # Kubernetes-based sandbox
+   base_url: http://deer-flow-sandbox-{pod_index}.deer-flow-sandbox.deer-flow.svc.cluster.local:8080 # Kubernetes StatefulSet pod URL
+   replicas: 3 # Must match StatefulSet replicas count
 ```
 
 ## Features

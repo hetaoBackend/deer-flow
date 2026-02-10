@@ -1,5 +1,5 @@
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: deer-flow-sandbox
   namespace: deer-flow
@@ -7,7 +7,9 @@ metadata:
     app.kubernetes.io/name: deer-flow
     app.kubernetes.io/component: sandbox
 spec:
-  replicas: 1
+  serviceName: deer-flow-sandbox
+  replicas: 3 # Set to 1 for single instance, or more for multiple isolated sandboxes
+  podManagementPolicy: Parallel
   selector:
     matchLabels:
       app: deer-flow-sandbox

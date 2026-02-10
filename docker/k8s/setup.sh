@@ -110,8 +110,8 @@ verify_deployment() {
     echo "  → Checking service..."
     kubectl get service -n deer-flow
     
-    echo "  → Checking deployment..."
-    kubectl get deployment -n deer-flow
+    echo "  → Checking statefulset..."
+    kubectl get statefulset -n deer-flow
     
     echo "  → Checking pods..."
     kubectl get pods -n deer-flow
@@ -155,7 +155,8 @@ print_next_steps() {
     echo
     echo -e "${GREEN}sandbox:${NC}"
     echo -e "${GREEN}  use: src.community.aio_sandbox:AioSandboxProvider${NC}"
-    echo -e "${GREEN}  base_url: http://deer-flow-sandbox.deer-flow.svc.cluster.local:8080${NC}"
+    echo -e "${GREEN}  base_url: http://deer-flow-sandbox-{pod_index}.deer-flow-sandbox.deer-flow.svc.cluster.local:8080${NC}"
+    echo -e "${GREEN}  replicas: 1  # Match the replicas count in sandbox-deployment.yaml${NC}"
     echo
     echo
     echo -e "${GREEN}Next steps:${NC}"

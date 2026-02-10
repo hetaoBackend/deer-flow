@@ -62,6 +62,9 @@ class AioSandboxProvider(SandboxProvider):
         self._thread_sandboxes: dict[str, str] = {}  # thread_id -> sandbox_id (for reusing sandbox across turns)
         self._thread_locks: dict[str, threading.Lock] = {}  # thread_id -> lock (for thread-specific acquisition)
         self._last_activity: dict[str, float] = {}  # sandbox_id -> last activity timestamp
+        # Pod pool allocation for StatefulSet mode (exclusive 1:1 thread-to-pod mapping)
+        self._allocated_pods: dict[int, str] = {}  # pod_index -> thread_id (or sandbox_id if no thread_id)
+        self._sandbox_pod_index: dict[str, int] = {}  # sandbox_id -> pod_index (for release)
         self._config = self._load_config()
         self._shutdown_called = False
         self._idle_checker_stop = threading.Event()
@@ -162,6 +165,7 @@ class AioSandboxProvider(SandboxProvider):
             "image": sandbox_config.image or DEFAULT_IMAGE,
             "port": sandbox_config.port or DEFAULT_PORT,
             "base_url": sandbox_config.base_url,
+            "replicas": sandbox_config.replicas,
             "auto_start": sandbox_config.auto_start if sandbox_config.auto_start is not None else True,
             "container_prefix": sandbox_config.container_prefix or DEFAULT_CONTAINER_PREFIX,
             "idle_timeout": getattr(sandbox_config, "idle_timeout", None) or DEFAULT_IDLE_TIMEOUT,
@@ -238,6 +242,57 @@ class AioSandboxProvider(SandboxProvider):
                 pass
             time.sleep(1)
         return False
+
+    def _resolve_pod_url(self, base_url_template: str, thread_id: str | None, sandbox_id: str) -> str:
+        """Allocate an exclusive pod for this thread/sandbox from the StatefulSet pod pool.
+
+        Each thread gets exclusive access to one pod to ensure filesystem isolation.
+        When the sandbox is released, the pod is returned to the pool.
+
+        Args:
+            base_url_template: URL template containing {pod_index} placeholder.
+            thread_id: Thread ID for exclusive allocation tracking.
+            sandbox_id: Sandbox ID for tracking pod release.
+
+        Returns:
+            Resolved base_url pointing to the exclusively allocated pod.
+
+        Raises:
+            RuntimeError: If no free and healthy pod is available.
+        """
+        replicas = self._config.get("replicas")
+        if not replicas or replicas < 1:
+            logger.warning("base_url contains {pod_index} but replicas is not set, defaulting to 1")
+            replicas = 1
+
+        # Determine the allocation key (prefer thread_id, fall back to sandbox_id)
+        alloc_key = thread_id or sandbox_id
+
+        # Build the list of free pod indices
+        with self._lock:
+            free_pods = [i for i in range(replicas) if i not in self._allocated_pods]
+
+        if not free_pods:
+            raise RuntimeError(f"All {replicas} sandbox pods are exclusively allocated, no free pod available for thread {thread_id}")
+
+        # Probe free pods to find a healthy one (outside lock to avoid blocking)
+        for pod_index in free_pods:
+            candidate_url = base_url_template.replace("{pod_index}", str(pod_index))
+            try:
+                response = requests.get(f"{candidate_url}/v1/sandbox", timeout=3)
+                if response.status_code == 200:
+                    with self._lock:
+                        # Double-check: another thread may have taken this pod
+                        if pod_index in self._allocated_pods:
+                            continue
+                        self._allocated_pods[pod_index] = alloc_key
+                        self._sandbox_pod_index[sandbox_id] = pod_index
+                    logger.info(f"Exclusively allocated pod {pod_index} to thread={thread_id} sandbox={sandbox_id}")
+                    return candidate_url
+            except requests.exceptions.RequestException:
+                logger.debug(f"Pod {pod_index} is not reachable at {candidate_url}")
+
+        raise RuntimeError(f"No healthy sandbox pod available ({len(free_pods)} free but all unhealthy, replicas={replicas})")
 
     def _get_thread_mounts(self, thread_id: str) -> list[tuple[str, str, bool]]:
         """Get the volume mounts for a thread's data directories.
@@ -460,10 +515,20 @@ class AioSandboxProvider(SandboxProvider):
 
         # If base_url is configured, use existing sandbox
         if self._config.get("base_url"):
-            base_url = self._config["base_url"]
+            base_url_template = self._config["base_url"]
+
+            # StatefulSet exclusive pod allocation: resolve {pod_index} in base_url
+            # _resolve_pod_url already probes health, so skip _is_sandbox_ready
+            if "{pod_index}" in base_url_template:
+                base_url = self._resolve_pod_url(base_url_template, thread_id, sandbox_id)
+                skip_ready_check = True
+            else:
+                base_url = base_url_template
+                skip_ready_check = False
+
             logger.info(f"Using existing sandbox at {base_url}")
 
-            if not self._is_sandbox_ready(base_url, timeout=60):
+            if not skip_ready_check and not self._is_sandbox_ready(base_url, timeout=60):
                 raise RuntimeError(f"Sandbox at {base_url} is not ready")
 
             sandbox = AioSandbox(id=sandbox_id, base_url=base_url)
@@ -548,6 +613,12 @@ class AioSandboxProvider(SandboxProvider):
             thread_ids_to_remove = [tid for tid, sid in self._thread_sandboxes.items() if sid == sandbox_id]
             for tid in thread_ids_to_remove:
                 del self._thread_sandboxes[tid]
+
+            # Release exclusive pod allocation back to the pool
+            if sandbox_id in self._sandbox_pod_index:
+                pod_index = self._sandbox_pod_index.pop(sandbox_id)
+                self._allocated_pods.pop(pod_index, None)
+                logger.info(f"Released pod {pod_index} back to pool (sandbox={sandbox_id})")
 
             # Remove last activity tracking
             if sandbox_id in self._last_activity:
