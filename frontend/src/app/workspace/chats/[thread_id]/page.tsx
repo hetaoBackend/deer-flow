@@ -4,7 +4,7 @@ import type { Message } from "@langchain/langgraph-sdk";
 import type { UseStream } from "@langchain/langgraph-sdk/react";
 import { FilesIcon, XIcon } from "lucide-react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { ConversationEmptyState } from "@/components/ai-elements/conversation";
 import { usePromptInputController } from "@/components/ai-elements/prompt-input";
@@ -63,10 +63,14 @@ export default function ChatPage() {
     }
     return t.inputBox.createSkillPrompt;
   }, [threadIdFromPath, searchParams, t.inputBox.createSkillPrompt]);
+  const lastInitialValueRef = useRef<string | undefined>(undefined);
+  const setInputRef = useRef(promptInputController.textInput.setInput);
+  setInputRef.current = promptInputController.textInput.setInput;
   useEffect(() => {
-    if (inputInitialValue) {
+    if (inputInitialValue && inputInitialValue !== lastInitialValueRef.current) {
+      lastInitialValueRef.current = inputInitialValue;
       setTimeout(() => {
-        promptInputController.textInput.setInput(inputInitialValue);
+        setInputRef.current(inputInitialValue);
         const textarea = document.querySelector("textarea");
         if (textarea) {
           textarea.focus();
@@ -75,7 +79,7 @@ export default function ChatPage() {
         }
       }, 100);
     }
-  }, [inputInitialValue, promptInputController.textInput]);
+  }, [inputInitialValue]);
   const isNewThread = useMemo(
     () => threadIdFromPath === "new",
     [threadIdFromPath],
