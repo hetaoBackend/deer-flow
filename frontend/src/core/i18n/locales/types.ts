@@ -225,6 +225,9 @@ export interface Translations {
       title: string;
       description: string;
       createSkill: string;
+      emptyTitle: string;
+      emptyDescription: string;
+      emptyButton: string;
     };
     notification: {
       title: string;

@@ -238,7 +238,7 @@ export const zhCN: Translations = {
         longTermBackground: "长期背景",
         updatedAt: "更新于",
         facts: "事实",
-        empty: "（空）",
+        empty: "空",
         table: {
           category: "类别",
           confidence: "置信度",
@@ -275,6 +275,10 @@ export const zhCN: Translations = {
       title: "技能",
       description: "管理 Agent Skill 配置和启用状态。",
       createSkill: "新建技能",
+      emptyTitle: "还没有技能",
+      emptyDescription:
+        "将你的 Agent Skill 文件夹放在 DeerFlow 根目录下的 `/skills/custom` 文件夹中。",
+      emptyButton: "创建你的第一个技能",
     },
     notification: {
       title: "通知",

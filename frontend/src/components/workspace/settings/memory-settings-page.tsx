@@ -31,6 +31,26 @@ function confidenceToLevelKey(confidence: unknown): {
   return { key: "normal", value };
 }
 
+function formatMemorySection(
+  title: string,
+  summary: string,
+  updatedAt: string | undefined,
+  t: ReturnType<typeof useI18n>["t"],
+): string {
+  const content =
+    summary.trim() ||
+    `<span class="text-muted-foreground">${t.settings.memory.markdown.empty}</span>`;
+  return [
+    `### ${title}`,
+    content,
+    "",
+    updatedAt &&
+      `> ${t.settings.memory.markdown.updatedAt}: \`${formatTimeAgo(updatedAt)}\``,
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
 function memoryToMarkdown(
   memory: UserMemory,
   t: ReturnType<typeof useI18n>["t"],
@@ -44,65 +64,61 @@ function memoryToMarkdown(
 
   parts.push(`\n## ${t.settings.memory.markdown.userContext}`);
   parts.push(
-    [
-      `### ${t.settings.memory.markdown.work}`,
-      memory.user.workContext.summary || "-",
-      "",
-      memory.user.workContext.updatedAt &&
-        `> ${t.settings.memory.markdown.updatedAt}: \`${formatTimeAgo(memory.user.workContext.updatedAt)}\``,
-    ].join("\n"),
+    formatMemorySection(
+      t.settings.memory.markdown.work,
+      memory.user.workContext.summary,
+      memory.user.workContext.updatedAt,
+      t,
+    ),
   );
   parts.push(
-    [
-      `### ${t.settings.memory.markdown.personal}`,
-      memory.user.personalContext.summary || "-",
-      "",
-      memory.user.personalContext.updatedAt &&
-        `> ${t.settings.memory.markdown.updatedAt}: \`${formatTimeAgo(memory.user.personalContext.updatedAt)}\``,
-    ].join("\n"),
+    formatMemorySection(
+      t.settings.memory.markdown.personal,
+      memory.user.personalContext.summary,
+      memory.user.personalContext.updatedAt,
+      t,
+    ),
   );
   parts.push(
-    [
-      `### ${t.settings.memory.markdown.topOfMind}`,
-      memory.user.topOfMind.summary || "-",
-      "",
-      memory.user.topOfMind.updatedAt &&
-        `> ${t.settings.memory.markdown.updatedAt}: \`${formatTimeAgo(memory.user.topOfMind.updatedAt)}\``,
-    ].join("\n"),
+    formatMemorySection(
+      t.settings.memory.markdown.topOfMind,
+      memory.user.topOfMind.summary,
+      memory.user.topOfMind.updatedAt,
+      t,
+    ),
   );
 
   parts.push(`\n## ${t.settings.memory.markdown.historyBackground}`);
   parts.push(
-    [
-      `### ${t.settings.memory.markdown.recentMonths}`,
-      memory.history.recentMonths.summary || "-",
-      "",
-      memory.history.recentMonths.updatedAt &&
-        `> ${t.settings.memory.markdown.updatedAt}: \`${formatTimeAgo(memory.history.recentMonths.updatedAt)}\``,
-    ].join("\n"),
+    formatMemorySection(
+      t.settings.memory.markdown.recentMonths,
+      memory.history.recentMonths.summary,
+      memory.history.recentMonths.updatedAt,
+      t,
+    ),
   );
   parts.push(
-    [
-      `### ${t.settings.memory.markdown.earlierContext}`,
-      memory.history.earlierContext.summary || "-",
-      "",
-      memory.history.earlierContext.updatedAt &&
-        `> ${t.settings.memory.markdown.updatedAt}: \`${formatTimeAgo(memory.history.earlierContext.updatedAt)}\``,
-    ].join("\n"),
+    formatMemorySection(
+      t.settings.memory.markdown.earlierContext,
+      memory.history.earlierContext.summary,
+      memory.history.earlierContext.updatedAt,
+      t,
+    ),
   );
   parts.push(
-    [
-      `### ${t.settings.memory.markdown.longTermBackground}`,
-      memory.history.longTermBackground.summary || "-",
-      "",
-      memory.history.longTermBackground.updatedAt &&
-        `> ${t.settings.memory.markdown.updatedAt}: \`${formatTimeAgo(memory.history.longTermBackground.updatedAt)}\``,
-    ].join("\n"),
+    formatMemorySection(
+      t.settings.memory.markdown.longTermBackground,
+      memory.history.longTermBackground.summary,
+      memory.history.longTermBackground.updatedAt,
+      t,
+    ),
   );
 
   parts.push(`\n## ${t.settings.memory.markdown.facts}`);
   if (memory.facts.length === 0) {
-    parts.push(`_${t.settings.memory.markdown.empty}_`);
+    parts.push(
+      `<span class="text-muted-foreground">${t.settings.memory.markdown.empty}</span>`,
+    );
   } else {
     parts.push(
       [

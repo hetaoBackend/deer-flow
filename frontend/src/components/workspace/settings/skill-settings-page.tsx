@@ -115,20 +115,20 @@ function SkillSettingsList({
 }
 
 function EmptySkill({ onCreateSkill }: { onCreateSkill: () => void }) {
+  const { t } = useI18n();
   return (
     <Empty>
       <EmptyHeader>
         <EmptyMedia variant="icon">
           <SparklesIcon />
         </EmptyMedia>
-        <EmptyTitle>No agent skill yet</EmptyTitle>
+        <EmptyTitle>{t.settings.skills.emptyTitle}</EmptyTitle>
         <EmptyDescription>
-          Put your agent skill folders under the `/skills/custom` folder under
-          the root folder of DeerFlow.
+          {t.settings.skills.emptyDescription}
         </EmptyDescription>
       </EmptyHeader>
       <EmptyContent>
-        <Button onClick={onCreateSkill}>Create Your First Skill</Button>
+        <Button onClick={onCreateSkill}>{t.settings.skills.emptyButton}</Button>
       </EmptyContent>
     </Empty>
   );

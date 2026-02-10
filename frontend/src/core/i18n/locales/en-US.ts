@@ -243,7 +243,7 @@ export const enUS: Translations = {
         longTermBackground: "Long-term background",
         updatedAt: "Updated at",
         facts: "Facts",
-        empty: "Empty",
+        empty: "empty",
         table: {
           category: "Category",
           confidence: "Confidence",
@@ -282,6 +282,10 @@ export const enUS: Translations = {
       description:
         "Manage the configuration and enabled status of the agent skills.",
       createSkill: "Create skill",
+      emptyTitle: "No agent skill yet",
+      emptyDescription:
+        "Put your agent skill folders under the `/skills/custom` folder under the root folder of DeerFlow.",
+      emptyButton: "Create Your First Skill",
     },
     notification: {
       title: "Notification",
