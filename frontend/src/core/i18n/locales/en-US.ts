@@ -243,7 +243,7 @@ export const enUS: Translations = {
         longTermBackground: "Long-term background",
         updatedAt: "Updated at",
         facts: "Facts",
-        empty: "empty",
+        empty: "(empty)",
         table: {
           category: "Category",
           confidence: "Confidence",

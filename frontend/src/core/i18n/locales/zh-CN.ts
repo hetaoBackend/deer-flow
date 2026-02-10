@@ -238,7 +238,7 @@ export const zhCN: Translations = {
         longTermBackground: "长期背景",
         updatedAt: "更新于",
         facts: "事实",
-        empty: "空",
+        empty: "（空）",
         table: {
           category: "类别",
           confidence: "置信度",
