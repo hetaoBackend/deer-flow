@@ -29,8 +29,12 @@ services:
     environment:
       - K8S_NAMESPACE=deer-flow
       - SANDBOX_IMAGE=enterprise-public-cn-beijing.cr.volces.com/vefaas-public/all-in-one-sandbox:latest
-      - SKILLS_HOST_PATH=${SKILLS_HOST_PATH:-/Users/feng/Projects/deer-flow/skills}
-      - THREADS_HOST_PATH=${THREADS_HOST_PATH:-/Users/feng/Projects/deer-flow/backend/.deer-flow/threads}
+      # Host paths for K8s HostPath volumes (must be absolute paths accessible by K8s node)
+      # On Docker Desktop/OrbStack, use your actual host paths like /Users/username/...
+      # Set these in your shell before running docker-compose:
+      #   export DEER_FLOW_ROOT=/absolute/path/to/deer-flow
+      - SKILLS_HOST_PATH=${DEER_FLOW_ROOT}/skills
+      - THREADS_HOST_PATH=${DEER_FLOW_ROOT}/backend/.deer-flow/threads
       - KUBECONFIG_PATH=/root/.kube/config
       - NODE_HOST=host.docker.internal
       # Override K8S API server URL since kubeconfig uses 127.0.0.1
