@@ -4,6 +4,7 @@ from langchain.tools import ToolRuntime, tool
 from langgraph.typing import ContextT
 
 from src.agents.thread_state import ThreadDataState, ThreadState
+from src.sandbox.consts import VIRTUAL_PATH_PREFIX
 from src.sandbox.exceptions import (
     SandboxError,
     SandboxNotFoundError,
@@ -11,9 +12,6 @@ from src.sandbox.exceptions import (
 )
 from src.sandbox.sandbox import Sandbox
 from src.sandbox.sandbox_provider import get_sandbox_provider
-
-# Virtual path prefix used in sandbox environments
-VIRTUAL_PATH_PREFIX = "/mnt/user-data"
 
 
 def replace_virtual_path(path: str, thread_data: ThreadDataState | None) -> str:

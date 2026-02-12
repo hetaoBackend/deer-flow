@@ -1,3 +1,4 @@
+import logging
 import mimetypes
 import zipfile
 from pathlib import Path
@@ -7,6 +8,8 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import FileResponse, HTMLResponse, PlainTextResponse, Response
 
 from src.gateway.path_utils import resolve_thread_virtual_path
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api", tags=["artifacts"])
 
@@ -125,6 +128,8 @@ async def get_artifact(thread_id: str, path: str, request: Request) -> FileRespo
             return Response(content=content, media_type=mime_type or "application/octet-stream", headers=cache_headers)
 
     actual_path = resolve_thread_virtual_path(thread_id, path)
+
+    logger.info(f"Resolving artifact path: thread_id={thread_id}, requested_path={path}, actual_path={actual_path}")
 
     if not actual_path.exists():
         raise HTTPException(status_code=404, detail=f"Artifact not found: {path}")

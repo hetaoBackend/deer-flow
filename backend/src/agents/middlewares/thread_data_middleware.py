@@ -7,9 +7,7 @@ from langchain.agents.middleware import AgentMiddleware
 from langgraph.runtime import Runtime
 
 from src.agents.thread_state import ThreadDataState
-
-# Base directory for thread data (relative to backend/)
-THREAD_DATA_BASE_DIR = ".deer-flow/threads"
+from src.sandbox.consts import THREAD_DATA_BASE_DIR
 
 
 class ThreadDataMiddlewareState(AgentState):

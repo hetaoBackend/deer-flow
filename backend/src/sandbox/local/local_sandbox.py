@@ -173,3 +173,11 @@ class LocalSandbox(Sandbox):
         mode = "a" if append else "w"
         with open(resolved_path, mode) as f:
             f.write(content)
+
+    def update_file(self, path: str, content: bytes) -> None:
+        resolved_path = self._resolve_path(path)
+        dir_path = os.path.dirname(resolved_path)
+        if dir_path:
+            os.makedirs(dir_path, exist_ok=True)
+        with open(resolved_path, "wb") as f:
+            f.write(content)

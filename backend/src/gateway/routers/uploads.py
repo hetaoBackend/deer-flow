@@ -8,6 +8,7 @@ from fastapi import APIRouter, File, HTTPException, UploadFile
 from pydantic import BaseModel
 
 from src.agents.middlewares.thread_data_middleware import THREAD_DATA_BASE_DIR
+from src.sandbox.sandbox_provider import get_sandbox_provider
 
 logger = logging.getLogger(__name__)
 
@@ -96,6 +97,10 @@ async def upload_files(
     uploads_dir = get_uploads_dir(thread_id)
     uploaded_files = []
 
+    sandbox_provider = get_sandbox_provider()
+    sandbox_id = sandbox_provider.acquire(thread_id)
+    sandbox = sandbox_provider.get(sandbox_id)
+
     for file in files:
         if not file.filename:
             continue
@@ -104,16 +109,17 @@ async def upload_files(
             # Save the original file
             file_path = uploads_dir / file.filename
             content = await file.read()
-            file_path.write_bytes(content)
 
             # Build relative path from backend root
             relative_path = f".deer-flow/threads/{thread_id}/user-data/uploads/{file.filename}"
+            virtual_path = f"/mnt/user-data/uploads/{file.filename}"
+            sandbox.update_file(virtual_path, content)
 
             file_info = {
                 "filename": file.filename,
                 "size": str(len(content)),
                 "path": relative_path,  # Actual filesystem path (relative to backend/)
-                "virtual_path": f"/mnt/user-data/uploads/{file.filename}",  # Path for Agent in sandbox
+                "virtual_path": virtual_path,  # Path for Agent in sandbox
                 "artifact_url": f"/api/threads/{thread_id}/artifacts/mnt/user-data/uploads/{file.filename}",  # HTTP URL
             }
 

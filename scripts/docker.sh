@@ -25,55 +25,26 @@ cleanup() {
 # Set up trap for Ctrl+C
 trap cleanup INT TERM
 
-# Initialize Docker containers and install dependencies
+# Initialize: pre-pull the sandbox image so first Pod startup is fast
 init() {
     echo "=========================================="
-    echo "  Initializing Docker Development"
+    echo "  DeerFlow Init — Pull Sandbox Image"
     echo "=========================================="
     echo ""
 
-    # Check if pnpm is installed on host
-    if ! command -v pnpm >/dev/null 2>&1; then
-        echo -e "${YELLOW}✗ pnpm is required but not found on host${NC}"
-        echo ""
-        echo "Please install pnpm first:"
-        echo "  npm install -g pnpm"
-        echo "  or visit: https://pnpm.io/installation"
-        echo ""
-        exit 1
+    SANDBOX_IMAGE="enterprise-public-cn-beijing.cr.volces.com/vefaas-public/all-in-one-sandbox:latest"
+
+    if ! docker images --format '{{.Repository}}:{{.Tag}}' | grep -q "^${SANDBOX_IMAGE}$"; then
+        echo -e "${BLUE}Pulling sandbox image: $SANDBOX_IMAGE ...${NC}"
+        docker pull "$SANDBOX_IMAGE"
+    else
+        echo -e "${GREEN}Sandbox image already exists locally: $SANDBOX_IMAGE${NC}"
     fi
 
-    # Get pnpm store directory
-    echo -e "${BLUE}Detecting pnpm store directory...${NC}"
-    PNPM_STORE=$(pnpm store path 2>/dev/null || echo "")
-
-    if [ -z "$PNPM_STORE" ]; then
-        echo -e "${YELLOW}✗ Could not detect pnpm store path${NC}"
-        exit 1
-    fi
-
-    echo -e "${GREEN}✓ Found pnpm store: $PNPM_STORE${NC}"
-    echo -e "${BLUE}  Will share pnpm cache with host${NC}"
-
-    # Export for docker compose
-    export PNPM_STORE_PATH="$PNPM_STORE"
-
     echo ""
-
-    # Build containers (dependencies are installed during build)
-    echo -e "${BLUE}Building containers...${NC}"
-    echo -e "${BLUE}  - Frontend dependencies will be installed via Dockerfile${NC}"
-    echo -e "${BLUE}  - Backend dependencies will be installed via Dockerfile${NC}"
-    cd "$DOCKER_DIR" && PNPM_STORE_PATH="$PNPM_STORE" $COMPOSE_CMD build
-
+    echo -e "${GREEN}✓ Sandbox image is ready.${NC}"
     echo ""
-
-    echo "=========================================="
-    echo -e "${GREEN}  ✓ Docker initialization complete!${NC}"
-    echo "=========================================="
-    echo ""
-    echo "You can now run: make docker-dev"
-    echo ""
+    echo -e "${YELLOW}Next step: make docker-start${NC}"
 }
 
 # Start Docker development environment
@@ -158,7 +129,7 @@ help() {
     echo "Usage: $0 <command> [options]"
     echo ""
     echo "Commands:"
-    echo "  init          - Initialize and install dependencies in Docker containers"
+    echo "  init          - Pull the sandbox image (speeds up first Pod startup)"
     echo "  start         - Start all services in Docker (localhost:2026)"
     echo "  restart       - Restart all running Docker services"
     echo "  logs [option] - View Docker development logs"

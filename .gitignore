@@ -1,3 +1,5 @@
+# DeerFlow docker image cache
+docker/.cache/
 # OS generated files
 .DS_Store
 *.local
@@ -40,3 +42,4 @@ logs/
 
 # pnpm
 .pnpm-store
+sandbox_image_cache.tar

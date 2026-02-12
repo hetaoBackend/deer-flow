@@ -3,6 +3,7 @@ Dockerfile
 .dockerignore
 .git
 .gitignore
+docker/
 
 # Python
 __pycache__/

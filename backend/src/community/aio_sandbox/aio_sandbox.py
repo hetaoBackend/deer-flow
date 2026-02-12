@@ -1,3 +1,4 @@
+import base64
 import logging
 
 from agent_sandbox import Sandbox as AioSandboxClient
@@ -18,7 +19,7 @@ class AioSandbox(Sandbox):
 
         Args:
             id: Unique identifier for this sandbox instance.
-            base_url: Base URL of the sandbox API (e.g., http://localhost:8080).
+            base_url: URL of the sandbox API (e.g., http://localhost:8080).
             home_dir: Home directory inside the sandbox. If None, will be fetched from the sandbox.
         """
         super().__init__(id)
@@ -110,4 +111,18 @@ class AioSandbox(Sandbox):
             self._client.file.write_file(file=path, content=content)
         except Exception as e:
             logger.error(f"Failed to write file in sandbox: {e}")
+            raise
+
+    def update_file(self, path: str, content: bytes) -> None:
+        """Update a file with binary content in the sandbox.
+
+        Args:
+            path: The absolute path of the file to update.
+            content: The binary content to write to the file.
+        """
+        try:
+            base64_content = base64.b64encode(content).decode("utf-8")
+            self._client.file.write_file(file=path, content=base64_content, encoding="base64")
+        except Exception as e:
+            logger.error(f"Failed to update file in sandbox: {e}")
             raise

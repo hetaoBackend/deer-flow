@@ -28,6 +28,7 @@ dependencies = [
     "tiktoken>=0.8.0",
     "uvicorn[standard]>=0.34.0",
     "ddgs>=9.10.0",
+    "duckdb>=1.4.4",
 ]
 
 [dependency-groups]

@@ -6,56 +6,17 @@ A LangGraph-based AI agent backend with sandbox execution capabilities.
 
 ## Quick Start
 
-### Option 1: Docker (Recommended)
+### Configuration
 
-The fastest way to get started with a consistent environment:
-
-1. **Configure the application**:
+1. **Copy the example config**:
    ```bash
    cp config.example.yaml config.yaml
-   # Edit config.yaml and set your API keys
+   cp .env.example .env
    ```
 
-2. **Initialize and start**:
-   ```bash
-   make docker-start   # Start all services
-   ```
+2. **Edit `config.yaml`** and set your API keys in `.env` and preferred sandbox mode.
 
-3. **Access**: http://localhost:2026
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed Docker development guide.
-
-### Option 2: Local Development
-
-If you prefer running services locally:
-
-1. **Check prerequisites**:
-   ```bash
-   make check  # Verifies Node.js 22+, pnpm, uv, nginx
-   ```
-
-2. **Configure and install**:
-   ```bash
-   cp config.example.yaml config.yaml
-   make install
-   ```
-
-3. **(Optional) Pre-pull sandbox image**:
-   ```bash
-   # Recommended if using Docker/Container-based sandbox
-   make setup-sandbox
-   ```
-
-4. **Start services**:
-   ```bash
-   make dev
-   ```
-
-5. **Access**: http://localhost:2026
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed local development guide.
-
-### Sandbox Configuration
+#### Sandbox Configuration
 
 DeerFlow supports multiple sandbox execution modes. Configure your preferred mode in `config.yaml`:
 
@@ -71,18 +32,58 @@ sandbox:
    use: src.community.aio_sandbox:AioSandboxProvider # Docker-based sandbox
 ```
 
-**Docker Execution with Kubernetes** (runs sandbox code in Kubernetes pods):
+**Docker Execution with Kubernetes** (runs sandbox code in Kubernetes pods via provisioner service):
 
-Setup Kubernetes sandbox as per [Kubernetes Sandbox Setup](docker/k8s/README.md).
-```bash
-./docker/k8s/setup.sh
-```
-Then configure `config.yaml` with the Kubernetes service URL:
+This mode runs each sandbox in an isolated Kubernetes Pod on your **host machine's cluster**. Requires Docker Desktop K8s, OrbStack, or similar local K8s setup.
+
 ```yaml
 sandbox:
-   use: src.community.k8s_sandbox:AioSandboxProvider # Kubernetes-based sandbox
-   base_url: http://deer-flow-sandbox.deer-flow.svc.cluster.local:8080 # Kubernetes service URL
+   use: src.community.aio_sandbox:AioSandboxProvider
+   provisioner_url: http://provisioner:8002
 ```
+
+See [Provisioner Setup Guide](docker/provisioner/README.md) for detailed configuration, prerequisites, and troubleshooting.
+
+### Running the Application
+
+#### Option 1: Docker (Recommended)
+
+The fastest way to get started with a consistent environment:
+
+1. **Initialize and start**:
+   ```bash
+   make docker-init    # Pull sandbox image (Only once or when image updates)
+   make docker-start   # Start all services and watch for code changes
+   ```
+
+2. **Access**: http://localhost:2026
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed Docker development guide.
+
+#### Option 2: Local Development
+
+If you prefer running services locally:
+
+1. **Check prerequisites**:
+   ```bash
+   make check  # Verifies Node.js 22+, pnpm, uv, nginx
+   ```
+
+2. **(Optional) Pre-pull sandbox image**:
+   ```bash
+   # Recommended if using Docker/Container-based sandbox
+   make setup-sandbox
+   ```
+
+3. **Start services**:
+   ```bash
+   make dev
+   ```
+
+4. **Access**: http://localhost:2026
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed local development guide.
+
 
 ## Features
 

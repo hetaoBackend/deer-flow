@@ -1,7 +1,0 @@
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: deer-flow
-  labels:
-    app.kubernetes.io/name: deer-flow
-    app.kubernetes.io/component: sandbox

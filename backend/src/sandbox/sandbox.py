@@ -60,3 +60,13 @@ class Sandbox(ABC):
             append: Whether to append the content to the file. If False, the file will be created or overwritten.
         """
         pass
+
+    @abstractmethod
+    def update_file(self, path: str, content: bytes) -> None:
+        """Update a file with binary content.
+
+        Args:
+            path: The absolute path of the file to update.
+            content: The binary content to write to the file.
+        """
+        pass
