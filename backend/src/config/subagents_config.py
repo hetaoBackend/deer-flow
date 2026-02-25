@@ -58,11 +58,7 @@ def load_subagents_config_from_dict(config_dict: dict) -> None:
     global _subagents_config
     _subagents_config = SubagentsAppConfig(**config_dict)
 
-    overrides_summary = {
-        name: f"{override.timeout_seconds}s"
-        for name, override in _subagents_config.agents.items()
-        if override.timeout_seconds is not None
-    }
+    overrides_summary = {name: f"{override.timeout_seconds}s" for name, override in _subagents_config.agents.items() if override.timeout_seconds is not None}
     if overrides_summary:
         logger.info(f"Subagents config loaded: default timeout={_subagents_config.timeout_seconds}s, per-agent overrides={overrides_summary}")
     else:

@@ -19,7 +19,6 @@ from src.config.subagents_config import (
 )
 from src.subagents.config import SubagentConfig
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -27,9 +26,7 @@ from src.subagents.config import SubagentConfig
 
 def _reset_subagents_config(timeout_seconds: int = 900, agents: dict | None = None) -> None:
     """Reset global subagents config to a known state."""
-    load_subagents_config_from_dict(
-        {"timeout_seconds": timeout_seconds, "agents": agents or {}}
-    )
+    load_subagents_config_from_dict({"timeout_seconds": timeout_seconds, "agents": agents or {}})
 
 
 # ---------------------------------------------------------------------------
@@ -326,11 +323,11 @@ class TestPollingTimeoutCalculation:
     @pytest.mark.parametrize(
         "timeout_seconds, expected_max_polls",
         [
-            (900, 192),   # default 15 min → (900+60)//5 = 192
-            (300, 72),    # 5 min → (300+60)//5 = 72
+            (900, 192),  # default 15 min → (900+60)//5 = 192
+            (300, 72),  # 5 min → (300+60)//5 = 72
             (1800, 372),  # 30 min → (1800+60)//5 = 372
-            (60, 24),     # 1 min → (60+60)//5 = 24
-            (1, 12),      # minimum → (1+60)//5 = 12
+            (60, 24),  # 1 min → (60+60)//5 = 24
+            (1, 12),  # minimum → (1+60)//5 = 12
         ],
     )
     def test_polling_timeout_formula(self, timeout_seconds: int, expected_max_polls: int):
