@@ -115,7 +115,6 @@ def task_tool(
     # Start background execution (always async to prevent blocking)
     # Use tool_call_id as task_id for better traceability
     task_id = executor.execute_async(prompt, task_id=tool_call_id)
-    logger.info(f"[trace={trace_id}] Started background task {task_id}, polling for completion...")
 
     # Poll for task completion in backend (removes need for LLM to poll)
     poll_count = 0
@@ -123,6 +122,8 @@ def task_tool(
     last_message_count = 0  # Track how many AI messages we've already sent
     # Polling timeout: execution timeout + 60s buffer, checked every 5s
     max_poll_count = (config.timeout_seconds + 60) // 5
+
+    logger.info(f"[trace={trace_id}] Started background task {task_id} (subagent={subagent_type}, timeout={config.timeout_seconds}s, polling_limit={max_poll_count} polls)")
 
     writer = get_stream_writer()
     # Send Task Started message'

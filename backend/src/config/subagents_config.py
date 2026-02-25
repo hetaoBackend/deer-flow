@@ -1,6 +1,10 @@
 """Configuration for the subagent system loaded from config.yaml."""
 
+import logging
+
 from pydantic import BaseModel, Field
+
+logger = logging.getLogger(__name__)
 
 
 class SubagentOverrideConfig(BaseModel):
@@ -53,3 +57,13 @@ def load_subagents_config_from_dict(config_dict: dict) -> None:
     """Load subagents configuration from a dictionary."""
     global _subagents_config
     _subagents_config = SubagentsAppConfig(**config_dict)
+
+    overrides_summary = {
+        name: f"{override.timeout_seconds}s"
+        for name, override in _subagents_config.agents.items()
+        if override.timeout_seconds is not None
+    }
+    if overrides_summary:
+        logger.info(f"Subagents config loaded: default timeout={_subagents_config.timeout_seconds}s, per-agent overrides={overrides_summary}")
+    else:
+        logger.info(f"Subagents config loaded: default timeout={_subagents_config.timeout_seconds}s, no per-agent overrides")
