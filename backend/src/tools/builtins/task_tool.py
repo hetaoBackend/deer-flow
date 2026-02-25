@@ -121,6 +121,8 @@ def task_tool(
     poll_count = 0
     last_status = None
     last_message_count = 0  # Track how many AI messages we've already sent
+    # Polling timeout: execution timeout + 60s buffer, checked every 5s
+    max_poll_count = (config.timeout_seconds + 60) // 5
 
     writer = get_stream_writer()
     # Send Task Started message'
@@ -176,9 +178,10 @@ def task_tool(
         poll_count += 1
 
         # Polling timeout as a safety net (in case thread pool timeout doesn't work)
-        # Set to 16 minutes (longer than the default 15-minute thread pool timeout)
+        # Set to execution timeout + 60s buffer, in 5s poll intervals
         # This catches edge cases where the background task gets stuck
-        if poll_count > 192:  # 192 * 5s = 16 minutes
+        if poll_count > max_poll_count:
+            timeout_minutes = config.timeout_seconds // 60
             logger.error(f"[trace={trace_id}] Task {task_id} polling timed out after {poll_count} polls (should have been caught by thread pool timeout)")
             writer({"type": "task_timed_out", "task_id": task_id})
-            return f"Task polling timed out after 16 minutes. This may indicate the background task is stuck. Status: {result.status.value}"
+            return f"Task polling timed out after {timeout_minutes} minutes. This may indicate the background task is stuck. Status: {result.status.value}"
