@@ -28,6 +28,7 @@ def mock_app_config():
     """Provide a minimal AppConfig mock."""
     model = MagicMock()
     model.name = "test-model"
+    model.model = "test-model"
     model.supports_thinking = False
     model.supports_reasoning_effort = False
     model.model_dump.return_value = {"name": "test-model", "use": "langchain_openai:ChatOpenAI"}
@@ -55,6 +56,7 @@ class TestClientInit:
         assert client._thinking_enabled is True
         assert client._subagent_enabled is False
         assert client._plan_mode is False
+        assert client._agent_name is None
         assert client._checkpointer is None
         assert client._agent is None
 
@@ -65,11 +67,20 @@ class TestClientInit:
                 thinking_enabled=False,
                 subagent_enabled=True,
                 plan_mode=True,
+                agent_name="test-agent"
             )
         assert c._model_name == "gpt-4"
         assert c._thinking_enabled is False
         assert c._subagent_enabled is True
         assert c._plan_mode is True
+        assert c._agent_name == "test-agent"
+
+    def test_invalid_agent_name(self, mock_app_config):
+        with patch("deerflow.client.get_app_config", return_value=mock_app_config):
+            with pytest.raises(ValueError, match="Invalid agent name"):
+                DeerFlowClient(agent_name="invalid name with spaces!")
+            with pytest.raises(ValueError, match="Invalid agent name"):
+                DeerFlowClient(agent_name="../path/traversal")
 
     def test_custom_config_path(self, mock_app_config):
         with (
@@ -98,6 +109,7 @@ class TestConfigQueries:
         assert len(result["models"]) == 1
         assert result["models"][0]["name"] == "test-model"
         # Verify Gateway-aligned fields are present
+        assert "model" in result["models"][0]
         assert "display_name" in result["models"][0]
         assert "supports_thinking" in result["models"][0]
 
@@ -185,6 +197,23 @@ class TestStream:
         assert types[-1] == "end"
         msg_events = _ai_events(events)
         assert msg_events[0].data["content"] == "Hello!"
+
+    def test_context_propagation(self, client):
+        """stream() passes agent_name to the context."""
+        agent = _make_agent_mock([{"messages": [AIMessage(content="ok", id="ai-1")]}])
+
+        client._agent_name = "test-agent-1"
+        with (
+            patch.object(client, "_ensure_agent"),
+            patch.object(client, "_agent", agent),
+        ):
+            list(client.stream("hi", thread_id="t1"))
+        
+        # Verify context passed to agent.stream
+        agent.stream.assert_called_once()
+        call_kwargs = agent.stream.call_args.kwargs
+        assert call_kwargs["context"]["thread_id"] == "t1"
+        assert call_kwargs["context"]["agent_name"] == "test-agent-1"
 
     def test_tool_call_and_result(self, client):
         """stream() emits messages-tuple events for tool calls and results."""
@@ -357,13 +386,19 @@ class TestEnsureAgent:
         with (
             patch("deerflow.client.create_chat_model"),
             patch("deerflow.client.create_agent", return_value=mock_agent),
-            patch("deerflow.client._build_middlewares", return_value=[]),
-            patch("deerflow.client.apply_prompt_template", return_value="prompt"),
+            patch("deerflow.client._build_middlewares", return_value=[]) as mock_build_middlewares,
+            patch("deerflow.client.apply_prompt_template", return_value="prompt") as mock_apply_prompt,
             patch.object(client, "_get_tools", return_value=[]),
         ):
+            client._agent_name = "custom-agent"
             client._ensure_agent(config)
 
         assert client._agent is mock_agent
+        # Verify agent_name propagation
+        mock_build_middlewares.assert_called_once()
+        assert mock_build_middlewares.call_args.kwargs.get("agent_name") == "custom-agent"
+        mock_apply_prompt.assert_called_once()
+        assert mock_apply_prompt.call_args.kwargs.get("agent_name") == "custom-agent"
 
     def test_uses_default_checkpointer_when_available(self, client):
         mock_agent = MagicMock()
@@ -420,6 +455,7 @@ class TestGetModel:
     def test_found(self, client):
         model_cfg = MagicMock()
         model_cfg.name = "test-model"
+        model_cfg.model = "test-model"
         model_cfg.display_name = "Test Model"
         model_cfg.description = "A test model"
         model_cfg.supports_thinking = True
@@ -429,6 +465,7 @@ class TestGetModel:
         result = client.get_model("test-model")
         assert result == {
             "name": "test-model",
+            "model": "test-model",
             "display_name": "Test Model",
             "description": "A test model",
             "supports_thinking": True,
@@ -1048,6 +1085,7 @@ class TestScenarioConfigManagement:
         # Get specific model
         model_cfg = MagicMock()
         model_cfg.name = model_name
+        model_cfg.model = model_name
         model_cfg.display_name = None
         model_cfg.description = None
         model_cfg.supports_thinking = False
@@ -1503,6 +1541,7 @@ class TestGatewayConformance:
     def test_list_models(self, mock_app_config):
         model = MagicMock()
         model.name = "test-model"
+        model.model = "gpt-test"
         model.display_name = "Test Model"
         model.description = "A test model"
         model.supports_thinking = False
@@ -1515,10 +1554,12 @@ class TestGatewayConformance:
         parsed = ModelsListResponse(**result)
         assert len(parsed.models) == 1
         assert parsed.models[0].name == "test-model"
+        assert parsed.models[0].model == "gpt-test"
 
     def test_get_model(self, mock_app_config):
         model = MagicMock()
         model.name = "test-model"
+        model.model = "gpt-test"
         model.display_name = "Test Model"
         model.description = "A test model"
         model.supports_thinking = True
@@ -1532,6 +1573,7 @@ class TestGatewayConformance:
         assert result is not None
         parsed = ModelResponse(**result)
         assert parsed.name == "test-model"
+        assert parsed.model == "gpt-test"
 
     def test_list_skills(self, client):
         skill = MagicMock()
