@@ -674,11 +674,6 @@ dependencies = [
     { name = "uvicorn", extra = ["standard"] },
 ]
 
-[package.optional-dependencies]
-acp = [
-    { name = "deerflow-harness", extra = ["acp"] },
-]
-
 [package.dev-dependencies]
 dev = [
     { name = "pytest" },
@@ -688,7 +683,6 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "deerflow-harness", editable = "packages/harness" },
-    { name = "deerflow-harness", extras = ["acp"], marker = "extra == 'acp'", editable = "packages/harness" },
     { name = "fastapi", specifier = ">=0.115.0" },
     { name = "httpx", specifier = ">=0.28.0" },
     { name = "langgraph-sdk", specifier = ">=0.1.51" },
@@ -700,7 +694,6 @@ requires-dist = [
     { name = "sse-starlette", specifier = ">=2.1.0" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.34.0" },
 ]
-provides-extras = ["acp"]
 
 [package.metadata.requires-dev]
 dev = [
@@ -713,6 +706,7 @@ name = "deerflow-harness"
 version = "0.1.0"
 source = { editable = "packages/harness" }
 dependencies = [
+    { name = "agent-client-protocol" },
     { name = "agent-sandbox" },
     { name = "ddgs" },
     { name = "dotenv" },
@@ -741,14 +735,9 @@ dependencies = [
     { name = "tiktoken" },
 ]
 
-[package.optional-dependencies]
-acp = [
-    { name = "agent-client-protocol" },
-]
-
 [package.metadata]
 requires-dist = [
-    { name = "agent-client-protocol", marker = "extra == 'acp'", specifier = ">=0.4.0" },
+    { name = "agent-client-protocol", specifier = ">=0.4.0" },
     { name = "agent-sandbox", specifier = ">=0.0.19" },
     { name = "ddgs", specifier = ">=9.10.0" },
     { name = "dotenv", specifier = ">=0.9.9" },
@@ -776,7 +765,6 @@ requires-dist = [
     { name = "tavily-python", specifier = ">=0.7.17" },
     { name = "tiktoken", specifier = ">=0.8.0" },
 ]
-provides-extras = ["acp"]
 
 [[package]]
 name = "defusedxml"

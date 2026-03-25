@@ -333,8 +333,6 @@ sandbox:
 # ACP Agents Configuration
 # ============================================================================
 # Configure external ACP-compatible agents for the built-in `invoke_acp_agent` tool.
-# Install optional ACP support first:
-#   uv sync --extra acp
 
 # acp_agents:
 #   claude_code:

@@ -105,7 +105,7 @@ def build_invoke_acp_agent_tool(agents: dict) -> BaseTool:
         except ImportError:
             return (
                 "Error: agent-client-protocol package is not installed. "
-                "Install it with: uv sync --extra acp"
+                "Run `uv sync` to install project dependencies."
             )
 
         class _CollectingClient(Client):
