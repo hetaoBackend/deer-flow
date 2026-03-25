@@ -10,6 +10,7 @@ from deerflow.config.acp_config import ACPAgentConfig
 from deerflow.config.extensions_config import ExtensionsConfig, McpServerConfig, set_extensions_config
 from deerflow.tools.builtins.invoke_acp_agent_tool import (
     _build_mcp_servers,
+    _build_permission_response,
     _resolve_cwd,
     build_invoke_acp_agent_tool,
 )
@@ -17,15 +18,19 @@ from deerflow.tools.tools import get_available_tools
 
 
 def test_build_mcp_servers_filters_disabled_and_maps_transports():
-    set_extensions_config(
-        ExtensionsConfig(
-            mcp_servers={
-                "stdio": McpServerConfig(enabled=True, type="stdio", command="npx", args=["srv"]),
-                "http": McpServerConfig(enabled=True, type="http", url="https://example.com/mcp"),
-                "disabled": McpServerConfig(enabled=False, type="stdio", command="echo"),
-            },
-            skills={},
-        )
+    set_extensions_config(ExtensionsConfig(mcp_servers={"stale": McpServerConfig(enabled=True, type="stdio", command="echo")}, skills={}))
+    fresh_config = ExtensionsConfig(
+        mcp_servers={
+            "stdio": McpServerConfig(enabled=True, type="stdio", command="npx", args=["srv"]),
+            "http": McpServerConfig(enabled=True, type="http", url="https://example.com/mcp"),
+            "disabled": McpServerConfig(enabled=False, type="stdio", command="echo"),
+        },
+        skills={},
+    )
+    monkeypatch = pytest.MonkeyPatch()
+    monkeypatch.setattr(
+        "deerflow.config.extensions_config.ExtensionsConfig.from_file",
+        classmethod(lambda cls: fresh_config),
     )
 
     try:
@@ -34,7 +39,32 @@ def test_build_mcp_servers_filters_disabled_and_maps_transports():
             "http": {"transport": "http", "url": "https://example.com/mcp"},
         }
     finally:
+        monkeypatch.undo()
         set_extensions_config(ExtensionsConfig(mcp_servers={}, skills={}))
+
+
+def test_build_permission_response_prefers_allow_once():
+    response = _build_permission_response(
+        [
+            SimpleNamespace(kind="reject_once", optionId="deny"),
+            SimpleNamespace(kind="allow_always", optionId="always"),
+            SimpleNamespace(kind="allow_once", optionId="once"),
+        ]
+    )
+
+    assert response.outcome.outcome == "selected"
+    assert response.outcome.option_id == "once"
+
+
+def test_build_permission_response_denies_when_no_allow_option():
+    response = _build_permission_response(
+        [
+            SimpleNamespace(kind="reject_once", optionId="deny"),
+            SimpleNamespace(kind="reject_always", optionId="deny-forever"),
+        ]
+    )
+
+    assert response.outcome.outcome == "cancelled"
 
 
 @pytest.mark.anyio
@@ -80,13 +110,16 @@ async def test_invoke_acp_agent_forwards_workspace_mcp_and_model(monkeypatch, tm
 
     monkeypatch.setattr("deerflow.config.paths.get_paths", lambda: DummyPaths())
 
-    set_extensions_config(
-        ExtensionsConfig(
-            mcp_servers={
-                "github": McpServerConfig(enabled=True, type="stdio", command="npx", args=["github-mcp"])
-            },
-            skills={},
-        )
+    monkeypatch.setattr(
+        "deerflow.config.extensions_config.ExtensionsConfig.from_file",
+        classmethod(
+            lambda cls: ExtensionsConfig(
+                mcp_servers={
+                    "github": McpServerConfig(enabled=True, type="stdio", command="npx", args=["github-mcp"])
+                },
+                skills={},
+            )
+        ),
     )
 
     captured: dict[str, object] = {}
@@ -182,7 +215,6 @@ async def test_invoke_acp_agent_forwards_workspace_mcp_and_model(monkeypatch, tm
             cwd="/mnt/user-data/uploads",
         )
     finally:
-        set_extensions_config(ExtensionsConfig(mcp_servers={}, skills={}))
         sys.modules.pop("acp", None)
         sys.modules.pop("acp.schema", None)
         sys.modules.pop("langgraph.config", None)

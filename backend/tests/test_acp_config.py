@@ -53,6 +53,14 @@ def test_load_acp_config_empty_clears_agents():
     assert len(get_acp_agents()) == 0
 
 
+def test_load_acp_config_none_clears_agents():
+    load_acp_config_from_dict({"agent": {"command": "cmd", "args": [], "description": "desc"}})
+    assert len(get_acp_agents()) == 1
+
+    load_acp_config_from_dict(None)
+    assert get_acp_agents() == {}
+
+
 def test_acp_agent_config_defaults():
     cfg = ACPAgentConfig(command="my-agent", description="My agent")
     assert cfg.args == []

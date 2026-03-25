@@ -68,10 +68,31 @@ def _resolve_cwd(cwd: str | None) -> str:
 
 def _build_mcp_servers() -> dict[str, dict[str, Any]]:
     """Build ACP ``mcpServers`` config from DeerFlow's enabled MCP servers."""
-    from deerflow.config.extensions_config import get_extensions_config
+    from deerflow.config.extensions_config import ExtensionsConfig
     from deerflow.mcp.client import build_servers_config
 
-    return build_servers_config(get_extensions_config())
+    return build_servers_config(ExtensionsConfig.from_file())
+
+
+def _build_permission_response(options: list[Any]):
+    """Auto-approve ACP permission requests one call at a time when possible."""
+    from acp import RequestPermissionResponse
+    from acp.schema import AllowedOutcome, DeniedOutcome
+
+    for preferred_kind in ("allow_once", "allow_always"):
+        for option in options:
+            if getattr(option, "kind", None) != preferred_kind:
+                continue
+
+            option_id = getattr(option, "option_id", None)
+            if option_id is None:
+                option_id = getattr(option, "optionId")
+
+            return RequestPermissionResponse(
+                outcome=AllowedOutcome(outcome="selected", optionId=option_id),
+            )
+
+    return RequestPermissionResponse(outcome=DeniedOutcome(outcome="cancelled"))
 
 
 def build_invoke_acp_agent_tool(agents: dict) -> BaseTool:
@@ -100,7 +121,7 @@ def build_invoke_acp_agent_tool(agents: dict) -> BaseTool:
         agent_config = _agents[agent]
 
         try:
-            from acp import PROTOCOL_VERSION, Client, RequestError, text_block
+            from acp import PROTOCOL_VERSION, Client, text_block
             from acp.schema import ClientCapabilities, Implementation
         except ImportError:
             return (
@@ -128,7 +149,13 @@ def build_invoke_acp_agent_tool(agents: dict) -> BaseTool:
                     pass
 
             async def request_permission(self, options, session_id: str, tool_call, **kwargs):  # type: ignore[override]
-                raise RequestError.method_not_found("session/request_permission")
+                response = _build_permission_response(options)
+                outcome = response.outcome.outcome
+                if outcome == "selected":
+                    logger.info("ACP permission auto-approved for tool call %s in session %s", tool_call.tool_call_id, session_id)
+                else:
+                    logger.warning("ACP permission denied for tool call %s in session %s", tool_call.tool_call_id, session_id)
+                return response
 
         client = _CollectingClient()
         cmd = agent_config.command
