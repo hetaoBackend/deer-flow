@@ -32,6 +32,9 @@ dependencies = [
     "langgraph-sdk>=0.1.51",
 ]
 
+[project.optional-dependencies]
+acp = ["agent-client-protocol>=0.4.0"]
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
