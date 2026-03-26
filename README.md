@@ -80,10 +80,10 @@ DeerFlow has newly integrated the intelligent search and crawling toolset indepe
 If you use Claude Code, Codex, Cursor, Windsurf, or another coding agent, you can hand it the setup instructions in one sentence:
 
 ```text
-Help me set up DeerFlow for local development by following https://raw.githubusercontent.com/bytedance/deer-flow/main/Install.md
+Help me clone DeerFlow if needed, then bootstrap it for local development by following https://raw.githubusercontent.com/bytedance/deer-flow/main/Install.md
 ```
 
-That prompt is intended for coding agents. It tells the agent to prepare the repo, choose Docker when available, and stop with the exact next command plus any missing config the user still needs to provide.
+That prompt is intended for coding agents. It tells the agent to clone the repo if needed, choose Docker when available, and stop with the exact next command plus any missing config the user still needs to provide.
 
 ## Quick Start
 

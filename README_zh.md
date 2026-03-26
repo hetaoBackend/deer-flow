@@ -68,10 +68,10 @@ https://github.com/user-attachments/assets/a8bcadc4-e040-4cf2-8fda-dd768b999c18
 如果你在用 Claude Code、Codex、Cursor、Windsurf 或其他 coding agent，可以直接把下面这句话发给它：
 
 ```text
-帮我按照 https://raw.githubusercontent.com/bytedance/deer-flow/main/Install.md 把 DeerFlow 的本地开发环境配置好
+如果还没 clone DeerFlow，就先 clone，然后按照 https://raw.githubusercontent.com/bytedance/deer-flow/main/Install.md 把它的本地开发环境初始化好
 ```
 
-这条提示词是给 coding agent 用的。它会优先选择 Docker，完成仓库初始化，并在结束时告诉你下一条启动命令，以及还缺哪些配置需要你补充。
+这条提示词是给 coding agent 用的。它会在需要时先 clone 仓库，优先选择 Docker，完成初始化，并在结束时告诉你下一条启动命令，以及还缺哪些配置需要你补充。
 
 ## 快速开始
 

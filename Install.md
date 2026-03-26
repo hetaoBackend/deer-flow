@@ -1,10 +1,10 @@
 # DeerFlow install.md
 
-This file is for coding agents. Execute it from the repository root.
+This file is for coding agents. If the DeerFlow repository is not already cloned and open, clone `https://github.com/bytedance/deer-flow.git` first, then continue from the repository root.
 
 ## Goal
 
-Prepare a working DeerFlow development environment on the user's machine with the least risky path available.
+Bootstrap a DeerFlow local development workspace on the user's machine with the least risky path available.
 
 Default preference:
 
@@ -26,20 +26,23 @@ Do not assume API keys or model credentials exist. Set up everything that can be
 
 Consider the setup successful when all of the following are true:
 
-- The repo is at the DeerFlow project root.
+- The DeerFlow repository is cloned and the current working directory is the repo root.
 - `config.yaml` exists.
-- Project dependencies for the chosen path are installed or initialized.
+- For Docker setup, `make docker-init` completed successfully and Docker prerequisites are prepared, but services are not assumed to be running yet.
+- For local setup, `make check` passed or reported no missing prerequisites, and `make install` completed successfully.
 - The user receives the exact next command to launch DeerFlow.
-- The user also receives the exact config fields or environment variables still missing, if any.
+- The user also receives any missing model configuration or referenced environment variable names from `config.yaml`, without inspecting secret-bearing files for actual values.
 
 ## TODO
 
+- If the current directory is not the DeerFlow repository root, clone `https://github.com/bytedance/deer-flow.git` if needed, then change into the repository root.
 - Confirm the current directory is the DeerFlow repository root by checking that `Makefile`, `backend/`, `frontend/`, and `config.example.yaml` exist.
 - Detect whether `config.yaml` already exists.
 - If `config.yaml` does not exist, run `make config`.
-- Detect whether Docker is available with `docker --version`.
+- Detect whether Docker is available and the daemon is reachable with `docker info`.
 - If Docker is available:
   - Run `make docker-init`.
+  - Treat this as Docker prerequisite preparation only. Do not claim that app services, compose validation, or image builds have already succeeded.
   - Do not start long-running services unless the user explicitly asks or this setup request clearly includes launch verification.
   - Tell the user the recommended next command is `make docker-start`.
 - If Docker is not available:
@@ -47,9 +50,9 @@ Consider the setup successful when all of the following are true:
   - If `make check` reports missing system dependencies such as `node`, `pnpm`, `uv`, or `nginx`, stop and report the missing tools instead of attempting privileged installs.
   - If prerequisites are satisfied, run `make install`.
   - Tell the user the recommended next command is `make dev`.
-- Inspect `config.yaml` and `.env` only for placeholders or missing required values. Do not print secrets.
+- Inspect `config.yaml` only for missing model entries or referenced environment variable placeholders. Do not read `.env`, `frontend/.env`, or other secret-bearing files.
 - If no model is configured, tell the user they must add at least one entry under `models` in `config.yaml`.
-- If obvious placeholder API keys remain, tell the user which variables still need real values.
+- If `config.yaml` references variables such as `$OPENAI_API_KEY`, tell the user which variable names still need real values, but do not verify them by opening secret-bearing files.
 - If the repository already appears configured, avoid repeating expensive work unless it is necessary to verify the environment.
 
 ## Verification
@@ -60,6 +63,7 @@ For Docker setup:
 
 - Confirm `make docker-init` completed successfully.
 - Confirm `config.yaml` exists.
+- State explicitly that Docker services were not started and `make docker-start` is still the first real launch step.
 - Do not leave background services running unless the user asked for that.
 
 For local setup:
@@ -73,9 +77,10 @@ For local setup:
 Return a short status report with:
 
 1. Setup path used: Docker or local
-2. Files created or detected: for example `config.yaml`
-3. Remaining user action: model config, API keys, auth files, or nothing
-4. Exact next command to start DeerFlow
+2. Setup level reached: Docker prerequisites prepared or local dependencies installed
+3. Files created or detected: for example `config.yaml`
+4. Remaining user action: model config, env var values, auth files, or nothing
+5. Exact next command to start DeerFlow
 
 ## EXECUTE NOW
 
