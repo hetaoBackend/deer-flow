@@ -1,4 +1,4 @@
-# DeerFlow install.md
+# DeerFlow Install
 
 This file is for coding agents. If the DeerFlow repository is not already cloned and open, clone `https://github.com/bytedance/deer-flow.git` first, then continue from the repository root.
 
@@ -33,7 +33,7 @@ Consider the setup successful when all of the following are true:
 - The user receives the exact next command to launch DeerFlow.
 - The user also receives any missing model configuration or referenced environment variable names from `config.yaml`, without inspecting secret-bearing files for actual values.
 
-## TODO
+## Steps
 
 - If the current directory is not the DeerFlow repository root, clone `https://github.com/bytedance/deer-flow.git` if needed, then change into the repository root.
 - Confirm the current directory is the DeerFlow repository root by checking that `Makefile`, `backend/`, `frontend/`, and `config.example.yaml` exist.
@@ -84,4 +84,4 @@ Return a short status report with:
 
 ## EXECUTE NOW
 
-Complete the TODO list above. When finished, stop after the setup boundary and report status instead of continuing into unrelated project work.
+Complete the steps above. When finished, stop after the setup boundary and report status instead of continuing into unrelated project work.
