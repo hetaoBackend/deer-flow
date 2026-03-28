@@ -379,6 +379,13 @@ class ChannelManager:
             {"thread_id": thread_id},
         )
 
+        # Custom agents are implemented as lead_agent + agent_name context.
+        # Keep backward compatibility for channel configs that set
+        # assistant_id: <custom-agent-name> by routing through lead_agent.
+        if assistant_id != DEFAULT_ASSISTANT_ID:
+            run_context.setdefault("agent_name", assistant_id)
+            assistant_id = DEFAULT_ASSISTANT_ID
+
         return assistant_id, run_config, run_context
 
     # -- LangGraph SDK client (lazy) ----------------------------------------
