@@ -6,7 +6,7 @@ import logging
 import os
 from typing import Any
 
-from app.channels.manager import ChannelManager
+from app.channels.manager import DEFAULT_GATEWAY_URL, DEFAULT_LANGGRAPH_URL, ChannelManager
 from app.channels.message_bus import MessageBus
 from app.channels.store import ChannelStore
 
@@ -21,8 +21,6 @@ _CHANNEL_REGISTRY: dict[str, str] = {
 
 _CHANNELS_LANGGRAPH_URL_ENV = "DEER_FLOW_CHANNELS_LANGGRAPH_URL"
 _CHANNELS_GATEWAY_URL_ENV = "DEER_FLOW_CHANNELS_GATEWAY_URL"
-_DEFAULT_LANGGRAPH_URL = "http://localhost:2024"
-_DEFAULT_GATEWAY_URL = "http://localhost:8001"
 
 
 def _resolve_service_url(config: dict[str, Any], config_key: str, env_key: str, default: str) -> str:
@@ -46,8 +44,8 @@ class ChannelService:
         self.bus = MessageBus()
         self.store = ChannelStore()
         config = dict(channels_config or {})
-        langgraph_url = _resolve_service_url(config, "langgraph_url", _CHANNELS_LANGGRAPH_URL_ENV, _DEFAULT_LANGGRAPH_URL)
-        gateway_url = _resolve_service_url(config, "gateway_url", _CHANNELS_GATEWAY_URL_ENV, _DEFAULT_GATEWAY_URL)
+        langgraph_url = _resolve_service_url(config, "langgraph_url", _CHANNELS_LANGGRAPH_URL_ENV, DEFAULT_LANGGRAPH_URL)
+        gateway_url = _resolve_service_url(config, "gateway_url", _CHANNELS_GATEWAY_URL_ENV, DEFAULT_GATEWAY_URL)
         default_session = config.pop("session", None)
         channel_sessions = {name: channel_config.get("session") for name, channel_config in config.items() if isinstance(channel_config, dict)}
         self.manager = ChannelManager(
