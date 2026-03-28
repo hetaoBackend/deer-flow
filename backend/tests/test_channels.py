@@ -498,10 +498,11 @@ class TestChannelManager:
 
             mock_client.runs.wait.assert_called_once()
             call_args = mock_client.runs.wait.call_args
-            assert call_args[0][1] == "mobile_agent"
+            assert call_args[0][1] == "lead_agent"
             assert call_args[1]["config"]["recursion_limit"] == 55
             assert call_args[1]["context"]["thinking_enabled"] is False
             assert call_args[1]["context"]["subagent_enabled"] is True
+            assert call_args[1]["context"]["agent_name"] == "mobile_agent"
 
         _run(go())
 
@@ -556,10 +557,11 @@ class TestChannelManager:
 
             mock_client.runs.wait.assert_called_once()
             call_args = mock_client.runs.wait.call_args
-            assert call_args[0][1] == "vip_agent"
+            assert call_args[0][1] == "lead_agent"
             assert call_args[1]["config"]["recursion_limit"] == 77
             assert call_args[1]["context"]["thinking_enabled"] is True
             assert call_args[1]["context"]["subagent_enabled"] is True
+            assert call_args[1]["context"]["agent_name"] == "vip_agent"
             assert call_args[1]["context"]["is_plan_mode"] is True
 
         _run(go())
