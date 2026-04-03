@@ -3,7 +3,6 @@ import logging
 import shlex
 import threading
 import uuid
-from itertools import zip_longest
 
 from agent_sandbox import Sandbox as AioSandboxClient
 
@@ -148,12 +147,14 @@ class AioSandbox(Sandbox):
         result = self._client.file.list_path(path=path, recursive=True, show_hidden=False)
         entries = result.data.files if result.data and result.data.files else []
         matches: list[str] = []
+        root_path = path.rstrip("/") or "/"
+        root_prefix = root_path if root_path == "/" else f"{root_path}/"
         for entry in entries:
-            if not entry.path.startswith(path):
+            if entry.path != root_path and not entry.path.startswith(root_prefix):
                 continue
             if should_ignore_path(entry.path):
                 continue
-            rel_path = entry.path[len(path) :].lstrip("/")
+            rel_path = entry.path[len(root_path) :].lstrip("/")
             if path_matches(pattern, rel_path):
                 matches.append(entry.path)
                 if len(matches) >= max_results:
@@ -201,7 +202,7 @@ class AioSandbox(Sandbox):
 
             line_numbers = data.line_numbers or []
             matched_lines = data.matches or []
-            for line_number, line in zip_longest(line_numbers, matched_lines, fillvalue=""):
+            for line_number, line in zip(line_numbers, matched_lines):
                 matches.append(
                     GrepMatch(
                         path=file_path,

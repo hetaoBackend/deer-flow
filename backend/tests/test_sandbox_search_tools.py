@@ -3,7 +3,7 @@ from unittest.mock import patch
 
 from deerflow.community.aio_sandbox.aio_sandbox import AioSandbox
 from deerflow.sandbox.local.local_sandbox import LocalSandbox
-from deerflow.sandbox.search import GrepMatch
+from deerflow.sandbox.search import GrepMatch, find_glob_matches, find_grep_matches
 from deerflow.sandbox.tools import glob_tool, grep_tool
 
 
@@ -273,6 +273,118 @@ def test_aio_sandbox_grep_parses_json(monkeypatch) -> None:
         sandbox._client.file,
         "search_in_file",
         lambda **kwargs: SimpleNamespace(data=SimpleNamespace(line_numbers=[7], matches=["TODO = True"])),
+    )
+
+    matches, truncated = sandbox.grep("/mnt/user-data/workspace", "TODO")
+
+    assert matches == [GrepMatch(path="/mnt/user-data/workspace/app.py", line_number=7, line="TODO = True")]
+    assert truncated is False
+
+
+def test_find_glob_matches_raises_not_a_directory(tmp_path) -> None:
+    file_path = tmp_path / "file.txt"
+    file_path.write_text("x\n", encoding="utf-8")
+
+    try:
+        find_glob_matches(file_path, "**/*.py")
+        assert False, "Expected NotADirectoryError"
+    except NotADirectoryError:
+        pass
+
+
+def test_find_grep_matches_raises_not_a_directory(tmp_path) -> None:
+    file_path = tmp_path / "file.txt"
+    file_path.write_text("TODO\n", encoding="utf-8")
+
+    try:
+        find_grep_matches(file_path, "TODO")
+        assert False, "Expected NotADirectoryError"
+    except NotADirectoryError:
+        pass
+
+
+def test_find_grep_matches_skips_symlink_outside_root(tmp_path) -> None:
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    outside = tmp_path / "outside.txt"
+    outside.write_text("TODO outside\n", encoding="utf-8")
+    (workspace / "outside-link.txt").symlink_to(outside)
+
+    matches, truncated = find_grep_matches(workspace, "TODO")
+
+    assert matches == []
+    assert truncated is False
+
+
+def test_glob_tool_honors_smaller_requested_max_results(tmp_path, monkeypatch) -> None:
+    runtime = _make_runtime(tmp_path)
+    workspace = tmp_path / "workspace"
+    (workspace / "a.py").write_text("print('a')\n", encoding="utf-8")
+    (workspace / "b.py").write_text("print('b')\n", encoding="utf-8")
+    (workspace / "c.py").write_text("print('c')\n", encoding="utf-8")
+
+    monkeypatch.setattr("deerflow.sandbox.tools.ensure_sandbox_initialized", lambda runtime: LocalSandbox(id="local"))
+    monkeypatch.setattr(
+        "deerflow.sandbox.tools.get_app_config",
+        lambda: SimpleNamespace(get_tool_config=lambda name: SimpleNamespace(model_extra={"max_results": 50})),
+    )
+
+    result = glob_tool.func(
+        runtime=runtime,
+        description="limit glob matches",
+        pattern="**/*.py",
+        path="/mnt/user-data/workspace",
+        max_results=2,
+    )
+
+    assert "Found 2 paths under /mnt/user-data/workspace (showing first 2)" in result
+    assert "Results truncated." in result
+
+
+def test_aio_sandbox_glob_include_dirs_enforces_root_boundary(monkeypatch) -> None:
+    with patch("deerflow.community.aio_sandbox.aio_sandbox.AioSandboxClient"):
+        sandbox = AioSandbox(id="test-sandbox", base_url="http://localhost:8080")
+    monkeypatch.setattr(
+        sandbox._client.file,
+        "list_path",
+        lambda **kwargs: SimpleNamespace(
+            data=SimpleNamespace(
+                files=[
+                    SimpleNamespace(name="src", path="/mnt/workspace/src"),
+                    SimpleNamespace(name="src2", path="/mnt/workspace2/src2"),
+                ]
+            )
+        ),
+    )
+
+    matches, truncated = sandbox.glob("/mnt/workspace", "**", include_dirs=True)
+
+    assert matches == ["/mnt/workspace/src"]
+    assert truncated is False
+
+
+def test_aio_sandbox_grep_skips_mismatched_line_number_payloads(monkeypatch) -> None:
+    with patch("deerflow.community.aio_sandbox.aio_sandbox.AioSandboxClient"):
+        sandbox = AioSandbox(id="test-sandbox", base_url="http://localhost:8080")
+    monkeypatch.setattr(
+        sandbox._client.file,
+        "list_path",
+        lambda **kwargs: SimpleNamespace(
+            data=SimpleNamespace(
+                files=[
+                    SimpleNamespace(
+                        name="app.py",
+                        path="/mnt/user-data/workspace/app.py",
+                        is_directory=False,
+                    )
+                ]
+            )
+        ),
+    )
+    monkeypatch.setattr(
+        sandbox._client.file,
+        "search_in_file",
+        lambda **kwargs: SimpleNamespace(data=SimpleNamespace(line_numbers=[7], matches=["TODO = True", "extra"])),
     )
 
     matches, truncated = sandbox.grep("/mnt/user-data/workspace", "TODO")

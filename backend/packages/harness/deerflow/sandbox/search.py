@@ -107,8 +107,10 @@ def find_glob_matches(root: Path, pattern: str, *, include_dirs: bool = False, m
     truncated = False
     root = root.resolve()
 
-    if not root.is_dir():
+    if not root.exists():
         raise FileNotFoundError(root)
+    if not root.is_dir():
+        raise NotADirectoryError(root)
 
     for current_root, dirs, files in os.walk(root):
         dirs[:] = [name for name in dirs if not should_ignore_name(name)]
@@ -153,8 +155,10 @@ def find_grep_matches(
     truncated = False
     root = root.resolve()
 
-    if not root.is_dir():
+    if not root.exists():
         raise FileNotFoundError(root)
+    if not root.is_dir():
+        raise NotADirectoryError(root)
 
     regex_source = re.escape(pattern) if literal else pattern
     flags = 0 if case_sensitive else re.IGNORECASE
@@ -171,13 +175,18 @@ def find_grep_matches(
             if should_ignore_name(name):
                 continue
 
-            file_path = (Path(current_root) / name).resolve()
+            candidate_path = Path(current_root) / name
             rel_path = (rel_dir / name).as_posix()
 
             if glob_pattern is not None and not path_matches(glob_pattern, rel_path):
                 continue
 
             try:
+                if candidate_path.is_symlink():
+                    continue
+                file_path = candidate_path.resolve()
+                if not file_path.is_relative_to(root):
+                    continue
                 if file_path.stat().st_size > max_file_size or is_binary_file(file_path):
                     continue
                 with file_path.open(encoding="utf-8", errors="replace") as handle:

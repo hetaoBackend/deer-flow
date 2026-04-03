@@ -269,6 +269,16 @@ def _clamp_max_results(value: int, *, default: int, upper_bound: int) -> int:
     return min(value, upper_bound)
 
 
+def _resolve_max_results(name: str, requested: int, *, default: int, upper_bound: int) -> int:
+    requested_max_results = _clamp_max_results(requested, default=default, upper_bound=upper_bound)
+    configured_max_results = _clamp_max_results(
+        _get_tool_config_int(name, "max_results", default),
+        default=default,
+        upper_bound=upper_bound,
+    )
+    return min(requested_max_results, configured_max_results)
+
+
 def _resolve_local_read_path(path: str, thread_data: ThreadDataState) -> str:
     validate_local_tool_path(path, thread_data, read_only=True)
     if _is_skills_path(path):
@@ -982,8 +992,9 @@ def glob_tool(
         sandbox = ensure_sandbox_initialized(runtime)
         ensure_thread_directories_exist(runtime)
         requested_path = path
-        effective_max_results = _clamp_max_results(
-            _get_tool_config_int("glob", "max_results", max_results),
+        effective_max_results = _resolve_max_results(
+            "glob",
+            max_results,
             default=_DEFAULT_GLOB_MAX_RESULTS,
             upper_bound=_MAX_GLOB_MAX_RESULTS,
         )
@@ -1035,8 +1046,9 @@ def grep_tool(
         sandbox = ensure_sandbox_initialized(runtime)
         ensure_thread_directories_exist(runtime)
         requested_path = path
-        effective_max_results = _clamp_max_results(
-            _get_tool_config_int("grep", "max_results", max_results),
+        effective_max_results = _resolve_max_results(
+            "grep",
+            max_results,
             default=_DEFAULT_GREP_MAX_RESULTS,
             upper_bound=_MAX_GREP_MAX_RESULTS,
         )
