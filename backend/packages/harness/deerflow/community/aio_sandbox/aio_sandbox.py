@@ -1,14 +1,14 @@
 import base64
-import json
 import logging
 import shlex
 import threading
 import uuid
+from itertools import zip_longest
 
 from agent_sandbox import Sandbox as AioSandboxClient
 
 from deerflow.sandbox.sandbox import Sandbox
-from deerflow.sandbox.search import DEFAULT_LINE_SUMMARY_LENGTH, DEFAULT_MAX_FILE_SIZE_BYTES, IGNORE_PATTERNS, GrepMatch
+from deerflow.sandbox.search import GrepMatch, path_matches, should_ignore_name, should_ignore_path, truncate_line
 
 logger = logging.getLogger(__name__)
 
@@ -137,87 +137,25 @@ class AioSandbox(Sandbox):
                 logger.error(f"Failed to write file in sandbox: {e}")
                 raise
 
-    def _run_search_script(self, payload: dict, body: str) -> dict:
-        payload_b64 = base64.b64encode(json.dumps(payload).encode("utf-8")).decode("ascii")
-        script = f"""python - <<'PY'
-import base64
-import json
-{body}
-
-payload = json.loads(base64.b64decode("{payload_b64}").decode("utf-8"))
-print(json.dumps(main(payload)))
-PY"""
-        output = self.execute_command(script).strip()
-        if output.startswith("Error:"):
-            raise RuntimeError(output)
-        try:
-            return json.loads(output)
-        except json.JSONDecodeError as exc:
-            raise RuntimeError(f"Invalid sandbox search output: {output}") from exc
-
     def glob(self, path: str, pattern: str, *, include_dirs: bool = False, max_results: int = 200) -> tuple[list[str], bool]:
-        body = """
-import fnmatch
-import os
-from pathlib import Path, PurePosixPath
+        if not include_dirs:
+            result = self._client.file.find_files(path=path, glob=pattern)
+            files = result.data.files if result.data and result.data.files else []
+            filtered = [file_path for file_path in files if not should_ignore_path(file_path)]
+            truncated = len(filtered) > max_results
+            return filtered[:max_results], truncated
 
-IGNORE_PATTERNS = """ + repr(IGNORE_PATTERNS) + """
-
-def should_ignore(name):
-    return any(fnmatch.fnmatch(name, pattern) for pattern in IGNORE_PATTERNS)
-
-def path_matches(pattern, rel_path):
-    path = PurePosixPath(rel_path)
-    if path.match(pattern):
-        return True
-    if pattern.startswith("**/"):
-        return path.match(pattern[3:])
-    return False
-
-def main(payload):
-    root = Path(payload["path"]).resolve()
-    if not root.exists():
-        raise FileNotFoundError(str(root))
-    if not root.is_dir():
-        raise NotADirectoryError(str(root))
-
-    matches = []
-    truncated = False
-    for current_root, dirs, files in os.walk(root):
-        dirs[:] = [name for name in dirs if not should_ignore(name)]
-        rel_dir = Path(current_root).resolve().relative_to(root)
-
-        if payload["include_dirs"]:
-            for name in dirs:
-                rel_path = (rel_dir / name).as_posix()
-                if path_matches(payload["pattern"], rel_path):
-                    matches.append(str((Path(current_root) / name).resolve()))
-                    if len(matches) >= payload["max_results"]:
-                        truncated = True
-                        return {"matches": matches, "truncated": truncated}
-
-        for name in files:
-            if should_ignore(name):
+        result = self._client.file.list_path(path=path, recursive=True, show_hidden=False)
+        entries = result.data.files if result.data and result.data.files else []
+        matches: list[str] = []
+        for entry in entries:
+            if should_ignore_name(entry.name):
                 continue
-            rel_path = (rel_dir / name).as_posix()
-            if path_matches(payload["pattern"], rel_path):
-                matches.append(str((Path(current_root) / name).resolve()))
-                if len(matches) >= payload["max_results"]:
-                    truncated = True
-                    return {"matches": matches, "truncated": truncated}
-
-    return {"matches": matches, "truncated": truncated}
-"""
-        data = self._run_search_script(
-            {
-                "path": path,
-                "pattern": pattern,
-                "include_dirs": include_dirs,
-                "max_results": max_results,
-            },
-            body,
-        )
-        return data.get("matches", []), bool(data.get("truncated"))
+            rel_path = entry.path[len(path) :].lstrip("/")
+            if path_matches(pattern, rel_path):
+                matches.append(entry.path)
+        truncated = len(matches) > max_results
+        return matches[:max_results], truncated
 
     def grep(
         self,
@@ -229,105 +167,49 @@ def main(payload):
         case_sensitive: bool = False,
         max_results: int = 100,
     ) -> tuple[list[GrepMatch], bool]:
-        body = """
-import fnmatch
-import os
-import re
-from pathlib import Path, PurePosixPath
+        regex = pattern
+        if literal:
+            import re
 
-IGNORE_PATTERNS = """ + repr(IGNORE_PATTERNS) + """
+            regex = re.escape(pattern)
+        if not case_sensitive:
+            regex = f"(?i){regex}"
 
-def should_ignore(name):
-    return any(fnmatch.fnmatch(name, pattern) for pattern in IGNORE_PATTERNS)
+        if glob is not None:
+            find_result = self._client.file.find_files(path=path, glob=glob)
+            candidate_paths = find_result.data.files if find_result.data and find_result.data.files else []
+        else:
+            list_result = self._client.file.list_path(path=path, recursive=True, show_hidden=False)
+            entries = list_result.data.files if list_result.data and list_result.data.files else []
+            candidate_paths = [entry.path for entry in entries if not entry.is_directory]
 
-def path_matches(pattern, rel_path):
-    path = PurePosixPath(rel_path)
-    if path.match(pattern):
-        return True
-    if pattern.startswith("**/"):
-        return path.match(pattern[3:])
-    return False
+        matches: list[GrepMatch] = []
+        truncated = False
 
-def truncate_line(line, max_chars):
-    line = line.rstrip("\\n\\r")
-    if len(line) <= max_chars:
-        return line
-    return line[: max_chars - 3] + "..."
-
-def is_binary_file(path):
-    try:
-        with open(path, "rb") as handle:
-            return b"\\0" in handle.read(8192)
-    except OSError:
-        return True
-
-def main(payload):
-    root = Path(payload["path"]).resolve()
-    if not root.exists():
-        raise FileNotFoundError(str(root))
-    if not root.is_dir():
-        raise NotADirectoryError(str(root))
-
-    regex_source = re.escape(payload["pattern"]) if payload["literal"] else payload["pattern"]
-    flags = 0 if payload["case_sensitive"] else re.IGNORECASE
-    regex = re.compile(regex_source, flags)
-    matches = []
-    truncated = False
-
-    for current_root, dirs, files in os.walk(root):
-        dirs[:] = [name for name in dirs if not should_ignore(name)]
-        rel_dir = Path(current_root).resolve().relative_to(root)
-
-        for name in files:
-            if should_ignore(name):
+        for file_path in candidate_paths:
+            if should_ignore_path(file_path):
                 continue
 
-            file_path = (Path(current_root) / name).resolve()
-            rel_path = (rel_dir / name).as_posix()
-
-            if payload["glob"] and not path_matches(payload["glob"], rel_path):
+            search_result = self._client.file.search_in_file(file=file_path, regex=regex)
+            data = search_result.data
+            if data is None:
                 continue
 
-            try:
-                if file_path.stat().st_size > payload["max_file_size"] or is_binary_file(file_path):
-                    continue
-                with open(file_path, encoding="utf-8", errors="replace") as handle:
-                    for line_number, line in enumerate(handle, start=1):
-                        if regex.search(line):
-                            matches.append({
-                                "path": str(file_path),
-                                "line_number": line_number,
-                                "line": truncate_line(line, payload["line_summary_length"]),
-                            })
-                            if len(matches) >= payload["max_results"]:
-                                truncated = True
-                                return {"matches": matches, "truncated": truncated}
-            except OSError:
-                continue
+            line_numbers = data.line_numbers or []
+            matched_lines = data.matches or []
+            for line_number, line in zip_longest(line_numbers, matched_lines, fillvalue=""):
+                matches.append(
+                    GrepMatch(
+                        path=file_path,
+                        line_number=line_number if isinstance(line_number, int) else 0,
+                        line=truncate_line(line),
+                    )
+                )
+                if len(matches) >= max_results:
+                    truncated = True
+                    return matches, truncated
 
-    return {"matches": matches, "truncated": truncated}
-"""
-        data = self._run_search_script(
-            {
-                "path": path,
-                "pattern": pattern,
-                "glob": glob,
-                "literal": literal,
-                "case_sensitive": case_sensitive,
-                "max_results": max_results,
-                "max_file_size": DEFAULT_MAX_FILE_SIZE_BYTES,
-                "line_summary_length": DEFAULT_LINE_SUMMARY_LENGTH,
-            },
-            body,
-        )
-        return [
-            GrepMatch(
-                path=match["path"],
-                line_number=match["line_number"],
-                line=match["line"],
-            )
-            for match in data.get("matches", [])
-        ], bool(data.get("truncated"))
+        return matches, truncated
 
     def update_file(self, path: str, content: bytes) -> None:
         """Update a file with binary content in the sandbox.

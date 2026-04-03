@@ -74,6 +74,10 @@ def should_ignore_name(name: str) -> bool:
     return False
 
 
+def should_ignore_path(path: str) -> bool:
+    return any(should_ignore_name(segment) for segment in path.replace("\\", "/").split("/") if segment)
+
+
 def path_matches(pattern: str, rel_path: str) -> bool:
     path = PurePosixPath(rel_path)
     if path.match(pattern):

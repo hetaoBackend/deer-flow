@@ -1,4 +1,3 @@
-import json
 from types import SimpleNamespace
 from unittest.mock import patch
 
@@ -124,9 +123,11 @@ def test_aio_sandbox_glob_parses_json(monkeypatch) -> None:
     with patch("deerflow.community.aio_sandbox.aio_sandbox.AioSandboxClient"):
         sandbox = AioSandbox(id="test-sandbox", base_url="http://localhost:8080")
     monkeypatch.setattr(
-        sandbox,
-        "execute_command",
-        lambda command: json.dumps({"matches": ["/mnt/user-data/workspace/app.py"], "truncated": False}),
+        sandbox._client.file,
+        "find_files",
+        lambda **kwargs: SimpleNamespace(
+            data=SimpleNamespace(files=["/mnt/user-data/workspace/app.py", "/mnt/user-data/workspace/node_modules/skip.py"])
+        ),
     )
 
     matches, truncated = sandbox.glob("/mnt/user-data/workspace", "**/*.py")
@@ -139,19 +140,27 @@ def test_aio_sandbox_grep_parses_json(monkeypatch) -> None:
     with patch("deerflow.community.aio_sandbox.aio_sandbox.AioSandboxClient"):
         sandbox = AioSandbox(id="test-sandbox", base_url="http://localhost:8080")
     monkeypatch.setattr(
-        sandbox,
-        "execute_command",
-        lambda command: json.dumps(
-            {
-                "matches": [
-                    {"path": "/mnt/user-data/workspace/app.py", "line_number": 7, "line": "TODO = True"},
-                ],
-                "truncated": True,
-            }
+        sandbox._client.file,
+        "list_path",
+        lambda **kwargs: SimpleNamespace(
+            data=SimpleNamespace(
+                files=[
+                    SimpleNamespace(
+                        name="app.py",
+                        path="/mnt/user-data/workspace/app.py",
+                        is_directory=False,
+                    )
+                ]
+            )
         ),
+    )
+    monkeypatch.setattr(
+        sandbox._client.file,
+        "search_in_file",
+        lambda **kwargs: SimpleNamespace(data=SimpleNamespace(line_numbers=[7], matches=["TODO = True"])),
     )
 
     matches, truncated = sandbox.grep("/mnt/user-data/workspace", "TODO")
 
     assert matches == [GrepMatch(path="/mnt/user-data/workspace/app.py", line_number=7, line="TODO = True")]
-    assert truncated is True
+    assert truncated is False
