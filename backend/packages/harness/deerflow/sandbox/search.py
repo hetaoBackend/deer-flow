@@ -112,13 +112,15 @@ def find_glob_matches(root: Path, pattern: str, *, include_dirs: bool = False, m
 
     for current_root, dirs, files in os.walk(root):
         dirs[:] = [name for name in dirs if not should_ignore_name(name)]
-        rel_dir = Path(current_root).resolve().relative_to(root)
+        # root is already resolved; os.walk builds current_root by joining under root,
+        # so relative_to() works without an extra stat()/resolve() per directory.
+        rel_dir = Path(current_root).relative_to(root)
 
         if include_dirs:
             for name in dirs:
                 rel_path = (rel_dir / name).as_posix()
                 if path_matches(pattern, rel_path):
-                    matches.append(str((Path(current_root) / name).resolve()))
+                    matches.append(str(Path(current_root) / name))
                     if len(matches) >= max_results:
                         truncated = True
                         return matches, truncated
@@ -128,7 +130,7 @@ def find_glob_matches(root: Path, pattern: str, *, include_dirs: bool = False, m
                 continue
             rel_path = (rel_dir / name).as_posix()
             if path_matches(pattern, rel_path):
-                matches.append(str((Path(current_root) / name).resolve()))
+                matches.append(str(Path(current_root) / name))
                 if len(matches) >= max_results:
                     truncated = True
                     return matches, truncated
@@ -158,9 +160,12 @@ def find_grep_matches(
     flags = 0 if case_sensitive else re.IGNORECASE
     regex = re.compile(regex_source, flags)
 
+    # Skip lines longer than this to prevent ReDoS on minified / no-newline files.
+    _max_line_chars = line_summary_length * 10
+
     for current_root, dirs, files in os.walk(root):
         dirs[:] = [name for name in dirs if not should_ignore_name(name)]
-        rel_dir = Path(current_root).resolve().relative_to(root)
+        rel_dir = Path(current_root).relative_to(root)
 
         for name in files:
             if should_ignore_name(name):
@@ -177,6 +182,8 @@ def find_grep_matches(
                     continue
                 with file_path.open(encoding="utf-8", errors="replace") as handle:
                     for line_number, line in enumerate(handle, start=1):
+                        if len(line) > _max_line_chars:
+                            continue
                         if regex.search(line):
                             matches.append(
                                 GrepMatch(

@@ -103,6 +103,8 @@ def test_grep_tool_truncates_results(tmp_path, monkeypatch) -> None:
     (workspace / "main.py").write_text("TODO one\nTODO two\nTODO three\n", encoding="utf-8")
 
     monkeypatch.setattr("deerflow.sandbox.tools.ensure_sandbox_initialized", lambda runtime: LocalSandbox(id="local"))
+    # Prevent config.yaml tool config from overriding the caller-supplied max_results=2.
+    monkeypatch.setattr("deerflow.sandbox.tools.get_app_config", lambda: SimpleNamespace(get_tool_config=lambda name: None))
 
     result = grep_tool.func(
         runtime=runtime,
@@ -119,15 +121,128 @@ def test_grep_tool_truncates_results(tmp_path, monkeypatch) -> None:
     assert "Results truncated." in result
 
 
+def test_glob_tool_include_dirs_filters_nested_ignored_paths(tmp_path, monkeypatch) -> None:
+    runtime = _make_runtime(tmp_path)
+    workspace = tmp_path / "workspace"
+    (workspace / "src").mkdir()
+    (workspace / "src" / "main.py").write_text("x\n", encoding="utf-8")
+    (workspace / "node_modules").mkdir()
+    (workspace / "node_modules" / "lib").mkdir()
+
+    monkeypatch.setattr("deerflow.sandbox.tools.ensure_sandbox_initialized", lambda runtime: LocalSandbox(id="local"))
+
+    result = glob_tool.func(
+        runtime=runtime,
+        description="find dirs",
+        pattern="**",
+        path="/mnt/user-data/workspace",
+        include_dirs=True,
+    )
+
+    assert "src" in result
+    assert "node_modules" not in result
+
+
+def test_grep_tool_literal_mode(tmp_path, monkeypatch) -> None:
+    runtime = _make_runtime(tmp_path)
+    workspace = tmp_path / "workspace"
+    (workspace / "file.py").write_text("price = (a+b)\nresult = a+b\n", encoding="utf-8")
+
+    monkeypatch.setattr("deerflow.sandbox.tools.ensure_sandbox_initialized", lambda runtime: LocalSandbox(id="local"))
+
+    # literal=True should treat (a+b) as a plain string, not a regex group
+    result = grep_tool.func(
+        runtime=runtime,
+        description="literal search",
+        pattern="(a+b)",
+        path="/mnt/user-data/workspace",
+        literal=True,
+    )
+
+    assert "price = (a+b)" in result
+    assert "result = a+b" not in result
+
+
+def test_grep_tool_case_sensitive(tmp_path, monkeypatch) -> None:
+    runtime = _make_runtime(tmp_path)
+    workspace = tmp_path / "workspace"
+    (workspace / "file.py").write_text("TODO: fix\ntodo: also fix\n", encoding="utf-8")
+
+    monkeypatch.setattr("deerflow.sandbox.tools.ensure_sandbox_initialized", lambda runtime: LocalSandbox(id="local"))
+
+    result = grep_tool.func(
+        runtime=runtime,
+        description="case sensitive search",
+        pattern="TODO",
+        path="/mnt/user-data/workspace",
+        case_sensitive=True,
+    )
+
+    assert "TODO: fix" in result
+    assert "todo: also fix" not in result
+
+
+def test_grep_tool_invalid_regex_returns_error(tmp_path, monkeypatch) -> None:
+    runtime = _make_runtime(tmp_path)
+
+    monkeypatch.setattr("deerflow.sandbox.tools.ensure_sandbox_initialized", lambda runtime: LocalSandbox(id="local"))
+
+    result = grep_tool.func(
+        runtime=runtime,
+        description="bad pattern",
+        pattern="[invalid",
+        path="/mnt/user-data/workspace",
+    )
+
+    assert "Invalid regex pattern" in result
+
+
+def test_aio_sandbox_glob_include_dirs_filters_nested_ignored(monkeypatch) -> None:
+    with patch("deerflow.community.aio_sandbox.aio_sandbox.AioSandboxClient"):
+        sandbox = AioSandbox(id="test-sandbox", base_url="http://localhost:8080")
+    monkeypatch.setattr(
+        sandbox._client.file,
+        "list_path",
+        lambda **kwargs: SimpleNamespace(
+            data=SimpleNamespace(
+                files=[
+                    SimpleNamespace(name="src", path="/mnt/workspace/src"),
+                    SimpleNamespace(name="node_modules", path="/mnt/workspace/node_modules"),
+                    # child of node_modules — should be filtered via should_ignore_path
+                    SimpleNamespace(name="lib", path="/mnt/workspace/node_modules/lib"),
+                ]
+            )
+        ),
+    )
+
+    matches, truncated = sandbox.glob("/mnt/workspace", "**", include_dirs=True)
+
+    assert "/mnt/workspace/src" in matches
+    assert "/mnt/workspace/node_modules" not in matches
+    assert "/mnt/workspace/node_modules/lib" not in matches
+    assert truncated is False
+
+
+def test_aio_sandbox_grep_invalid_regex_raises() -> None:
+    with patch("deerflow.community.aio_sandbox.aio_sandbox.AioSandboxClient"):
+        sandbox = AioSandbox(id="test-sandbox", base_url="http://localhost:8080")
+
+    import re
+
+    try:
+        sandbox.grep("/mnt/workspace", "[invalid")
+        assert False, "Expected re.error"
+    except re.error:
+        pass
+
+
 def test_aio_sandbox_glob_parses_json(monkeypatch) -> None:
     with patch("deerflow.community.aio_sandbox.aio_sandbox.AioSandboxClient"):
         sandbox = AioSandbox(id="test-sandbox", base_url="http://localhost:8080")
     monkeypatch.setattr(
         sandbox._client.file,
         "find_files",
-        lambda **kwargs: SimpleNamespace(
-            data=SimpleNamespace(files=["/mnt/user-data/workspace/app.py", "/mnt/user-data/workspace/node_modules/skip.py"])
-        ),
+        lambda **kwargs: SimpleNamespace(data=SimpleNamespace(files=["/mnt/user-data/workspace/app.py", "/mnt/user-data/workspace/node_modules/skip.py"])),
     )
 
     matches, truncated = sandbox.glob("/mnt/user-data/workspace", "**/*.py")

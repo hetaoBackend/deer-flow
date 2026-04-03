@@ -8,7 +8,7 @@ from itertools import zip_longest
 from agent_sandbox import Sandbox as AioSandboxClient
 
 from deerflow.sandbox.sandbox import Sandbox
-from deerflow.sandbox.search import GrepMatch, path_matches, should_ignore_name, should_ignore_path, truncate_line
+from deerflow.sandbox.search import GrepMatch, path_matches, should_ignore_path, truncate_line
 
 logger = logging.getLogger(__name__)
 
@@ -149,13 +149,16 @@ class AioSandbox(Sandbox):
         entries = result.data.files if result.data and result.data.files else []
         matches: list[str] = []
         for entry in entries:
-            if should_ignore_name(entry.name):
+            if not entry.path.startswith(path):
+                continue
+            if should_ignore_path(entry.path):
                 continue
             rel_path = entry.path[len(path) :].lstrip("/")
             if path_matches(pattern, rel_path):
                 matches.append(entry.path)
-        truncated = len(matches) > max_results
-        return matches[:max_results], truncated
+                if len(matches) >= max_results:
+                    return matches, True
+        return matches, False
 
     def grep(
         self,
@@ -167,13 +170,14 @@ class AioSandbox(Sandbox):
         case_sensitive: bool = False,
         max_results: int = 100,
     ) -> tuple[list[GrepMatch], bool]:
-        regex = pattern
-        if literal:
-            import re
+        import re as _re
 
-            regex = re.escape(pattern)
-        if not case_sensitive:
-            regex = f"(?i){regex}"
+        regex_source = _re.escape(pattern) if literal else pattern
+        # Validate the pattern locally so an invalid regex raises re.error
+        # (caught by grep_tool's except re.error handler) rather than a
+        # generic remote API error.
+        _re.compile(regex_source, 0 if case_sensitive else _re.IGNORECASE)
+        regex = regex_source if case_sensitive else f"(?i){regex_source}"
 
         if glob is not None:
             find_result = self._client.file.find_files(path=path, glob=glob)

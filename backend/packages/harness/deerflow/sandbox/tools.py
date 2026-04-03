@@ -987,14 +987,14 @@ def glob_tool(
             default=_DEFAULT_GLOB_MAX_RESULTS,
             upper_bound=_MAX_GLOB_MAX_RESULTS,
         )
+        thread_data = None
         if is_local_sandbox(runtime):
             thread_data = get_thread_data(runtime)
             if thread_data is None:
                 raise SandboxRuntimeError("Thread data not available for local sandbox")
             path = _resolve_local_read_path(path, thread_data)
         matches, truncated = sandbox.glob(path, pattern, include_dirs=include_dirs, max_results=effective_max_results)
-        if is_local_sandbox(runtime):
-            thread_data = get_thread_data(runtime)
+        if thread_data is not None:
             matches = [mask_local_paths_in_output(match, thread_data) for match in matches]
         return _format_glob_results(requested_path, matches, truncated)
     except SandboxError as e:
@@ -1040,6 +1040,7 @@ def grep_tool(
             default=_DEFAULT_GREP_MAX_RESULTS,
             upper_bound=_MAX_GREP_MAX_RESULTS,
         )
+        thread_data = None
         if is_local_sandbox(runtime):
             thread_data = get_thread_data(runtime)
             if thread_data is None:
@@ -1053,8 +1054,7 @@ def grep_tool(
             case_sensitive=case_sensitive,
             max_results=effective_max_results,
         )
-        if is_local_sandbox(runtime):
-            thread_data = get_thread_data(runtime)
+        if thread_data is not None:
             matches = [
                 GrepMatch(
                     path=mask_local_paths_in_output(match.path, thread_data),
