@@ -7,6 +7,7 @@ from deerflow.reflection import resolve_variable
 from deerflow.sandbox.security import is_host_bash_allowed
 from deerflow.tools.builtins import ask_clarification_tool, present_file_tool, task_tool, view_image_tool
 from deerflow.tools.builtins.tool_search import reset_deferred_registry
+from deerflow.tools.skill_manage_tool import skill_manage_tool
 
 logger = logging.getLogger(__name__)
 
@@ -63,6 +64,8 @@ def get_available_tools(
 
     # Conditionally add tools based on config
     builtin_tools = BUILTIN_TOOLS.copy()
+    if config.skill_evolution.enabled:
+        builtin_tools.append(skill_manage_tool)
 
     # Add subagent tools only if enabled via runtime parameter
     if subagent_enabled:

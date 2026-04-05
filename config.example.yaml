@@ -508,6 +508,10 @@ skills:
   # Default: /mnt/skills
   container_path: /mnt/skills
 
+skill_evolution:
+  enabled: true
+  # moderation_model_name: null
+
 # Note: To restrict which skills are loaded for a specific custom agent,
 # define a `skills` list in that agent's `config.yaml` (e.g. `agents/my-agent/config.yaml`):
 # - Omitted or null: load all globally enabled skills (default)
@@ -587,6 +591,14 @@ memory:
   fact_confidence_threshold: 0.7 # Minimum confidence for storing facts
   injection_enabled: true # Whether to inject memory into system prompt
   max_injection_tokens: 2000 # Maximum tokens for memory injection
+
+# ============================================================================
+# Skill Self-Evolution Configuration
+# ============================================================================
+# Allow the agent to autonomously create and improve skills in skills/custom/.
+skill_evolution:
+  enabled: true       # Set to false to prevent agent from writing skills
+  scanner_model: null # Model for LLM-based security scanning (null = use default model)
 
 # ============================================================================
 # Checkpointer Configuration
