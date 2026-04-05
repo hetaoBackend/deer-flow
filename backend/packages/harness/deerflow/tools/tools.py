@@ -64,7 +64,8 @@ def get_available_tools(
 
     # Conditionally add tools based on config
     builtin_tools = BUILTIN_TOOLS.copy()
-    if config.skill_evolution.enabled:
+    skill_evolution_config = getattr(config, "skill_evolution", None)
+    if getattr(skill_evolution_config, "enabled", False):
         builtin_tools.append(skill_manage_tool)
 
     # Add subagent tools only if enabled via runtime parameter

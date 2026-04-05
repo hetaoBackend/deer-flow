@@ -404,11 +404,7 @@ def _get_cached_skills_prompt_section(
     container_base_path: str,
     skill_evolution_enabled: bool,
 ) -> str:
-    filtered = [
-        (name, description, category, location)
-        for name, description, category, location in skill_signature
-        if available_skills_key is None or name in available_skills_key
-    ]
+    filtered = [(name, description, category, location) for name, description, category, location in skill_signature if available_skills_key is None or name in available_skills_key]
     if not filtered:
         return ""
 
@@ -464,10 +460,7 @@ def get_skills_prompt_section(available_skills: set[str] | None = None) -> str:
     if not skills:
         return ""
 
-    skill_signature = tuple(
-        (skill.name, skill.description, skill.category, skill.get_container_file_path(container_base_path))
-        for skill in skills
-    )
+    skill_signature = tuple((skill.name, skill.description, skill.category, skill.get_container_file_path(container_base_path)) for skill in skills)
     available_key = tuple(sorted(available_skills)) if available_skills is not None else None
     return _get_cached_skills_prompt_section(skill_signature, available_key, container_base_path, skill_evolution_enabled)
 

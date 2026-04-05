@@ -67,14 +67,7 @@ async def scan_skill_content(content: str, *, executable: bool = False, location
         "or unsafe executable code. Warn for borderline external API references. "
         'Return strict JSON: {"decision":"allow|warn|block","reason":"..."}.'
     )
-    prompt = (
-        f"Location: {location}\n"
-        f"Executable: {str(executable).lower()}\n\n"
-        "Review this content:\n"
-        "-----\n"
-        f"{content[:12000]}\n"
-        "-----"
-    )
+    prompt = f"Location: {location}\nExecutable: {str(executable).lower()}\n\nReview this content:\n-----\n{content[:12000]}\n-----"
 
     try:
         config = get_app_config()

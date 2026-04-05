@@ -174,9 +174,7 @@ async def _skill_manage_impl(
             return f"Removed '{path}' from custom skill '{name}'."
 
         if public_skill_exists(name):
-            raise ValueError(
-                f"'{name}' is a built-in skill. To customise it, create a new skill with the same name under skills/custom/."
-            )
+            raise ValueError(f"'{name}' is a built-in skill. To customise it, create a new skill with the same name under skills/custom/.")
         raise ValueError(f"Unsupported action '{action}'.")
 
 
