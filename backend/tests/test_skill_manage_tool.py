@@ -135,3 +135,29 @@ def test_skill_manage_sync_wrapper_supported(monkeypatch, tmp_path):
     )
 
     assert "Created custom skill" in result
+
+
+def test_skill_manage_rejects_support_path_traversal(monkeypatch, tmp_path):
+    skills_root = tmp_path / "skills"
+    config = SimpleNamespace(
+        skills=SimpleNamespace(get_skills_path=lambda: skills_root, container_path="/mnt/skills"),
+        skill_evolution=SimpleNamespace(enabled=True, moderation_model_name=None),
+    )
+    monkeypatch.setattr("deerflow.config.get_app_config", lambda: config)
+    monkeypatch.setattr("deerflow.skills.manager.get_app_config", lambda: config)
+    monkeypatch.setattr("deerflow.skills.security_scanner.get_app_config", lambda: config)
+    monkeypatch.setattr(skill_manage_module, "clear_skills_system_prompt_cache", lambda: None)
+    monkeypatch.setattr(skill_manage_module, "scan_skill_content", lambda *args, **kwargs: _async_result("allow", "ok"))
+
+    runtime = SimpleNamespace(context={"thread_id": "thread-1"}, config={"configurable": {"thread_id": "thread-1"}})
+    anyio.run(skill_manage_module.skill_manage_tool.coroutine, runtime, "create", "demo-skill", _skill_content("demo-skill"))
+
+    with pytest.raises(ValueError, match="parent-directory traversal|selected support directory"):
+        anyio.run(
+            skill_manage_module.skill_manage_tool.coroutine,
+            runtime,
+            "write_file",
+            "demo-skill",
+            "malicious overwrite",
+            "references/../SKILL.md",
+        )

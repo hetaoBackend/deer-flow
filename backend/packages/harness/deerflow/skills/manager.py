@@ -15,6 +15,7 @@ from deerflow.skills.validation import _validate_skill_frontmatter
 
 SKILL_FILE_NAME = "SKILL.md"
 HISTORY_FILE_NAME = "HISTORY.jsonl"
+HISTORY_DIR_NAME = ".history"
 ALLOWED_SUPPORT_SUBDIRS = {"references", "templates", "scripts", "assets"}
 _SKILL_NAME_PATTERN = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 
@@ -50,8 +51,14 @@ def get_custom_skill_file(name: str) -> Path:
     return get_custom_skill_dir(name) / SKILL_FILE_NAME
 
 
+def get_custom_skill_history_dir() -> Path:
+    path = get_custom_skills_dir() / HISTORY_DIR_NAME
+    path.mkdir(parents=True, exist_ok=True)
+    return path
+
+
 def get_skill_history_file(name: str) -> Path:
-    return get_custom_skill_dir(name) / HISTORY_FILE_NAME
+    return get_custom_skill_history_dir() / f"{validate_skill_name(name)}.jsonl"
 
 
 def get_public_skill_dir(name: str) -> Path:
@@ -76,17 +83,24 @@ def ensure_custom_skill_is_editable(name: str) -> None:
 
 def ensure_safe_support_path(name: str, relative_path: str) -> Path:
     skill_dir = get_custom_skill_dir(name).resolve()
-    target = (skill_dir / relative_path).resolve()
-    try:
-        target.relative_to(skill_dir)
-    except ValueError as exc:
-        raise ValueError("Supporting file path must stay within the skill directory.") from exc
-
     if not relative_path or relative_path.endswith("/"):
         raise ValueError("Supporting file path must include a filename.")
-    top_level = Path(relative_path).parts[0] if Path(relative_path).parts else ""
+    relative = Path(relative_path)
+    if relative.is_absolute():
+        raise ValueError("Supporting file path must be relative.")
+    if any(part in {"..", ""} for part in relative.parts):
+        raise ValueError("Supporting file path must not contain parent-directory traversal.")
+
+    top_level = relative.parts[0] if relative.parts else ""
     if top_level not in ALLOWED_SUPPORT_SUBDIRS:
         raise ValueError(f"Supporting files must live under one of: {', '.join(sorted(ALLOWED_SUPPORT_SUBDIRS))}.")
+
+    target = (skill_dir / relative).resolve()
+    allowed_root = (skill_dir / top_level).resolve()
+    try:
+        target.relative_to(allowed_root)
+    except ValueError as exc:
+        raise ValueError("Supporting file path must stay within the selected support directory.") from exc
     return target
 
 

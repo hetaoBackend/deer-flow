@@ -17,6 +17,8 @@ from deerflow.skills.manager import (
     custom_skill_exists,
     ensure_custom_skill_is_editable,
     get_custom_skill_dir,
+    get_custom_skill_file,
+    get_skill_history_file,
     read_custom_skill_content,
     read_history,
     validate_skill_markdown_content,
@@ -225,7 +227,7 @@ async def delete_custom_skill(skill_name: str) -> dict[str, bool]:
 @router.get("/skills/custom/{skill_name}/history", response_model=CustomSkillHistoryResponse, summary="Get Custom Skill History")
 async def get_custom_skill_history(skill_name: str) -> CustomSkillHistoryResponse:
     try:
-        if not custom_skill_exists(skill_name):
+        if not custom_skill_exists(skill_name) and not get_skill_history_file(skill_name).exists():
             raise HTTPException(status_code=404, detail=f"Custom skill '{skill_name}' not found")
         return CustomSkillHistoryResponse(history=read_history(skill_name))
     except HTTPException:
@@ -238,7 +240,8 @@ async def get_custom_skill_history(skill_name: str) -> CustomSkillHistoryRespons
 @router.post("/skills/custom/{skill_name}/rollback", response_model=CustomSkillContentResponse, summary="Rollback Custom Skill")
 async def rollback_custom_skill(skill_name: str, request: SkillRollbackRequest) -> CustomSkillContentResponse:
     try:
-        ensure_custom_skill_is_editable(skill_name)
+        if not custom_skill_exists(skill_name) and not get_skill_history_file(skill_name).exists():
+            raise HTTPException(status_code=404, detail=f"Custom skill '{skill_name}' not found")
         history = read_history(skill_name)
         if not history:
             raise HTTPException(status_code=400, detail=f"Custom skill '{skill_name}' has no history")
@@ -248,8 +251,8 @@ async def rollback_custom_skill(skill_name: str, request: SkillRollbackRequest) 
             raise HTTPException(status_code=400, detail="Selected history entry has no previous content to roll back to")
         validate_skill_markdown_content(skill_name, target_content)
         scan = await scan_skill_content(target_content, executable=False, location=f"{skill_name}/SKILL.md")
-        skill_file = get_custom_skill_dir(skill_name) / "SKILL.md"
-        current_content = skill_file.read_text(encoding="utf-8")
+        skill_file = get_custom_skill_file(skill_name)
+        current_content = skill_file.read_text(encoding="utf-8") if skill_file.exists() else None
         history_entry = {
             "action": "rollback",
             "author": "human",
