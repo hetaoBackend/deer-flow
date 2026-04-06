@@ -366,12 +366,17 @@ def _path_variants(path: str) -> set[str]:
     return {path, path.replace("\\", "/"), path.replace("/", "\\")}
 
 
+def _path_separator_for_style(path: str) -> str:
+    return "\\" if "\\" in path and "/" not in path else "/"
+
+
 def _join_path_preserving_style(base: str, relative: str) -> str:
     if not relative:
         return base
-    if "/" in base and "\\" not in base:
-        return f"{base.rstrip('/')}/{relative}"
-    return str(Path(base) / relative)
+    separator = _path_separator_for_style(base)
+    normalized_relative = relative.replace("\\" if separator == "/" else "/", separator).lstrip("/\\")
+    stripped_base = base.rstrip("/\\")
+    return f"{stripped_base}{separator}{normalized_relative}"
 
 
 def _sanitize_error(error: Exception, runtime: "ToolRuntime[ContextT, ThreadState] | None" = None) -> str:
@@ -416,7 +421,10 @@ def replace_virtual_path(path: str, thread_data: ThreadDataState | None) -> str:
             return actual_base
         if path.startswith(f"{virtual_base}/"):
             rest = path[len(virtual_base) :].lstrip("/")
-            return _join_path_preserving_style(actual_base, rest)
+            result = _join_path_preserving_style(actual_base, rest)
+            if path.endswith("/") and not result.endswith(("/", "\\")):
+                result += _path_separator_for_style(actual_base)
+            return result
 
     return path
 
@@ -955,6 +963,29 @@ def _truncate_read_file_output(output: str, max_chars: int) -> str:
     return f"{output[:kept]}{marker}"
 
 
+def _truncate_ls_output(output: str, max_chars: int) -> str:
+    """Head-truncate ls output, preserving the beginning of the listing.
+
+    Directory listings are read top-to-bottom; the head shows the most
+    relevant structure.
+
+    The returned string (including the truncation marker) is guaranteed to be
+    no longer than max_chars characters. Pass max_chars=0 to disable truncation
+    and return the full output unchanged.
+    """
+    if max_chars == 0:
+        return output
+    if len(output) <= max_chars:
+        return output
+    total = len(output)
+    marker_max_len = len(f"\n... [truncated: showing first {total} of {total} chars. Use a more specific path to see fewer results] ...")
+    kept = max(0, max_chars - marker_max_len)
+    if kept == 0:
+        return output[:max_chars]
+    marker = f"\n... [truncated: showing first {kept} of {total} chars. Use a more specific path to see fewer results] ..."
+    return f"{output[:kept]}{marker}"
+
+
 @tool("bash", parse_docstring=True)
 def bash_tool(runtime: ToolRuntime[ContextT, ThreadState], description: str, command: str) -> str:
     """Execute a bash command in a Linux environment.
@@ -1029,7 +1060,15 @@ def ls_tool(runtime: ToolRuntime[ContextT, ThreadState], description: str, path:
         children = sandbox.list_dir(path)
         if not children:
             return "(empty)"
-        return "\n".join(children)
+        output = "\n".join(children)
+        try:
+            from deerflow.config.app_config import get_app_config
+
+            sandbox_cfg = get_app_config().sandbox
+            max_chars = sandbox_cfg.ls_output_max_chars if sandbox_cfg else 20000
+        except Exception:
+            max_chars = 20000
+        return _truncate_ls_output(output, max_chars)
     except SandboxError as e:
         return f"Error: {e}"
     except FileNotFoundError:
