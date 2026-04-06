@@ -64,4 +64,4 @@ async def scan_skill_content(content: str, *, executable: bool = False, location
 
     if executable:
         return ScanResult("block", "Security scan unavailable for executable content; manual review required.")
-    return ScanResult("warn", "Security scan unavailable; non-executable content requires caution.")
+    return ScanResult("block", "Security scan unavailable for skill content; manual review required.")

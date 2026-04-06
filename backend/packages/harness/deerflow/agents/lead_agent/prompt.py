@@ -418,6 +418,7 @@ def _get_cached_skills_prompt_section(
     skill_signature: tuple[tuple[str, str, str, str], ...],
     available_skills_key: tuple[str, ...] | None,
     container_base_path: str,
+    skill_evolution_section: str,
 ) -> str:
     filtered = [(name, description, category, location) for name, description, category, location in skill_signature if available_skills_key is None or name in available_skills_key]
     skills_list = ""
@@ -438,7 +439,7 @@ You have access to skills that provide optimized workflows for specific tasks. E
 5. Follow the skill's instructions precisely
 
 **Skills are located at:** {container_base_path}
-__EVOLUTION_SECTION__
+{skill_evolution_section}
 {skills_list}
 
 </skill_system>"""
@@ -468,7 +469,8 @@ def get_skills_prompt_section(available_skills: set[str] | None = None) -> str:
     available_key = tuple(sorted(available_skills)) if available_skills is not None else None
     if not skill_signature and available_key is not None:
         return ""
-    return _get_cached_skills_prompt_section(skill_signature, available_key, container_base_path).replace("__EVOLUTION_SECTION__", _build_skill_evolution_section(skill_evolution_enabled))
+    skill_evolution_section = _build_skill_evolution_section(skill_evolution_enabled)
+    return _get_cached_skills_prompt_section(skill_signature, available_key, container_base_path, skill_evolution_section)
 
 
 def get_agent_soul(agent_name: str | None) -> str:

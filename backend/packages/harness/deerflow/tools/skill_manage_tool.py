@@ -6,6 +6,7 @@ import asyncio
 import logging
 import shutil
 from typing import Any
+from weakref import WeakValueDictionary
 
 from langchain.tools import ToolRuntime, tool
 from langgraph.typing import ContextT
@@ -30,7 +31,7 @@ from deerflow.skills.security_scanner import scan_skill_content
 
 logger = logging.getLogger(__name__)
 
-_skill_locks: dict[str, asyncio.Lock] = {}
+_skill_locks: WeakValueDictionary[str, asyncio.Lock] = WeakValueDictionary()
 
 
 def _get_lock(name: str) -> asyncio.Lock:
