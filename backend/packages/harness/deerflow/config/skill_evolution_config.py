@@ -5,7 +5,7 @@ class SkillEvolutionConfig(BaseModel):
     """Configuration for agent-managed skill evolution."""
 
     enabled: bool = Field(
-        default=True,
+        default=False,
         description="Whether the agent can create and modify skills under skills/custom.",
     )
     moderation_model_name: str | None = Field(

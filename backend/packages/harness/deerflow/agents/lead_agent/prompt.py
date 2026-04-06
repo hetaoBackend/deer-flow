@@ -25,6 +25,22 @@ def clear_skills_system_prompt_cache() -> None:
     _get_cached_skills_prompt_section.cache_clear()
 
 
+def _build_skill_evolution_section(skill_evolution_enabled: bool) -> str:
+    if not skill_evolution_enabled:
+        return ""
+    return """
+## Skill Self-Evolution
+After completing a task, consider creating or updating a skill when:
+- The task required 5+ tool calls to resolve
+- You overcame non-obvious errors or pitfalls
+- The user corrected your approach and the corrected version worked
+- You discovered a non-trivial, recurring workflow
+If you used a skill and encountered issues not covered by it, patch it immediately.
+Prefer patch over edit. Before creating a new skill, confirm with the user first.
+Skip simple one-off tasks.
+"""
+
+
 def _build_subagent_section(max_concurrent: int) -> str:
     """Build the subagent system prompt section with dynamic concurrency limit.
 
@@ -402,30 +418,15 @@ def _get_cached_skills_prompt_section(
     skill_signature: tuple[tuple[str, str, str, str], ...],
     available_skills_key: tuple[str, ...] | None,
     container_base_path: str,
-    skill_evolution_enabled: bool,
 ) -> str:
     filtered = [(name, description, category, location) for name, description, category, location in skill_signature if available_skills_key is None or name in available_skills_key]
-    if not filtered:
-        return ""
-
-    skill_items = "\n".join(
-        f"    <skill>\n        <name>{name}</name>\n        <description>{description} {_skill_mutability_label(category)}</description>\n        <location>{location}</location>\n    </skill>"
-        for name, description, category, location in filtered
-    )
-    skills_list = f"<available_skills>\n{skill_items}\n</available_skills>"
-    evolution_section = ""
-    if skill_evolution_enabled:
-        evolution_section = """
-## Skill Self-Evolution
-After completing a task, consider creating or updating a skill when:
-- The task required 5+ tool calls to resolve
-- You overcame non-obvious errors or pitfalls
-- The user corrected your approach and the corrected version worked
-- You discovered a non-trivial, recurring workflow
-If you used a skill and encountered issues not covered by it, patch it immediately.
-Prefer patch over edit. Before creating a new skill, confirm with the user first.
-Skip simple one-off tasks.
-"""
+    skills_list = ""
+    if filtered:
+        skill_items = "\n".join(
+            f"    <skill>\n        <name>{name}</name>\n        <description>{description} {_skill_mutability_label(category)}</description>\n        <location>{location}</location>\n    </skill>"
+            for name, description, category, location in filtered
+        )
+        skills_list = f"<available_skills>\n{skill_items}\n</available_skills>"
     return f"""<skill_system>
 You have access to skills that provide optimized workflows for specific tasks. Each skill contains best practices, frameworks, and references to additional resources.
 
@@ -437,7 +438,7 @@ You have access to skills that provide optimized workflows for specific tasks. E
 5. Follow the skill's instructions precisely
 
 **Skills are located at:** {container_base_path}
-{evolution_section}
+__EVOLUTION_SECTION__
 {skills_list}
 
 </skill_system>"""
@@ -455,14 +456,19 @@ def get_skills_prompt_section(available_skills: set[str] | None = None) -> str:
         skill_evolution_enabled = config.skill_evolution.enabled
     except Exception:
         container_base_path = "/mnt/skills"
-        skill_evolution_enabled = True
+        skill_evolution_enabled = False
 
-    if not skills:
+    if not skills and not skill_evolution_enabled:
+        return ""
+
+    if available_skills is not None and not any(skill.name in available_skills for skill in skills):
         return ""
 
     skill_signature = tuple((skill.name, skill.description, skill.category, skill.get_container_file_path(container_base_path)) for skill in skills)
     available_key = tuple(sorted(available_skills)) if available_skills is not None else None
-    return _get_cached_skills_prompt_section(skill_signature, available_key, container_base_path, skill_evolution_enabled)
+    if not skill_signature and available_key is not None:
+        return ""
+    return _get_cached_skills_prompt_section(skill_signature, available_key, container_base_path).replace("__EVOLUTION_SECTION__", _build_skill_evolution_section(skill_evolution_enabled))
 
 
 def get_agent_soul(agent_name: str | None) -> str:

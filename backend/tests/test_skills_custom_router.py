@@ -1,3 +1,4 @@
+import json
 from types import SimpleNamespace
 
 from fastapi import FastAPI
@@ -56,3 +57,42 @@ def test_custom_skills_router_lifecycle(monkeypatch, tmp_path):
         rollback_response = client.post("/api/skills/custom/demo-skill/rollback", json={"history_index": -1})
         assert rollback_response.status_code == 200
         assert rollback_response.json()["description"] == "Demo skill"
+
+
+def test_custom_skill_rollback_blocked_by_scanner(monkeypatch, tmp_path):
+    skills_root = tmp_path / "skills"
+    custom_dir = skills_root / "custom" / "demo-skill"
+    custom_dir.mkdir(parents=True, exist_ok=True)
+    original_content = _skill_content("demo-skill")
+    edited_content = _skill_content("demo-skill", "Edited skill")
+    (custom_dir / "SKILL.md").write_text(edited_content, encoding="utf-8")
+    (custom_dir / "HISTORY.jsonl").write_text(
+        '{"action":"human_edit","prev_content":' + json.dumps(original_content) + ',"new_content":' + json.dumps(edited_content) + "}\n",
+        encoding="utf-8",
+    )
+    config = SimpleNamespace(
+        skills=SimpleNamespace(get_skills_path=lambda: skills_root, container_path="/mnt/skills"),
+        skill_evolution=SimpleNamespace(enabled=True, moderation_model_name=None),
+    )
+    monkeypatch.setattr("deerflow.config.get_app_config", lambda: config)
+    monkeypatch.setattr("deerflow.skills.manager.get_app_config", lambda: config)
+    monkeypatch.setattr("app.gateway.routers.skills.clear_skills_system_prompt_cache", lambda: None)
+
+    async def _scan(*args, **kwargs):
+        from deerflow.skills.security_scanner import ScanResult
+
+        return ScanResult(decision="block", reason="unsafe rollback")
+
+    monkeypatch.setattr("app.gateway.routers.skills.scan_skill_content", _scan)
+
+    app = FastAPI()
+    app.include_router(skills_router.router)
+
+    with TestClient(app) as client:
+        rollback_response = client.post("/api/skills/custom/demo-skill/rollback", json={"history_index": -1})
+        assert rollback_response.status_code == 400
+        assert "unsafe rollback" in rollback_response.json()["detail"]
+
+        history_response = client.get("/api/skills/custom/demo-skill/history")
+        assert history_response.status_code == 200
+        assert history_response.json()["history"][-1]["scanner"]["decision"] == "block"

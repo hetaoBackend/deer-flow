@@ -247,22 +247,24 @@ async def rollback_custom_skill(skill_name: str, request: SkillRollbackRequest) 
         if target_content is None:
             raise HTTPException(status_code=400, detail="Selected history entry has no previous content to roll back to")
         validate_skill_markdown_content(skill_name, target_content)
+        scan = await scan_skill_content(target_content, executable=False, location=f"{skill_name}/SKILL.md")
         skill_file = get_custom_skill_dir(skill_name) / "SKILL.md"
         current_content = skill_file.read_text(encoding="utf-8")
+        history_entry = {
+            "action": "rollback",
+            "author": "human",
+            "thread_id": None,
+            "file_path": "SKILL.md",
+            "prev_content": current_content,
+            "new_content": target_content,
+            "rollback_from_ts": record.get("ts"),
+            "scanner": {"decision": scan.decision, "reason": scan.reason},
+        }
+        if scan.decision == "block":
+            append_history(skill_name, history_entry)
+            raise HTTPException(status_code=400, detail=f"Rollback blocked by security scanner: {scan.reason}")
         atomic_write(skill_file, target_content)
-        append_history(
-            skill_name,
-            {
-                "action": "rollback",
-                "author": "human",
-                "thread_id": None,
-                "file_path": "SKILL.md",
-                "prev_content": current_content,
-                "new_content": target_content,
-                "rollback_from_ts": record.get("ts"),
-                "scanner": {"decision": "allow", "reason": "Rollback to prior content."},
-            },
-        )
+        append_history(skill_name, history_entry)
         clear_skills_system_prompt_cache()
         return await get_custom_skill(skill_name)
     except HTTPException:

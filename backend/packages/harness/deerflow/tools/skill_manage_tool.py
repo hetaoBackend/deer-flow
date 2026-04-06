@@ -12,6 +12,7 @@ from langgraph.typing import ContextT
 
 from deerflow.agents.lead_agent.prompt import clear_skills_system_prompt_cache
 from deerflow.agents.thread_state import ThreadState
+from deerflow.mcp.tools import _make_sync_tool_wrapper
 from deerflow.skills.manager import (
     append_history,
     atomic_write,
@@ -132,13 +133,14 @@ async def _skill_manage_impl(
                 raise ValueError("Patch target not found in SKILL.md.")
             if expected_count is not None and occurrences != expected_count:
                 raise ValueError(f"Expected {expected_count} replacements but found {occurrences}.")
-            new_content = prev_content.replace(find, replace)
+            replacement_count = expected_count if expected_count is not None else 1
+            new_content = prev_content.replace(find, replace, replacement_count)
             validate_skill_markdown_content(name, new_content)
             scan = await _scan_or_raise(new_content, executable=False, location=f"{name}/SKILL.md")
             atomic_write(skill_file, new_content)
             append_history(name, _history_record(action="patch", file_path="SKILL.md", prev_content=prev_content, new_content=new_content, thread_id=thread_id, scanner=scan))
             clear_skills_system_prompt_cache()
-            return f"Patched custom skill '{name}' ({occurrences} replacement(s))."
+            return f"Patched custom skill '{name}' ({replacement_count} replacement(s) applied, {occurrences} match(es) found)."
 
         if action == "delete":
             ensure_custom_skill_is_editable(name)
@@ -212,28 +214,4 @@ async def skill_manage_tool(
     )
 
 
-def _skill_manage_sync(
-    runtime: ToolRuntime[ContextT, ThreadState],
-    action: str,
-    name: str,
-    content: str | None = None,
-    path: str | None = None,
-    find: str | None = None,
-    replace: str | None = None,
-    expected_count: int | None = None,
-) -> str:
-    return asyncio.run(
-        _skill_manage_impl(
-            runtime=runtime,
-            action=action,
-            name=name,
-            content=content,
-            path=path,
-            find=find,
-            replace=replace,
-            expected_count=expected_count,
-        )
-    )
-
-
-skill_manage_tool.func = _skill_manage_sync
+skill_manage_tool.func = _make_sync_tool_wrapper(_skill_manage_impl, "skill_manage")

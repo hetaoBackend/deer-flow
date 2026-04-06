@@ -69,6 +69,20 @@ def test_get_skills_prompt_section_includes_self_evolution_rules(monkeypatch):
     assert "Skill Self-Evolution" in result
 
 
+def test_get_skills_prompt_section_includes_self_evolution_rules_without_skills(monkeypatch):
+    monkeypatch.setattr("deerflow.agents.lead_agent.prompt.load_skills", lambda enabled_only: [])
+    monkeypatch.setattr(
+        "deerflow.config.get_app_config",
+        lambda: SimpleNamespace(
+            skills=SimpleNamespace(container_path="/mnt/skills"),
+            skill_evolution=SimpleNamespace(enabled=True),
+        ),
+    )
+
+    result = get_skills_prompt_section(available_skills=None)
+    assert "Skill Self-Evolution" in result
+
+
 def test_make_lead_agent_empty_skills_passed_correctly(monkeypatch):
     from unittest.mock import MagicMock
 
