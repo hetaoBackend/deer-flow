@@ -1,20 +1,83 @@
+import asyncio
 import logging
+import threading
 from datetime import datetime
 from functools import lru_cache
 
 from deerflow.config.agents_config import load_agent_soul
 from deerflow.skills import load_skills
+from deerflow.skills.types import Skill
 from deerflow.subagents import get_available_subagent_names
 
 logger = logging.getLogger(__name__)
 
+_enabled_skills_lock = threading.Lock()
+_enabled_skills_cache: list[Skill] | None = None
+_enabled_skills_loading = False
 
-def _get_enabled_skills():
+
+def _load_enabled_skills_sync() -> list[Skill]:
+    return list(load_skills(enabled_only=True))
+
+
+def _refresh_enabled_skills_cache() -> None:
+    global _enabled_skills_cache, _enabled_skills_loading
+
     try:
-        return list(load_skills(enabled_only=True))
+        skills = _load_enabled_skills_sync()
     except Exception:
         logger.exception("Failed to load enabled skills for prompt injection")
-        return []
+        skills = []
+
+    with _enabled_skills_lock:
+        _enabled_skills_cache = skills
+        _enabled_skills_loading = False
+
+
+def _ensure_enabled_skills_cache() -> None:
+    global _enabled_skills_loading
+
+    with _enabled_skills_lock:
+        if _enabled_skills_cache is not None or _enabled_skills_loading:
+            return
+        _enabled_skills_loading = True
+
+    threading.Thread(
+        target=_refresh_enabled_skills_cache,
+        name="deerflow-enabled-skills-loader",
+        daemon=True,
+    ).start()
+
+
+def _reset_skills_system_prompt_cache_state() -> None:
+    global _enabled_skills_cache, _enabled_skills_loading
+
+    _get_cached_skills_prompt_section.cache_clear()
+    with _enabled_skills_lock:
+        _enabled_skills_cache = None
+        _enabled_skills_loading = False
+
+
+def warm_enabled_skills_cache() -> None:
+    global _enabled_skills_loading
+
+    with _enabled_skills_lock:
+        if _enabled_skills_cache is not None or _enabled_skills_loading:
+            return
+        _enabled_skills_loading = True
+
+    _refresh_enabled_skills_cache()
+
+
+def _get_enabled_skills():
+    with _enabled_skills_lock:
+        cached = _enabled_skills_cache
+
+    if cached is not None:
+        return list(cached)
+
+    _ensure_enabled_skills_cache()
+    return []
 
 
 def _skill_mutability_label(category: str) -> str:
@@ -22,7 +85,16 @@ def _skill_mutability_label(category: str) -> str:
 
 
 def clear_skills_system_prompt_cache() -> None:
-    _get_cached_skills_prompt_section.cache_clear()
+    _reset_skills_system_prompt_cache_state()
+    _ensure_enabled_skills_cache()
+
+
+async def refresh_skills_system_prompt_cache_async() -> None:
+    _reset_skills_system_prompt_cache_state()
+    await asyncio.to_thread(warm_enabled_skills_cache)
+
+
+warm_enabled_skills_cache()
 
 
 def _build_skill_evolution_section(skill_evolution_enabled: bool) -> str:
