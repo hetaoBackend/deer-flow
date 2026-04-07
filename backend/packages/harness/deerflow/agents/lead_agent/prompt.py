@@ -13,60 +13,86 @@ logger = logging.getLogger(__name__)
 
 _enabled_skills_lock = threading.Lock()
 _enabled_skills_cache: list[Skill] | None = None
-_enabled_skills_loading = False
+_enabled_skills_refresh_active = False
+_enabled_skills_refresh_version = 0
+_enabled_skills_refresh_event = threading.Event()
 
 
 def _load_enabled_skills_sync() -> list[Skill]:
     return list(load_skills(enabled_only=True))
 
 
-def _refresh_enabled_skills_cache() -> None:
-    global _enabled_skills_cache, _enabled_skills_loading
-
-    try:
-        skills = _load_enabled_skills_sync()
-    except Exception:
-        logger.exception("Failed to load enabled skills for prompt injection")
-        skills = []
-
-    with _enabled_skills_lock:
-        _enabled_skills_cache = skills
-        _enabled_skills_loading = False
-
-
-def _ensure_enabled_skills_cache() -> None:
-    global _enabled_skills_loading
-
-    with _enabled_skills_lock:
-        if _enabled_skills_cache is not None or _enabled_skills_loading:
-            return
-        _enabled_skills_loading = True
-
+def _start_enabled_skills_refresh_thread() -> None:
     threading.Thread(
-        target=_refresh_enabled_skills_cache,
+        target=_refresh_enabled_skills_cache_worker,
         name="deerflow-enabled-skills-loader",
         daemon=True,
     ).start()
 
 
-def _reset_skills_system_prompt_cache_state() -> None:
-    global _enabled_skills_cache, _enabled_skills_loading
+def _refresh_enabled_skills_cache_worker() -> None:
+    global _enabled_skills_cache, _enabled_skills_refresh_active
+
+    while True:
+        with _enabled_skills_lock:
+            target_version = _enabled_skills_refresh_version
+
+        try:
+            skills = _load_enabled_skills_sync()
+        except Exception:
+            logger.exception("Failed to load enabled skills for prompt injection")
+            skills = []
+
+        with _enabled_skills_lock:
+            if _enabled_skills_refresh_version == target_version:
+                _enabled_skills_cache = skills
+                _enabled_skills_refresh_active = False
+                _enabled_skills_refresh_event.set()
+                return
+
+            # A newer invalidation happened while loading. Keep the worker alive
+            # and loop again so the cache always converges on the latest version.
+            _enabled_skills_cache = None
+
+
+def _ensure_enabled_skills_cache() -> threading.Event:
+    global _enabled_skills_refresh_active
+
+    with _enabled_skills_lock:
+        if _enabled_skills_cache is not None:
+            _enabled_skills_refresh_event.set()
+            return _enabled_skills_refresh_event
+        if _enabled_skills_refresh_active:
+            return _enabled_skills_refresh_event
+        _enabled_skills_refresh_active = True
+        _enabled_skills_refresh_event.clear()
+
+    _start_enabled_skills_refresh_thread()
+    return _enabled_skills_refresh_event
+
+
+def _invalidate_enabled_skills_cache() -> threading.Event:
+    global _enabled_skills_cache, _enabled_skills_refresh_active, _enabled_skills_refresh_version
 
     _get_cached_skills_prompt_section.cache_clear()
     with _enabled_skills_lock:
         _enabled_skills_cache = None
-        _enabled_skills_loading = False
+        _enabled_skills_refresh_version += 1
+        _enabled_skills_refresh_event.clear()
+        if _enabled_skills_refresh_active:
+            return _enabled_skills_refresh_event
+        _enabled_skills_refresh_active = True
+
+    _start_enabled_skills_refresh_thread()
+    return _enabled_skills_refresh_event
+
+
+def prime_enabled_skills_cache() -> None:
+    _ensure_enabled_skills_cache()
 
 
 def warm_enabled_skills_cache() -> None:
-    global _enabled_skills_loading
-
-    with _enabled_skills_lock:
-        if _enabled_skills_cache is not None or _enabled_skills_loading:
-            return
-        _enabled_skills_loading = True
-
-    _refresh_enabled_skills_cache()
+    _ensure_enabled_skills_cache().wait()
 
 
 def _get_enabled_skills():
@@ -85,16 +111,36 @@ def _skill_mutability_label(category: str) -> str:
 
 
 def clear_skills_system_prompt_cache() -> None:
-    _reset_skills_system_prompt_cache_state()
-    _ensure_enabled_skills_cache()
+    _invalidate_enabled_skills_cache()
 
 
 async def refresh_skills_system_prompt_cache_async() -> None:
-    _reset_skills_system_prompt_cache_state()
-    await asyncio.to_thread(warm_enabled_skills_cache)
+    await asyncio.to_thread(_invalidate_enabled_skills_cache().wait)
 
 
-warm_enabled_skills_cache()
+def _reset_skills_system_prompt_cache_state() -> None:
+    global _enabled_skills_cache, _enabled_skills_refresh_active, _enabled_skills_refresh_version
+
+    _get_cached_skills_prompt_section.cache_clear()
+    with _enabled_skills_lock:
+        _enabled_skills_cache = None
+        _enabled_skills_refresh_active = False
+        _enabled_skills_refresh_version = 0
+        _enabled_skills_refresh_event.clear()
+
+
+def _refresh_enabled_skills_cache() -> None:
+    """Backward-compatible test helper for direct synchronous reload."""
+    try:
+        skills = _load_enabled_skills_sync()
+    except Exception:
+        logger.exception("Failed to load enabled skills for prompt injection")
+        skills = []
+
+    with _enabled_skills_lock:
+        _enabled_skills_cache = skills
+        _enabled_skills_refresh_active = False
+        _enabled_skills_refresh_event.set()
 
 
 def _build_skill_evolution_section(skill_evolution_enabled: bool) -> str:

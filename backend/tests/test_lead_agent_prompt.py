@@ -1,3 +1,4 @@
+import threading
 from types import SimpleNamespace
 
 import anyio
@@ -76,4 +77,60 @@ def test_refresh_skills_system_prompt_cache_async_reloads_immediately(monkeypatc
 
         assert [skill.name for skill in prompt_module._get_enabled_skills()] == ["second-skill"]
     finally:
+        prompt_module._reset_skills_system_prompt_cache_state()
+
+
+def test_clear_cache_does_not_spawn_parallel_refresh_workers(monkeypatch, tmp_path):
+    started = threading.Event()
+    release = threading.Event()
+    active_loads = 0
+    max_active_loads = 0
+    call_count = 0
+    lock = threading.Lock()
+
+    def make_skill(name: str) -> Skill:
+        skill_dir = tmp_path / name
+        return Skill(
+            name=name,
+            description=f"Description for {name}",
+            license="MIT",
+            skill_dir=skill_dir,
+            skill_file=skill_dir / "SKILL.md",
+            relative_path=skill_dir.relative_to(tmp_path),
+            category="custom",
+            enabled=True,
+        )
+
+    def fake_load_skills(enabled_only=True):
+        nonlocal active_loads, max_active_loads, call_count
+        with lock:
+            active_loads += 1
+            max_active_loads = max(max_active_loads, active_loads)
+            call_count += 1
+            current_call = call_count
+
+        started.set()
+        if current_call == 1:
+            release.wait(timeout=5)
+
+        with lock:
+            active_loads -= 1
+
+        return [make_skill(f"skill-{current_call}")]
+
+    monkeypatch.setattr(prompt_module, "load_skills", fake_load_skills)
+    prompt_module._reset_skills_system_prompt_cache_state()
+
+    try:
+        prompt_module.clear_skills_system_prompt_cache()
+        assert started.wait(timeout=5)
+
+        prompt_module.clear_skills_system_prompt_cache()
+        release.set()
+        prompt_module.warm_enabled_skills_cache()
+
+        assert max_active_loads == 1
+        assert [skill.name for skill in prompt_module._get_enabled_skills()] == ["skill-2"]
+    finally:
+        release.set()
         prompt_module._reset_skills_system_prompt_cache_state()
