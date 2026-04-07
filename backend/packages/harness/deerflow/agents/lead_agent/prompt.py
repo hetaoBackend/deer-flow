@@ -11,6 +11,7 @@ from deerflow.subagents import get_available_subagent_names
 
 logger = logging.getLogger(__name__)
 
+_ENABLED_SKILLS_REFRESH_WAIT_TIMEOUT_SECONDS = 5.0
 _enabled_skills_lock = threading.Lock()
 _enabled_skills_cache: list[Skill] | None = None
 _enabled_skills_refresh_active = False
@@ -91,8 +92,12 @@ def prime_enabled_skills_cache() -> None:
     _ensure_enabled_skills_cache()
 
 
-def warm_enabled_skills_cache() -> None:
-    _ensure_enabled_skills_cache().wait()
+def warm_enabled_skills_cache(timeout_seconds: float = _ENABLED_SKILLS_REFRESH_WAIT_TIMEOUT_SECONDS) -> bool:
+    if _ensure_enabled_skills_cache().wait(timeout=timeout_seconds):
+        return True
+
+    logger.warning("Timed out waiting %.1fs for enabled skills cache warm-up", timeout_seconds)
+    return False
 
 
 def _get_enabled_skills():

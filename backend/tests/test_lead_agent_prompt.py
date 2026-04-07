@@ -134,3 +134,14 @@ def test_clear_cache_does_not_spawn_parallel_refresh_workers(monkeypatch, tmp_pa
     finally:
         release.set()
         prompt_module._reset_skills_system_prompt_cache_state()
+
+
+def test_warm_enabled_skills_cache_logs_on_timeout(monkeypatch, caplog):
+    event = threading.Event()
+    monkeypatch.setattr(prompt_module, "_ensure_enabled_skills_cache", lambda: event)
+
+    with caplog.at_level("WARNING"):
+        warmed = prompt_module.warm_enabled_skills_cache(timeout_seconds=0.01)
+
+    assert warmed is False
+    assert "Timed out waiting" in caplog.text
