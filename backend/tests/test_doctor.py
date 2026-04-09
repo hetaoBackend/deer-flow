@@ -6,19 +6,9 @@ Run from repo root:
 
 from __future__ import annotations
 
-import os
 import sys
-from pathlib import Path
-
-import pytest
-
-# Add scripts/ to sys.path
-SCRIPTS_DIR = Path(__file__).resolve().parents[2] / "scripts"
-if str(SCRIPTS_DIR) not in sys.path:
-    sys.path.insert(0, str(SCRIPTS_DIR))
 
 import doctor
-
 
 # ---------------------------------------------------------------------------
 # check_python
@@ -27,11 +17,8 @@ import doctor
 class TestCheckPython:
     def test_current_python_passes(self):
         result = doctor.check_python()
-        # We're running on 3.12+ (CI requirement), so this should pass
-        if sys.version_info >= (3, 12):
-            assert result.status == "ok"
-        else:
-            assert result.status == "fail"
+        assert sys.version_info >= (3, 12)
+        assert result.status == "ok"
 
 
 # ---------------------------------------------------------------------------
