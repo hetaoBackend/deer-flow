@@ -145,7 +145,9 @@ def main() -> int:
         print()
         print("You can now run:")
         print("  make install  - Install project dependencies")
-        print("  make config   - Generate local config files")
+        print("  make setup    - Create a minimal working config (recommended)")
+        print("  make config   - Copy the full config template (manual setup)")
+        print("  make doctor   - Verify config and dependency health")
         print("  make dev      - Start development server")
         print("  make start    - Start production server")
         return 0

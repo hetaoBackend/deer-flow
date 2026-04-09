@@ -3,6 +3,7 @@
 .PHONY: help config config-upgrade check install setup setup-full doctor dev dev-pro dev-daemon dev-daemon-pro start start-pro start-daemon start-daemon-pro stop up up-pro down clean docker-init docker-start docker-start-pro docker-stop docker-logs docker-logs-frontend docker-logs-gateway
 
 BASH ?= bash
+BACKEND_UV_RUN = cd backend && uv run
 
 # Detect OS for Windows compatibility
 ifeq ($(OS),Windows_NT)
@@ -49,13 +50,13 @@ help:
 
 ## Setup & Diagnosis
 setup:
-	@cd backend && uv run python ../scripts/setup_wizard.py
+	@$(BACKEND_UV_RUN) python ../scripts/setup_wizard.py
 
 setup-full:
-	@cd backend && uv run python ../scripts/setup_wizard.py --full
+	@$(BACKEND_UV_RUN) python ../scripts/setup_wizard.py --full
 
 doctor:
-	@cd backend && uv run python ../scripts/doctor.py
+	@$(BACKEND_UV_RUN) python ../scripts/doctor.py
 
 config:
 	@$(PYTHON) ./scripts/configure.py

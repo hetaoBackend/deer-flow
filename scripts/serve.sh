@@ -155,7 +155,7 @@ if ! { \
         [ -f config.yaml ]; \
     }; then
     echo "✗ No DeerFlow config file found."
-    echo "  Run 'make config' to generate config.yaml."
+    echo "  Run 'make setup' (recommended) or 'make config' to generate config.yaml."
     exit 1
 fi
 
