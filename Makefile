@@ -1,6 +1,6 @@
 # DeerFlow - Unified Development Environment
 
-.PHONY: help config config-upgrade check install dev dev-pro dev-daemon dev-daemon-pro start start-pro start-daemon start-daemon-pro stop up up-pro down clean docker-init docker-start docker-start-pro docker-stop docker-logs docker-logs-frontend docker-logs-gateway
+.PHONY: help config config-upgrade check install setup setup-full doctor dev dev-pro dev-daemon dev-daemon-pro start start-pro start-daemon start-daemon-pro stop up up-pro down clean docker-init docker-start docker-start-pro docker-stop docker-logs docker-logs-frontend docker-logs-gateway
 
 BASH ?= bash
 
@@ -14,6 +14,9 @@ endif
 
 help:
 	@echo "DeerFlow Development Commands:"
+	@echo "  make setup           - Interactive setup wizard (recommended for new users)"
+	@echo "  make setup-full      - Interactive setup wizard (full configuration)"
+	@echo "  make doctor          - Check configuration and system requirements"
 	@echo "  make config          - Generate local config files (aborts if config already exists)"
 	@echo "  make config-upgrade  - Merge new fields from config.example.yaml into config.yaml"
 	@echo "  make check           - Check if all required tools are installed"
@@ -43,6 +46,16 @@ help:
 	@echo "  make docker-logs     - View Docker development logs"
 	@echo "  make docker-logs-frontend - View Docker frontend logs"
 	@echo "  make docker-logs-gateway - View Docker gateway logs"
+
+## Setup & Diagnosis
+setup:
+	@uv run python scripts/setup_wizard.py
+
+setup-full:
+	@uv run python scripts/setup_wizard.py --full
+
+doctor:
+	@uv run python scripts/doctor.py
 
 config:
 	@$(PYTHON) ./scripts/configure.py
