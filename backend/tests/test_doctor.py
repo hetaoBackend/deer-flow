@@ -14,6 +14,7 @@ import doctor
 # check_python
 # ---------------------------------------------------------------------------
 
+
 class TestCheckPython:
     def test_current_python_passes(self):
         result = doctor.check_python()
@@ -24,6 +25,7 @@ class TestCheckPython:
 # ---------------------------------------------------------------------------
 # check_config_exists
 # ---------------------------------------------------------------------------
+
 
 class TestCheckConfigExists:
     def test_missing_config(self, tmp_path):
@@ -41,6 +43,7 @@ class TestCheckConfigExists:
 # ---------------------------------------------------------------------------
 # check_config_version
 # ---------------------------------------------------------------------------
+
 
 class TestCheckConfigVersion:
     def test_up_to_date(self, tmp_path):
@@ -69,6 +72,7 @@ class TestCheckConfigVersion:
 # check_models_configured
 # ---------------------------------------------------------------------------
 
+
 class TestCheckModelsConfigured:
     def test_no_models(self, tmp_path):
         cfg = tmp_path / "config.yaml"
@@ -78,14 +82,7 @@ class TestCheckModelsConfigured:
 
     def test_one_model(self, tmp_path):
         cfg = tmp_path / "config.yaml"
-        cfg.write_text(
-            "config_version: 5\n"
-            "models:\n"
-            "  - name: default\n"
-            "    use: langchain_openai:ChatOpenAI\n"
-            "    model: gpt-4o\n"
-            "    api_key: $OPENAI_API_KEY\n"
-        )
+        cfg.write_text("config_version: 5\nmodels:\n  - name: default\n    use: langchain_openai:ChatOpenAI\n    model: gpt-4o\n    api_key: $OPENAI_API_KEY\n")
         result = doctor.check_models_configured(cfg)
         assert result.status == "ok"
 
@@ -98,17 +95,11 @@ class TestCheckModelsConfigured:
 # check_llm_api_key
 # ---------------------------------------------------------------------------
 
+
 class TestCheckLLMApiKey:
     def test_key_set(self, tmp_path, monkeypatch):
         cfg = tmp_path / "config.yaml"
-        cfg.write_text(
-            "config_version: 5\n"
-            "models:\n"
-            "  - name: default\n"
-            "    use: langchain_openai:ChatOpenAI\n"
-            "    model: gpt-4o\n"
-            "    api_key: $OPENAI_API_KEY\n"
-        )
+        cfg.write_text("config_version: 5\nmodels:\n  - name: default\n    use: langchain_openai:ChatOpenAI\n    model: gpt-4o\n    api_key: $OPENAI_API_KEY\n")
         monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
         results = doctor.check_llm_api_key(cfg)
         assert any(r.status == "ok" for r in results)
@@ -116,14 +107,7 @@ class TestCheckLLMApiKey:
 
     def test_key_missing(self, tmp_path, monkeypatch):
         cfg = tmp_path / "config.yaml"
-        cfg.write_text(
-            "config_version: 5\n"
-            "models:\n"
-            "  - name: default\n"
-            "    use: langchain_openai:ChatOpenAI\n"
-            "    model: gpt-4o\n"
-            "    api_key: $OPENAI_API_KEY\n"
-        )
+        cfg.write_text("config_version: 5\nmodels:\n  - name: default\n    use: langchain_openai:ChatOpenAI\n    model: gpt-4o\n    api_key: $OPENAI_API_KEY\n")
         monkeypatch.delenv("OPENAI_API_KEY", raising=False)
         results = doctor.check_llm_api_key(cfg)
         assert any(r.status == "fail" for r in results)
@@ -140,19 +124,12 @@ class TestCheckLLMApiKey:
 # check_web_search
 # ---------------------------------------------------------------------------
 
+
 class TestCheckWebSearch:
     def test_ddg_always_ok(self, tmp_path):
         cfg = tmp_path / "config.yaml"
         cfg.write_text(
-            "config_version: 5\n"
-            "models:\n"
-            "  - name: default\n"
-            "    use: langchain_openai:ChatOpenAI\n"
-            "    model: gpt-4o\n"
-            "    api_key: $OPENAI_API_KEY\n"
-            "tools:\n"
-            "  - name: web_search\n"
-            "    use: deerflow.community.ddg_search.tools:web_search_tool\n"
+            "config_version: 5\nmodels:\n  - name: default\n    use: langchain_openai:ChatOpenAI\n    model: gpt-4o\n    api_key: $OPENAI_API_KEY\ntools:\n  - name: web_search\n    use: deerflow.community.ddg_search.tools:web_search_tool\n"
         )
         result = doctor.check_web_search(cfg)
         assert result.status == "ok"
@@ -161,24 +138,14 @@ class TestCheckWebSearch:
     def test_tavily_with_key_ok(self, tmp_path, monkeypatch):
         monkeypatch.setenv("TAVILY_API_KEY", "tvly-test")
         cfg = tmp_path / "config.yaml"
-        cfg.write_text(
-            "config_version: 5\n"
-            "tools:\n"
-            "  - name: web_search\n"
-            "    use: deerflow.community.tavily.tools:web_search_tool\n"
-        )
+        cfg.write_text("config_version: 5\ntools:\n  - name: web_search\n    use: deerflow.community.tavily.tools:web_search_tool\n")
         result = doctor.check_web_search(cfg)
         assert result.status == "ok"
 
     def test_tavily_without_key_warns(self, tmp_path, monkeypatch):
         monkeypatch.delenv("TAVILY_API_KEY", raising=False)
         cfg = tmp_path / "config.yaml"
-        cfg.write_text(
-            "config_version: 5\n"
-            "tools:\n"
-            "  - name: web_search\n"
-            "    use: deerflow.community.tavily.tools:web_search_tool\n"
-        )
+        cfg.write_text("config_version: 5\ntools:\n  - name: web_search\n    use: deerflow.community.tavily.tools:web_search_tool\n")
         result = doctor.check_web_search(cfg)
         assert result.status == "warn"
         assert result.fix is not None
@@ -198,6 +165,7 @@ class TestCheckWebSearch:
 # check_env_file
 # ---------------------------------------------------------------------------
 
+
 class TestCheckEnvFile:
     def test_missing(self, tmp_path):
         result = doctor.check_env_file(tmp_path)
@@ -212,6 +180,7 @@ class TestCheckEnvFile:
 # ---------------------------------------------------------------------------
 # main() exit code
 # ---------------------------------------------------------------------------
+
 
 class TestMainExitCode:
     def test_returns_int(self, tmp_path, monkeypatch, capsys):
