@@ -185,11 +185,23 @@ class TestCheckEnvFile:
 class TestMainExitCode:
     def test_returns_int(self, tmp_path, monkeypatch, capsys):
         """main() should return 0 or 1 without raising."""
-        monkeypatch.chdir(tmp_path)
-        # Point doctor at tmp_path so it doesn't find a real config
-        monkeypatch.setattr(
-            doctor,
-            "main",
-            lambda: 1,  # just a stub; actual smoke tested below
-        )
-        assert doctor.main() == 1
+        repo_root = tmp_path / "repo"
+        scripts_dir = repo_root / "scripts"
+        scripts_dir.mkdir(parents=True)
+        fake_doctor = scripts_dir / "doctor.py"
+        fake_doctor.write_text("# test-only shim for __file__ resolution\n")
+
+        monkeypatch.chdir(repo_root)
+        monkeypatch.setattr(doctor, "__file__", str(fake_doctor))
+        monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+        monkeypatch.delenv("TAVILY_API_KEY", raising=False)
+
+        exit_code = doctor.main()
+
+        captured = capsys.readouterr()
+        output = captured.out + captured.err
+
+        assert exit_code in (0, 1)
+        assert output
+        assert "config.yaml" in output
+        assert ".env" in output

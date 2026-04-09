@@ -90,7 +90,7 @@ class TestBuildMinimalConfig:
         tool_names = [t["name"] for t in data.get("tools", [])]
         assert "web_search" in tool_names
 
-    def test_ddg_fallback_when_no_search_specified(self):
+    def test_no_search_tool_when_not_configured(self):
         content = build_minimal_config(
             provider_use="langchain_openai:ChatOpenAI",
             model_name="gpt-4o",
@@ -99,9 +99,8 @@ class TestBuildMinimalConfig:
             env_var="OPENAI_API_KEY",
         )
         data = yaml.safe_load(content)
-        web_search_tools = [t for t in data.get("tools", []) if t["name"] == "web_search"]
-        assert len(web_search_tools) == 1
-        assert "ddg_search" in web_search_tools[0]["use"]
+        tool_names = [t["name"] for t in data.get("tools", [])]
+        assert "web_search" not in tool_names
 
     def test_sandbox_included(self):
         content = build_minimal_config(

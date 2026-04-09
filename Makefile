@@ -15,7 +15,7 @@ endif
 help:
 	@echo "DeerFlow Development Commands:"
 	@echo "  make setup           - Interactive setup wizard (recommended for new users)"
-	@echo "  make setup-full      - Interactive setup wizard (full configuration)"
+	@echo "  make setup-full      - Interactive setup wizard with optional web search"
 	@echo "  make doctor          - Check configuration and system requirements"
 	@echo "  make config          - Generate local config files (aborts if config already exists)"
 	@echo "  make config-upgrade  - Merge new fields from config.example.yaml into config.yaml"
@@ -49,13 +49,13 @@ help:
 
 ## Setup & Diagnosis
 setup:
-	@uv run python scripts/setup_wizard.py
+	@cd backend && uv run python ../scripts/setup_wizard.py
 
 setup-full:
-	@uv run python scripts/setup_wizard.py --full
+	@cd backend && uv run python ../scripts/setup_wizard.py --full
 
 doctor:
-	@uv run python scripts/doctor.py
+	@cd backend && uv run python ../scripts/doctor.py
 
 config:
 	@$(PYTHON) ./scripts/configure.py

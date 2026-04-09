@@ -114,7 +114,7 @@ That prompt is intended for coding agents. It tells the agent to clone the repo 
 
    This launches an interactive wizard that guides you through choosing an LLM provider and entering your API key. It generates a minimal `config.yaml` and writes your keys to `.env`. Takes about 2 minutes.
 
-   Run `make setup-full` for advanced configuration (web search provider, sandbox, IM channels).
+   Run `make setup-full` if you also want to configure an optional web search provider during setup.
 
    Run `make doctor` at any time to verify your setup and get actionable fix hints.
 

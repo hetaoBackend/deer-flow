@@ -3,7 +3,7 @@
 
 Usage:
     uv run python scripts/setup_wizard.py           # Quick Setup
-    uv run python scripts/setup_wizard.py --full    # Full Setup (not yet implemented)
+    uv run python scripts/setup_wizard.py --full    # Full Setup (includes web search)
 """
 
 from __future__ import annotations
@@ -62,18 +62,25 @@ def main() -> int:
             return 0
         print()
 
+    total_steps = 3 if full_mode else 2
+
     # ── Step 1: LLM ──────────────────────────────────────────────────────────
     from wizard.steps.llm import run_llm_step
 
-    llm = run_llm_step("Step 1/3")
+    llm = run_llm_step(f"Step 1/{total_steps}")
 
-    # ── Step 2: Web Search ────────────────────────────────────────────────────
-    from wizard.steps.search import run_search_step
+    search_provider = None
+    search_api_key = None
+    if full_mode:
+        # ── Step 2: Web Search ────────────────────────────────────────────────
+        from wizard.steps.search import run_search_step
 
-    search = run_search_step("Step 2/3" if full_mode else "Step 2/3")
+        search = run_search_step(f"Step 2/{total_steps}")
+        search_provider = search.provider
+        search_api_key = search.api_key
 
     # ── Write files ───────────────────────────────────────────────────────────
-    print_header("Step 3/3 · Writing configuration")
+    print_header(f"Step {total_steps}/{total_steps} · Writing configuration")
 
     # config.yaml
     write_config_yaml(
@@ -85,8 +92,8 @@ def main() -> int:
         env_var=llm.provider.env_var,
         extra_model_config=llm.provider.extra_config or None,
         base_url=llm.base_url,
-        search_use=search.provider.use if search.provider else None,
-        search_tool_name=search.provider.tool_name if search.provider else "web_search",
+        search_use=search_provider.use if search_provider else None,
+        search_tool_name=search_provider.tool_name if search_provider else "web_search",
     )
     print_success(f"Config written to: {config_path.relative_to(project_root)}")
 
@@ -100,8 +107,8 @@ def main() -> int:
     env_pairs: dict[str, str] = {}
     if llm.api_key:
         env_pairs[llm.provider.env_var] = llm.api_key
-    if search.api_key and search.provider and search.provider.env_var:
-        env_pairs[search.provider.env_var] = search.api_key
+    if search_api_key and search_provider and search_provider.env_var:
+        env_pairs[search_provider.env_var] = search_api_key
 
     if env_pairs:
         write_env_file(env_path, env_pairs)
@@ -118,10 +125,12 @@ def main() -> int:
     # ── Done ──────────────────────────────────────────────────────────────────
     print_header("Setup complete!")
     print(f"  {green('✓')} LLM:        {llm.provider.display_name} / {llm.model_name}")
-    if search.provider:
-        print(f"  {green('✓')} Web search: {search.provider.display_name}")
+    if search_provider:
+        print(f"  {green('✓')} Web search: {search_provider.display_name}")
+    elif full_mode:
+        print(f"  {'—':>3} Web search: not configured")
     else:
-        print(f"  {'—':>3} Web search: not configured (DuckDuckGo used as fallback)")
+        print(f"  {'—':>3} Web search: skipped in quick setup")
     print()
     print("Next steps:")
     print(f"  {cyan('make install')}    # Install dependencies (first time only)")

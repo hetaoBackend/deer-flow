@@ -1,6 +1,7 @@
 """Config file writer for the Setup Wizard.
 
-Writes config.yaml and .env without wiping existing user customisations.
+Writes config.yaml as a minimal working configuration and updates .env
+without wiping existing user customisations where possible.
 """
 
 from __future__ import annotations
@@ -64,7 +65,7 @@ def write_env_file(env_path: Path, pairs: dict[str, str]) -> None:
 # ── config.yaml helpers ───────────────────────────────────────────────────────
 
 def _yaml_dump(data: Any) -> str:
-    return yaml.dump(data, default_flow_style=False, allow_unicode=True, sort_keys=False)
+    return yaml.safe_dump(data, default_flow_style=False, allow_unicode=True, sort_keys=False)
 
 
 def build_minimal_config(
@@ -78,7 +79,6 @@ def build_minimal_config(
     base_url: str | None = None,
     search_use: str | None = None,
     search_tool_name: str = "web_search",
-    search_env_var: str | None = None,
     config_version: int = 5,
 ) -> str:
     """Build the content of a minimal config.yaml."""
@@ -121,13 +121,6 @@ def build_minimal_config(
             "group": "search",
         }
         tools.insert(0, search_tool)
-    else:
-        # Default to DuckDuckGo (no key required)
-        tools.insert(0, {
-            "name": "web_search",
-            "use": "deerflow.community.ddg_search.tools:web_search_tool",
-            "group": "search",
-        })
 
     data["tools"] = tools
     data["sandbox"] = {"use": "deerflow.sandbox.local:LocalSandboxProvider"}
@@ -154,7 +147,6 @@ def write_config_yaml(
     base_url: str | None = None,
     search_use: str | None = None,
     search_tool_name: str = "web_search",
-    search_env_var: str | None = None,
 ) -> None:
     """Write (or overwrite) config.yaml with a minimal working configuration."""
     # Read config_version from config.example.yaml if present
@@ -178,7 +170,6 @@ def write_config_yaml(
         base_url=base_url,
         search_use=search_use,
         search_tool_name=search_tool_name,
-        search_env_var=search_env_var,
         config_version=config_version,
     )
     config_path.write_text(content, encoding="utf-8")

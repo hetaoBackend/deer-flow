@@ -41,7 +41,7 @@ def run_llm_step(step_label: str = "Step 1/3") -> LLMStepResult:
         model_name = provider.models[0]
 
     print()
-    print_header(f"{step_label.split('/')[0].replace('Step ', 'Step ')} · Enter your API Key")
+    print_header(f"{step_label} · Enter your API Key")
 
     # "Other" provider: ask for base_url too
     base_url: str | None = None
