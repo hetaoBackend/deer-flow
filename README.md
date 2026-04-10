@@ -112,7 +112,7 @@ That prompt is intended for coding agents. It tells the agent to clone the repo 
    make setup
    ```
 
-   This launches an interactive wizard that guides you through choosing an LLM provider and entering your API key. It generates a minimal `config.yaml` and writes your keys to `.env`. Takes about 2 minutes.
+   This launches an interactive wizard that guides you through choosing an LLM provider, optional web search, and execution/safety preferences such as sandbox mode, bash access, and file-write tools. It generates a minimal `config.yaml` and writes your keys to `.env`. Takes about 2 minutes.
 
    The wizard also lets you configure an optional web search provider, or skip it for now.
 

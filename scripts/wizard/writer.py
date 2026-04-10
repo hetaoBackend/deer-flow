@@ -79,6 +79,10 @@ def build_minimal_config(
     base_url: str | None = None,
     search_use: str | None = None,
     search_tool_name: str = "web_search",
+    sandbox_use: str = "deerflow.sandbox.local:LocalSandboxProvider",
+    allow_host_bash: bool = False,
+    include_bash_tool: bool = False,
+    include_write_tools: bool = True,
     config_version: int = 5,
 ) -> str:
     """Build the content of a minimal config.yaml."""
@@ -108,11 +112,19 @@ def build_minimal_config(
         {"name": "read_file", "use": "deerflow.sandbox.tools:read_file_tool", "group": "sandbox"},
         {"name": "glob", "use": "deerflow.sandbox.tools:glob_tool", "group": "sandbox"},
         {"name": "grep", "use": "deerflow.sandbox.tools:grep_tool", "group": "sandbox"},
-        {"name": "write_file", "use": "deerflow.sandbox.tools:write_file_tool", "group": "sandbox"},
-        {"name": "str_replace", "use": "deerflow.sandbox.tools:str_replace_tool", "group": "sandbox"},
-        {"name": "bash", "use": "deerflow.sandbox.tools:bash_tool", "group": "sandbox"},
         {"name": "image_search", "use": "deerflow.community.image_search.tools:image_search_tool", "group": "search"},
     ]
+
+    if include_write_tools:
+        tools.extend(
+            [
+                {"name": "write_file", "use": "deerflow.sandbox.tools:write_file_tool", "group": "sandbox"},
+                {"name": "str_replace", "use": "deerflow.sandbox.tools:str_replace_tool", "group": "sandbox"},
+            ]
+        )
+
+    if include_bash_tool:
+        tools.append({"name": "bash", "use": "deerflow.sandbox.tools:bash_tool", "group": "sandbox"})
 
     if search_use:
         search_tool: dict[str, Any] = {
@@ -123,7 +135,9 @@ def build_minimal_config(
         tools.insert(0, search_tool)
 
     data["tools"] = tools
-    data["sandbox"] = {"use": "deerflow.sandbox.local:LocalSandboxProvider"}
+    data["sandbox"] = {"use": sandbox_use}
+    if sandbox_use == "deerflow.sandbox.local:LocalSandboxProvider":
+        data["sandbox"]["allow_host_bash"] = allow_host_bash
 
     header = (
         f"# DeerFlow Configuration\n"
@@ -147,6 +161,10 @@ def write_config_yaml(
     base_url: str | None = None,
     search_use: str | None = None,
     search_tool_name: str = "web_search",
+    sandbox_use: str = "deerflow.sandbox.local:LocalSandboxProvider",
+    allow_host_bash: bool = False,
+    include_bash_tool: bool = False,
+    include_write_tools: bool = True,
 ) -> None:
     """Write (or overwrite) config.yaml with a minimal working configuration."""
     # Read config_version from config.example.yaml if present
@@ -170,6 +188,10 @@ def write_config_yaml(
         base_url=base_url,
         search_use=search_use,
         search_tool_name=search_tool_name,
+        sandbox_use=sandbox_use,
+        allow_host_bash=allow_host_bash,
+        include_bash_tool=include_bash_tool,
+        include_write_tools=include_write_tools,
         config_version=config_version,
     )
     config_path.write_text(content, encoding="utf-8")

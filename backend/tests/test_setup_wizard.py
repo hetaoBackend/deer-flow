@@ -113,6 +113,50 @@ class TestBuildMinimalConfig:
         data = yaml.safe_load(content)
         assert "sandbox" in data
         assert "use" in data["sandbox"]
+        assert data["sandbox"]["use"] == "deerflow.sandbox.local:LocalSandboxProvider"
+        assert data["sandbox"]["allow_host_bash"] is False
+
+    def test_bash_tool_disabled_by_default(self):
+        content = build_minimal_config(
+            provider_use="langchain_openai:ChatOpenAI",
+            model_name="gpt-4o",
+            display_name="OpenAI",
+            api_key_field="api_key",
+            env_var="OPENAI_API_KEY",
+        )
+        data = yaml.safe_load(content)
+        tool_names = [t["name"] for t in data.get("tools", [])]
+        assert "bash" not in tool_names
+
+    def test_can_enable_container_sandbox_and_bash(self):
+        content = build_minimal_config(
+            provider_use="langchain_openai:ChatOpenAI",
+            model_name="gpt-4o",
+            display_name="OpenAI",
+            api_key_field="api_key",
+            env_var="OPENAI_API_KEY",
+            sandbox_use="deerflow.community.aio_sandbox:AioSandboxProvider",
+            include_bash_tool=True,
+        )
+        data = yaml.safe_load(content)
+        assert data["sandbox"]["use"] == "deerflow.community.aio_sandbox:AioSandboxProvider"
+        assert "allow_host_bash" not in data["sandbox"]
+        tool_names = [t["name"] for t in data.get("tools", [])]
+        assert "bash" in tool_names
+
+    def test_can_disable_write_tools(self):
+        content = build_minimal_config(
+            provider_use="langchain_openai:ChatOpenAI",
+            model_name="gpt-4o",
+            display_name="OpenAI",
+            api_key_field="api_key",
+            env_var="OPENAI_API_KEY",
+            include_write_tools=False,
+        )
+        data = yaml.safe_load(content)
+        tool_names = [t["name"] for t in data.get("tools", [])]
+        assert "write_file" not in tool_names
+        assert "str_replace" not in tool_names
 
     def test_config_version_present(self):
         content = build_minimal_config(

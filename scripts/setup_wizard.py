@@ -59,7 +59,7 @@ def main() -> int:
             return 0
         print()
 
-    total_steps = 3
+    total_steps = 4
 
     # ── Step 1: LLM ──────────────────────────────────────────────────────────
     from wizard.steps.llm import run_llm_step
@@ -72,6 +72,11 @@ def main() -> int:
     search = run_search_step(f"Step 2/{total_steps}")
     search_provider = search.provider
     search_api_key = search.api_key
+
+    # ── Step 3: Execution & Safety ───────────────────────────────────────────
+    from wizard.steps.execution import run_execution_step
+
+    execution = run_execution_step(f"Step 3/{total_steps}")
 
     # ── Write files ───────────────────────────────────────────────────────────
     print_header(f"Step {total_steps}/{total_steps} · Writing configuration")
@@ -88,6 +93,10 @@ def main() -> int:
         base_url=llm.base_url,
         search_use=search_provider.use if search_provider else None,
         search_tool_name=search_provider.tool_name if search_provider else "web_search",
+        sandbox_use=execution.sandbox_use,
+        allow_host_bash=execution.allow_host_bash,
+        include_bash_tool=execution.include_bash_tool,
+        include_write_tools=execution.include_write_tools,
     )
     print_success(f"Config written to: {config_path.relative_to(project_root)}")
 
@@ -123,6 +132,19 @@ def main() -> int:
         print(f"  {green('✓')} Web search: {search_provider.display_name}")
     else:
         print(f"  {'—':>3} Web search: not configured")
+    sandbox_label = "Local sandbox" if execution.sandbox_use.endswith("LocalSandboxProvider") else "Container sandbox"
+    print(f"  {green('✓')} Execution:  {sandbox_label}")
+    if execution.include_bash_tool:
+        bash_label = "enabled"
+        if execution.allow_host_bash:
+            bash_label += " (host bash)"
+        print(f"  {green('✓')} Bash:       {bash_label}")
+    else:
+        print(f"  {'—':>3} Bash:       disabled")
+    if execution.include_write_tools:
+        print(f"  {green('✓')} File write: enabled")
+    else:
+        print(f"  {'—':>3} File write: disabled")
     print()
     print("Next steps:")
     print(f"  {cyan('make install')}    # Install dependencies (first time only)")
