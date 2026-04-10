@@ -36,6 +36,10 @@ class TestProviders:
             assert sp.use
             assert ":" in sp.use
 
+    def test_search_and_fetch_include_firecrawl(self):
+        assert any(provider.name == "firecrawl" for provider in SEARCH_PROVIDERS)
+        assert any(provider.name == "firecrawl" for provider in WEB_FETCH_PROVIDERS)
+
     def test_web_fetch_providers_have_required_fields(self):
         for provider in WEB_FETCH_PROVIDERS:
             assert provider.name
@@ -100,6 +104,29 @@ class TestBuildMinimalConfig:
         data = yaml.safe_load(content)
         search_tool = next(t for t in data.get("tools", []) if t["name"] == "web_search")
         assert search_tool["max_results"] == 5
+
+    def test_openrouter_defaults_are_preserved(self):
+        content = build_minimal_config(
+            provider_use="langchain_openai:ChatOpenAI",
+            model_name="google/gemini-2.5-flash-preview",
+            display_name="OpenRouter",
+            api_key_field="api_key",
+            env_var="OPENROUTER_API_KEY",
+            extra_model_config={
+                "base_url": "https://openrouter.ai/api/v1",
+                "request_timeout": 600.0,
+                "max_retries": 2,
+                "max_tokens": 8192,
+                "temperature": 0.7,
+            },
+        )
+        data = yaml.safe_load(content)
+        model = data["models"][0]
+        assert model["base_url"] == "https://openrouter.ai/api/v1"
+        assert model["request_timeout"] == 600.0
+        assert model["max_retries"] == 2
+        assert model["max_tokens"] == 8192
+        assert model["temperature"] == 0.7
 
     def test_web_fetch_tool_included(self):
         content = build_minimal_config(

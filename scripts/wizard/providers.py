@@ -96,7 +96,13 @@ LLM_PROVIDERS: list[LLMProvider] = [
         default_model="google/gemini-2.5-flash-preview",
         env_var="OPENROUTER_API_KEY",
         package="langchain-openai",
-        extra_config={"base_url": "https://openrouter.ai/api/v1"},
+        extra_config={
+            "base_url": "https://openrouter.ai/api/v1",
+            "request_timeout": 600.0,
+            "max_retries": 2,
+            "max_tokens": 8192,
+            "temperature": 0.7,
+        },
     ),
     LLMProvider(
         name="vllm",
@@ -109,6 +115,9 @@ LLM_PROVIDERS: list[LLMProvider] = [
         package=None,
         extra_config={
             "base_url": "http://localhost:8000/v1",
+            "request_timeout": 600.0,
+            "max_retries": 2,
+            "max_tokens": 8192,
             "supports_thinking": True,
             "supports_vision": False,
             "when_thinking_enabled": {
@@ -164,6 +173,7 @@ SEARCH_PROVIDERS: list[SearchProvider] = [
         description="No API key required",
         use="deerflow.community.ddg_search.tools:web_search_tool",
         env_var=None,
+        extra_config={"max_results": 5},
     ),
     SearchProvider(
         name="tavily",
@@ -171,6 +181,7 @@ SEARCH_PROVIDERS: list[SearchProvider] = [
         description="Recommended, free tier available",
         use="deerflow.community.tavily.tools:web_search_tool",
         env_var="TAVILY_API_KEY",
+        extra_config={"max_results": 5},
     ),
     SearchProvider(
         name="infoquest",
@@ -191,6 +202,14 @@ SEARCH_PROVIDERS: list[SearchProvider] = [
             "search_type": "auto",
             "contents_max_characters": 1000,
         },
+    ),
+    SearchProvider(
+        name="firecrawl",
+        display_name="Firecrawl",
+        description="Search + crawl via Firecrawl API",
+        use="deerflow.community.firecrawl.tools:web_search_tool",
+        env_var="FIRECRAWL_API_KEY",
+        extra_config={"max_results": 5},
     ),
 ]
 
@@ -220,5 +239,13 @@ WEB_FETCH_PROVIDERS: list[WebProvider] = [
         env_var="INFOQUEST_API_KEY",
         tool_name="web_fetch",
         extra_config={"timeout": 10, "fetch_time": 10, "navigation_timeout": 30},
+    ),
+    WebProvider(
+        name="firecrawl",
+        display_name="Firecrawl",
+        description="Search-grade crawl with markdown output, API key required",
+        use="deerflow.community.firecrawl.tools:web_fetch_tool",
+        env_var="FIRECRAWL_API_KEY",
+        tool_name="web_fetch",
     ),
 ]
