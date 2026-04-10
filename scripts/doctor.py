@@ -382,7 +382,7 @@ def check_web_search(config_path: Path) -> CheckResult:
                         "web search configured",
                         "warn",
                         f"{provider} configured but {var} not set",
-                        fix=f"Add {var}=<your-key> to .env, or run 'make setup-full'",
+                        fix=f"Add {var}=<your-key> to .env, or run 'make setup'",
                     )
 
         if not search_tool_uses:
@@ -390,7 +390,7 @@ def check_web_search(config_path: Path) -> CheckResult:
                 "web search configured",
                 "warn",
                 "no web_search tool in config",
-                fix="Run 'make setup-full' to configure a search provider",
+                fix="Run 'make setup' to configure a search provider",
             )
 
         return CheckResult("web search configured", "ok")

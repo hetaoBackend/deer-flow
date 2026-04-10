@@ -1,6 +1,6 @@
 # DeerFlow - Unified Development Environment
 
-.PHONY: help config config-upgrade check install setup setup-full doctor dev dev-pro dev-daemon dev-daemon-pro start start-pro start-daemon start-daemon-pro stop up up-pro down clean docker-init docker-start docker-start-pro docker-stop docker-logs docker-logs-frontend docker-logs-gateway
+.PHONY: help config config-upgrade check install setup doctor dev dev-pro dev-daemon dev-daemon-pro start start-pro start-daemon start-daemon-pro stop up up-pro down clean docker-init docker-start docker-start-pro docker-stop docker-logs docker-logs-frontend docker-logs-gateway
 
 BASH ?= bash
 BACKEND_UV_RUN = cd backend && uv run
@@ -16,7 +16,6 @@ endif
 help:
 	@echo "DeerFlow Development Commands:"
 	@echo "  make setup           - Interactive setup wizard (recommended for new users)"
-	@echo "  make setup-full      - Interactive setup wizard with optional web search"
 	@echo "  make doctor          - Check configuration and system requirements"
 	@echo "  make config          - Generate local config files (aborts if config already exists)"
 	@echo "  make config-upgrade  - Merge new fields from config.example.yaml into config.yaml"
@@ -51,9 +50,6 @@ help:
 ## Setup & Diagnosis
 setup:
 	@$(BACKEND_UV_RUN) python ../scripts/setup_wizard.py
-
-setup-full:
-	@$(BACKEND_UV_RUN) python ../scripts/setup_wizard.py --full
 
 doctor:
 	@$(BACKEND_UV_RUN) python ../scripts/doctor.py

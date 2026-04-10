@@ -149,7 +149,7 @@ class TestCheckWebSearch:
         result = doctor.check_web_search(cfg)
         assert result.status == "warn"
         assert result.fix is not None
-        assert "make setup-full" in result.fix
+        assert "make setup" in result.fix
 
     def test_no_search_tool_warns(self, tmp_path):
         cfg = tmp_path / "config.yaml"
@@ -157,7 +157,7 @@ class TestCheckWebSearch:
         result = doctor.check_web_search(cfg)
         assert result.status == "warn"
         assert result.fix is not None
-        assert "make setup-full" in result.fix
+        assert "make setup" in result.fix
 
     def test_missing_config_skipped(self, tmp_path):
         result = doctor.check_web_search(tmp_path / "config.yaml")

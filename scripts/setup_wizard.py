@@ -2,8 +2,7 @@
 """DeerFlow Interactive Setup Wizard.
 
 Usage:
-    uv run python scripts/setup_wizard.py           # Quick Setup
-    uv run python scripts/setup_wizard.py --full    # Full Setup (includes web search)
+    uv run python scripts/setup_wizard.py
 """
 
 from __future__ import annotations
@@ -20,8 +19,6 @@ def _is_interactive() -> bool:
 
 
 def main() -> int:
-    full_mode = "--full" in sys.argv
-
     if not _is_interactive():
         print(
             "Non-interactive environment detected.\n"
@@ -62,22 +59,19 @@ def main() -> int:
             return 0
         print()
 
-    total_steps = 3 if full_mode else 2
+    total_steps = 3
 
     # ── Step 1: LLM ──────────────────────────────────────────────────────────
     from wizard.steps.llm import run_llm_step
 
     llm = run_llm_step(f"Step 1/{total_steps}")
 
-    search_provider = None
-    search_api_key = None
-    if full_mode:
-        # ── Step 2: Web Search ────────────────────────────────────────────────
-        from wizard.steps.search import run_search_step
+    # ── Step 2: Web Search ────────────────────────────────────────────────────
+    from wizard.steps.search import run_search_step
 
-        search = run_search_step(f"Step 2/{total_steps}")
-        search_provider = search.provider
-        search_api_key = search.api_key
+    search = run_search_step(f"Step 2/{total_steps}")
+    search_provider = search.provider
+    search_api_key = search.api_key
 
     # ── Write files ───────────────────────────────────────────────────────────
     print_header(f"Step {total_steps}/{total_steps} · Writing configuration")
@@ -127,10 +121,8 @@ def main() -> int:
     print(f"  {green('✓')} LLM:        {llm.provider.display_name} / {llm.model_name}")
     if search_provider:
         print(f"  {green('✓')} Web search: {search_provider.display_name}")
-    elif full_mode:
-        print(f"  {'—':>3} Web search: not configured")
     else:
-        print(f"  {'—':>3} Web search: skipped in quick setup")
+        print(f"  {'—':>3} Web search: not configured")
     print()
     print("Next steps:")
     print(f"  {cyan('make install')}    # Install dependencies (first time only)")
