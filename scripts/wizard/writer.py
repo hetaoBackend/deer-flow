@@ -6,6 +6,7 @@ without wiping existing user customisations where possible.
 
 from __future__ import annotations
 
+from copy import deepcopy
 from pathlib import Path
 from typing import Any
 
@@ -68,6 +69,75 @@ def _yaml_dump(data: Any) -> str:
     return yaml.safe_dump(data, default_flow_style=False, allow_unicode=True, sort_keys=False)
 
 
+def _default_tools() -> list[dict[str, Any]]:
+    return [
+        {"name": "image_search", "use": "deerflow.community.image_search.tools:image_search_tool", "group": "web", "max_results": 5},
+        {"name": "ls", "use": "deerflow.sandbox.tools:ls_tool", "group": "file:read"},
+        {"name": "read_file", "use": "deerflow.sandbox.tools:read_file_tool", "group": "file:read"},
+        {"name": "glob", "use": "deerflow.sandbox.tools:glob_tool", "group": "file:read"},
+        {"name": "grep", "use": "deerflow.sandbox.tools:grep_tool", "group": "file:read"},
+        {"name": "write_file", "use": "deerflow.sandbox.tools:write_file_tool", "group": "file:write"},
+        {"name": "str_replace", "use": "deerflow.sandbox.tools:str_replace_tool", "group": "file:write"},
+        {"name": "bash", "use": "deerflow.sandbox.tools:bash_tool", "group": "bash"},
+    ]
+
+
+def _build_tools(
+    *,
+    base_tools: list[dict[str, Any]] | None,
+    search_use: str | None,
+    search_tool_name: str,
+    search_extra_config: dict | None,
+    web_fetch_use: str | None,
+    web_fetch_tool_name: str,
+    web_fetch_extra_config: dict | None,
+    include_bash_tool: bool,
+    include_write_tools: bool,
+) -> list[dict[str, Any]]:
+    tools = deepcopy(base_tools if base_tools is not None else _default_tools())
+    tools = [
+        tool
+        for tool in tools
+        if tool.get("name") not in {search_tool_name, web_fetch_tool_name, "write_file", "str_replace", "bash"}
+    ]
+
+    web_group = "web"
+
+    if search_use:
+        search_tool: dict[str, Any] = {
+            "name": search_tool_name,
+            "use": search_use,
+            "group": web_group,
+        }
+        if search_extra_config:
+            search_tool.update(search_extra_config)
+        tools.insert(0, search_tool)
+
+    if web_fetch_use:
+        fetch_tool: dict[str, Any] = {
+            "name": web_fetch_tool_name,
+            "use": web_fetch_use,
+            "group": web_group,
+        }
+        if web_fetch_extra_config:
+            fetch_tool.update(web_fetch_extra_config)
+        insert_idx = 1 if search_use else 0
+        tools.insert(insert_idx, fetch_tool)
+
+    if include_write_tools:
+        tools.extend(
+            [
+                {"name": "write_file", "use": "deerflow.sandbox.tools:write_file_tool", "group": "file:write"},
+                {"name": "str_replace", "use": "deerflow.sandbox.tools:str_replace_tool", "group": "file:write"},
+            ]
+        )
+
+    if include_bash_tool:
+        tools.append({"name": "bash", "use": "deerflow.sandbox.tools:bash_tool", "group": "bash"})
+
+    return tools
+
+
 def build_minimal_config(
     *,
     provider_use: str,
@@ -88,6 +158,7 @@ def build_minimal_config(
     include_bash_tool: bool = False,
     include_write_tools: bool = True,
     config_version: int = 5,
+    base_config: dict[str, Any] | None = None,
 ) -> str:
     """Build the content of a minimal config.yaml."""
     from datetime import date
@@ -110,54 +181,31 @@ def build_minimal_config(
     if extra_model_fields:
         model_entry.update(extra_model_fields)
 
-    data: dict[str, Any] = {
-        "config_version": config_version,
-        "models": [model_entry],
-    }
-
-    tools: list[dict[str, Any]] = [
-        {"name": "ls", "use": "deerflow.sandbox.tools:ls_tool", "group": "sandbox"},
-        {"name": "read_file", "use": "deerflow.sandbox.tools:read_file_tool", "group": "sandbox"},
-        {"name": "glob", "use": "deerflow.sandbox.tools:glob_tool", "group": "sandbox"},
-        {"name": "grep", "use": "deerflow.sandbox.tools:grep_tool", "group": "sandbox"},
-        {"name": "image_search", "use": "deerflow.community.image_search.tools:image_search_tool", "group": "search"},
-    ]
-
-    if include_write_tools:
-        tools.extend(
-            [
-                {"name": "write_file", "use": "deerflow.sandbox.tools:write_file_tool", "group": "sandbox"},
-                {"name": "str_replace", "use": "deerflow.sandbox.tools:str_replace_tool", "group": "sandbox"},
-            ]
-        )
-
-    if include_bash_tool:
-        tools.append({"name": "bash", "use": "deerflow.sandbox.tools:bash_tool", "group": "sandbox"})
-
-    if search_use:
-        search_tool: dict[str, Any] = {
-            "name": search_tool_name,
-            "use": search_use,
-            "group": "search",
-        }
-        if search_extra_config:
-            search_tool.update(search_extra_config)
-        tools.insert(0, search_tool)
-    if web_fetch_use:
-        fetch_tool: dict[str, Any] = {
-            "name": web_fetch_tool_name,
-            "use": web_fetch_use,
-            "group": "search",
-        }
-        if web_fetch_extra_config:
-            fetch_tool.update(web_fetch_extra_config)
-        insert_idx = 1 if search_use else 0
-        tools.insert(insert_idx, fetch_tool)
-
+    data: dict[str, Any] = deepcopy(base_config or {})
+    data["config_version"] = config_version
+    data["models"] = [model_entry]
+    base_tools = data.get("tools")
+    if not isinstance(base_tools, list):
+        base_tools = None
+    tools = _build_tools(
+        base_tools=base_tools,
+        search_use=search_use,
+        search_tool_name=search_tool_name,
+        search_extra_config=search_extra_config,
+        web_fetch_use=web_fetch_use,
+        web_fetch_tool_name=web_fetch_tool_name,
+        web_fetch_extra_config=web_fetch_extra_config,
+        include_bash_tool=include_bash_tool,
+        include_write_tools=include_write_tools,
+    )
     data["tools"] = tools
-    data["sandbox"] = {"use": sandbox_use}
+    sandbox_config = deepcopy(data.get("sandbox") if isinstance(data.get("sandbox"), dict) else {})
+    sandbox_config["use"] = sandbox_use
     if sandbox_use == "deerflow.sandbox.local:LocalSandboxProvider":
-        data["sandbox"]["allow_host_bash"] = allow_host_bash
+        sandbox_config["allow_host_bash"] = allow_host_bash
+    else:
+        sandbox_config.pop("allow_host_bash", None)
+    data["sandbox"] = sandbox_config
 
     header = (
         f"# DeerFlow Configuration\n"
@@ -199,8 +247,11 @@ def write_config_yaml(
             import yaml as _yaml
             raw = _yaml.safe_load(example_path.read_text(encoding="utf-8")) or {}
             config_version = int(raw.get("config_version", 5))
+            example_defaults = raw
         except Exception:
-            pass
+            example_defaults = None
+    else:
+        example_defaults = None
 
     content = build_minimal_config(
         provider_use=provider_use,
@@ -221,5 +272,6 @@ def write_config_yaml(
         include_bash_tool=include_bash_tool,
         include_write_tools=include_write_tools,
         config_version=config_version,
+        base_config=example_defaults,
     )
     config_path.write_text(content, encoding="utf-8")

@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import yaml
 from wizard.providers import LLM_PROVIDERS, SEARCH_PROVIDERS, WEB_FETCH_PROVIDERS
+from wizard.steps import search as search_step
 from wizard.writer import (
     build_minimal_config,
     read_env_file,
@@ -305,6 +306,66 @@ class TestWriteConfigYaml:
         assert isinstance(data, dict)
         assert "models" in data
 
+    def test_copies_example_defaults_for_unconfigured_sections(self, tmp_path):
+        example_path = tmp_path / "config.example.yaml"
+        example_path.write_text(
+            yaml.safe_dump(
+                {
+                    "config_version": 5,
+                    "log_level": "info",
+                    "token_usage": {"enabled": False},
+                    "tool_groups": [{"name": "web"}, {"name": "file:read"}, {"name": "file:write"}, {"name": "bash"}],
+                    "tools": [
+                        {
+                            "name": "web_search",
+                            "group": "web",
+                            "use": "deerflow.community.ddg_search.tools:web_search_tool",
+                            "max_results": 5,
+                        },
+                        {
+                            "name": "web_fetch",
+                            "group": "web",
+                            "use": "deerflow.community.jina_ai.tools:web_fetch_tool",
+                            "timeout": 10,
+                        },
+                        {
+                            "name": "image_search",
+                            "group": "web",
+                            "use": "deerflow.community.image_search.tools:image_search_tool",
+                            "max_results": 5,
+                        },
+                        {"name": "ls", "group": "file:read", "use": "deerflow.sandbox.tools:ls_tool"},
+                        {"name": "write_file", "group": "file:write", "use": "deerflow.sandbox.tools:write_file_tool"},
+                        {"name": "bash", "group": "bash", "use": "deerflow.sandbox.tools:bash_tool"},
+                    ],
+                    "sandbox": {
+                        "use": "deerflow.sandbox.local:LocalSandboxProvider",
+                        "allow_host_bash": False,
+                    },
+                    "summarization": {"max_tokens": 2048},
+                },
+                sort_keys=False,
+            )
+        )
+
+        config_path = tmp_path / "config.yaml"
+        write_config_yaml(
+            config_path,
+            provider_use="langchain_openai:ChatOpenAI",
+            model_name="gpt-4o",
+            display_name="OpenAI / gpt-4o",
+            api_key_field="api_key",
+            env_var="OPENAI_API_KEY",
+        )
+        with open(config_path) as f:
+            data = yaml.safe_load(f)
+
+        assert data["log_level"] == "info"
+        assert data["token_usage"]["enabled"] is False
+        assert data["tool_groups"][0]["name"] == "web"
+        assert data["summarization"]["max_tokens"] == 2048
+        assert any(tool["name"] == "image_search" and tool["max_results"] == 5 for tool in data["tools"])
+
     def test_config_version_read_from_example(self, tmp_path):
         """write_config_yaml should read config_version from config.example.yaml if present."""
 
@@ -338,3 +399,33 @@ class TestWriteConfigYaml:
         with open(config_path) as f:
             data = yaml.safe_load(f)
         assert data["models"][0]["base_url"] == "https://openrouter.ai/api/v1"
+
+
+class TestSearchStep:
+    def test_reuses_api_key_for_same_provider(self, monkeypatch):
+        monkeypatch.setattr(search_step, "print_header", lambda *_args, **_kwargs: None)
+        monkeypatch.setattr(search_step, "print_success", lambda *_args, **_kwargs: None)
+        monkeypatch.setattr(search_step, "print_info", lambda *_args, **_kwargs: None)
+
+        choices = iter([3, 1])
+        prompts: list[str] = []
+
+        def fake_choice(_prompt, _options, default=0):
+            return next(choices)
+
+        def fake_secret(prompt):
+            prompts.append(prompt)
+            return "shared-api-key"
+
+        monkeypatch.setattr(search_step, "ask_choice", fake_choice)
+        monkeypatch.setattr(search_step, "ask_secret", fake_secret)
+
+        result = search_step.run_search_step()
+
+        assert result.search_provider is not None
+        assert result.fetch_provider is not None
+        assert result.search_provider.name == "exa"
+        assert result.fetch_provider.name == "exa"
+        assert result.search_api_key == "shared-api-key"
+        assert result.fetch_api_key == "shared-api-key"
+        assert prompts == ["EXA_API_KEY"]
