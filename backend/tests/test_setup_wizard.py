@@ -7,7 +7,7 @@ Run from repo root:
 from __future__ import annotations
 
 import yaml
-from wizard.providers import LLM_PROVIDERS, SEARCH_PROVIDERS
+from wizard.providers import LLM_PROVIDERS, SEARCH_PROVIDERS, WEB_FETCH_PROVIDERS
 from wizard.writer import (
     build_minimal_config,
     read_env_file,
@@ -18,7 +18,7 @@ from wizard.writer import (
 
 class TestProviders:
     def test_llm_providers_not_empty(self):
-        assert len(LLM_PROVIDERS) >= 4
+        assert len(LLM_PROVIDERS) >= 8
 
     def test_llm_providers_have_required_fields(self):
         for p in LLM_PROVIDERS:
@@ -26,8 +26,6 @@ class TestProviders:
             assert p.display_name
             assert p.use
             assert ":" in p.use, f"Provider '{p.name}' use path must contain ':'"
-            assert p.env_var
-            assert p.package
             assert p.models
             assert p.default_model in p.models
 
@@ -38,10 +36,22 @@ class TestProviders:
             assert sp.use
             assert ":" in sp.use
 
+    def test_web_fetch_providers_have_required_fields(self):
+        for provider in WEB_FETCH_PROVIDERS:
+            assert provider.name
+            assert provider.display_name
+            assert provider.use
+            assert ":" in provider.use
+            assert provider.tool_name == "web_fetch"
+
     def test_at_least_one_free_search_provider(self):
         """At least one search provider needs no API key."""
         free = [sp for sp in SEARCH_PROVIDERS if sp.env_var is None]
         assert free, "Expected at least one free (no-key) search provider"
+
+    def test_at_least_one_free_web_fetch_provider(self):
+        free = [provider for provider in WEB_FETCH_PROVIDERS if provider.env_var is None]
+        assert free, "Expected at least one free (no-key) web fetch provider"
 
 
 class TestBuildMinimalConfig:
@@ -85,10 +95,25 @@ class TestBuildMinimalConfig:
             api_key_field="api_key",
             env_var="OPENAI_API_KEY",
             search_use="deerflow.community.tavily.tools:web_search_tool",
+            search_extra_config={"max_results": 5},
         )
         data = yaml.safe_load(content)
-        tool_names = [t["name"] for t in data.get("tools", [])]
-        assert "web_search" in tool_names
+        search_tool = next(t for t in data.get("tools", []) if t["name"] == "web_search")
+        assert search_tool["max_results"] == 5
+
+    def test_web_fetch_tool_included(self):
+        content = build_minimal_config(
+            provider_use="langchain_openai:ChatOpenAI",
+            model_name="gpt-4o",
+            display_name="OpenAI",
+            api_key_field="api_key",
+            env_var="OPENAI_API_KEY",
+            web_fetch_use="deerflow.community.jina_ai.tools:web_fetch_tool",
+            web_fetch_extra_config={"timeout": 10},
+        )
+        data = yaml.safe_load(content)
+        fetch_tool = next(t for t in data.get("tools", []) if t["name"] == "web_fetch")
+        assert fetch_tool["timeout"] == 10
 
     def test_no_search_tool_when_not_configured(self):
         content = build_minimal_config(
@@ -101,6 +126,7 @@ class TestBuildMinimalConfig:
         data = yaml.safe_load(content)
         tool_names = [t["name"] for t in data.get("tools", [])]
         assert "web_search" not in tool_names
+        assert "web_fetch" not in tool_names
 
     def test_sandbox_included(self):
         content = build_minimal_config(
@@ -169,6 +195,18 @@ class TestBuildMinimalConfig:
         )
         data = yaml.safe_load(content)
         assert data["config_version"] == 5
+
+    def test_cli_provider_does_not_emit_fake_api_key(self):
+        content = build_minimal_config(
+            provider_use="deerflow.models.openai_codex_provider:CodexChatModel",
+            model_name="gpt-5.4",
+            display_name="Codex CLI",
+            api_key_field="api_key",
+            env_var=None,
+        )
+        data = yaml.safe_load(content)
+        model = data["models"][0]
+        assert "api_key" not in model
 
 
 # ---------------------------------------------------------------------------
@@ -258,3 +296,18 @@ class TestWriteConfigYaml:
         with open(config_path) as f:
             data = yaml.safe_load(f)
         assert data["config_version"] == 99
+
+    def test_model_base_url_from_extra_config(self, tmp_path):
+        config_path = tmp_path / "config.yaml"
+        write_config_yaml(
+            config_path,
+            provider_use="langchain_openai:ChatOpenAI",
+            model_name="google/gemini-2.5-flash-preview",
+            display_name="OpenRouter",
+            api_key_field="api_key",
+            env_var="OPENROUTER_API_KEY",
+            extra_model_config={"base_url": "https://openrouter.ai/api/v1"},
+        )
+        with open(config_path) as f:
+            data = yaml.safe_load(f)
+        assert data["models"][0]["base_url"] == "https://openrouter.ai/api/v1"

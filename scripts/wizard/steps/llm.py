@@ -19,7 +19,7 @@ from wizard.ui import (
 class LLMStepResult:
     provider: LLMProvider
     model_name: str
-    api_key: str
+    api_key: str | None
     base_url: str | None = None
 
 
@@ -41,18 +41,29 @@ def run_llm_step(step_label: str = "Step 1/3") -> LLMStepResult:
         model_name = provider.models[0]
 
     print()
-    print_header(f"{step_label} · Enter your API Key")
-
-    # "Other" provider: ask for base_url too
     base_url: str | None = None
+    if provider.name in {"openrouter", "vllm"}:
+        base_url = provider.extra_config.get("base_url")
     if provider.name == "other":
+        print_header(f"{step_label} · Connection details")
         base_url = ask_text("Base URL (e.g. https://api.openai.com/v1)", required=True)
         model_name = ask_text("Model name", default=provider.default_model)
+    elif provider.auth_hint:
+        print_header(f"{step_label} · Authentication")
+        print_info(provider.auth_hint)
+        api_key = None
+        return LLMStepResult(
+            provider=provider,
+            model_name=model_name,
+            api_key=api_key,
+            base_url=base_url,
+        )
 
+    print_header(f"{step_label} · Enter your API Key")
     if provider.env_var:
         api_key = ask_secret(f"{provider.env_var}")
     else:
-        api_key = ""
+        api_key = None
 
     if api_key:
         print_success(f"Key will be saved to .env as {provider.env_var}")

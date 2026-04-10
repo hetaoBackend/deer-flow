@@ -74,11 +74,15 @@ def build_minimal_config(
     model_name: str,
     display_name: str,
     api_key_field: str,
-    env_var: str,
+    env_var: str | None,
     extra_model_config: dict | None = None,
     base_url: str | None = None,
     search_use: str | None = None,
     search_tool_name: str = "web_search",
+    search_extra_config: dict | None = None,
+    web_fetch_use: str | None = None,
+    web_fetch_tool_name: str = "web_fetch",
+    web_fetch_extra_config: dict | None = None,
     sandbox_use: str = "deerflow.sandbox.local:LocalSandboxProvider",
     allow_host_bash: bool = False,
     include_bash_tool: bool = False,
@@ -95,12 +99,16 @@ def build_minimal_config(
         "display_name": display_name,
         "use": provider_use,
         "model": model_name,
-        api_key_field: f"${env_var}",
     }
+    if env_var:
+        model_entry[api_key_field] = f"${env_var}"
+    extra_model_fields = dict(extra_model_config or {})
+    if "base_url" in extra_model_fields and not base_url:
+        base_url = extra_model_fields.pop("base_url")
     if base_url:
         model_entry["base_url"] = base_url
-    if extra_model_config:
-        model_entry.update(extra_model_config)
+    if extra_model_fields:
+        model_entry.update(extra_model_fields)
 
     data: dict[str, Any] = {
         "config_version": config_version,
@@ -132,7 +140,19 @@ def build_minimal_config(
             "use": search_use,
             "group": "search",
         }
+        if search_extra_config:
+            search_tool.update(search_extra_config)
         tools.insert(0, search_tool)
+    if web_fetch_use:
+        fetch_tool: dict[str, Any] = {
+            "name": web_fetch_tool_name,
+            "use": web_fetch_use,
+            "group": "search",
+        }
+        if web_fetch_extra_config:
+            fetch_tool.update(web_fetch_extra_config)
+        insert_idx = 1 if search_use else 0
+        tools.insert(insert_idx, fetch_tool)
 
     data["tools"] = tools
     data["sandbox"] = {"use": sandbox_use}
@@ -156,11 +176,15 @@ def write_config_yaml(
     model_name: str,
     display_name: str,
     api_key_field: str,
-    env_var: str,
+    env_var: str | None,
     extra_model_config: dict | None = None,
     base_url: str | None = None,
     search_use: str | None = None,
     search_tool_name: str = "web_search",
+    search_extra_config: dict | None = None,
+    web_fetch_use: str | None = None,
+    web_fetch_tool_name: str = "web_fetch",
+    web_fetch_extra_config: dict | None = None,
     sandbox_use: str = "deerflow.sandbox.local:LocalSandboxProvider",
     allow_host_bash: bool = False,
     include_bash_tool: bool = False,
@@ -188,6 +212,10 @@ def write_config_yaml(
         base_url=base_url,
         search_use=search_use,
         search_tool_name=search_tool_name,
+        search_extra_config=search_extra_config,
+        web_fetch_use=web_fetch_use,
+        web_fetch_tool_name=web_fetch_tool_name,
+        web_fetch_extra_config=web_fetch_extra_config,
         sandbox_use=sandbox_use,
         allow_host_bash=allow_host_bash,
         include_bash_tool=include_bash_tool,
