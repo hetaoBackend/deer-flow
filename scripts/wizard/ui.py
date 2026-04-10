@@ -115,7 +115,7 @@ def ask_secret(prompt: str) -> str:
 
 def ask_yes_no(prompt: str, default: bool = True) -> bool:
     """Ask a yes/no question."""
-    suffix = "[Y/n]" if default else "[y/N]"
+    suffix = "[Y/N]"
     while True:
         raw = input(f"{prompt} {suffix}: ").strip().lower()
         if raw == "":
