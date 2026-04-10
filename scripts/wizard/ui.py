@@ -114,7 +114,10 @@ def _supports_arrow_menu() -> bool:
 
 
 def _clear_rendered_lines(count: int) -> None:
-    for _ in range(count):
+    if count <= 0:
+        return
+    sys.stdout.write("\x1b[2K\r")
+    for _ in range(count - 1):
         sys.stdout.write("\x1b[1A\x1b[2K\r")
 
 
@@ -146,12 +149,11 @@ def _truncate_line(text: str, max_width: int) -> str:
 def _render_choice_menu(options: list[str], selected: int) -> int:
     number_width = len(str(len(options)))
     menu_width = _terminal_width()
+    content_width = max(menu_width - 3, 20)
     for i, opt in enumerate(options, 1):
-        prefix_width = number_width + 4
-        line = _truncate_line(f"{i:>{number_width}}. {opt}", menu_width - prefix_width)
+        line = _truncate_line(f"{i:>{number_width}}. {opt}", content_width)
         if i - 1 == selected:
-            prefix = f"{green('›')} "
-            print(f"{prefix}{inverse(bold(line))}")
+            print(f"{green('›')} {inverse(bold(line))}")
         else:
             print(f"  {line}")
     sys.stdout.flush()
@@ -169,7 +171,7 @@ def _ask_choice_with_arrows(prompt: str, options: list[str], default: int | None
         sys.stdout.write("\x1b[?25l")
         tty.setraw(fd)
         prompt_help = f"{prompt}  (↑/↓ move, Enter confirm, number quick-select)"
-        print(cyan(_truncate_line(prompt_help, _terminal_width())))
+        print(cyan(_truncate_line(prompt_help, max(_terminal_width() - 2, 20))))
 
         while True:
             if rendered_lines:
