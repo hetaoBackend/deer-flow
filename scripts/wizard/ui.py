@@ -44,6 +44,10 @@ def bold(text: str) -> str:
     return _c(text, "1")
 
 
+def inverse(text: str) -> str:
+    return _c(text, "7")
+
+
 # ── UI primitives ─────────────────────────────────────────────────────────────
 
 def print_header(title: str) -> None:
@@ -129,12 +133,12 @@ def _read_key(fd: int) -> str:
 def _render_choice_menu(options: list[str], selected: int) -> int:
     number_width = len(str(len(options)))
     for i, opt in enumerate(options, 1):
+        line = f"{i:>{number_width}}. {opt}"
         if i - 1 == selected:
             prefix = f"{green('›')} "
-            label = bold(opt)
-            print(f"{prefix}{i:>{number_width}}. {label}")
+            print(f"{prefix}{inverse(bold(line))}")
         else:
-            print(f"  {i:>{number_width}}. {opt}")
+            print(f"  {line}")
     sys.stdout.flush()
     return len(options)
 
