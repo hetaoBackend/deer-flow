@@ -180,6 +180,9 @@ def _ask_choice_with_arrows(prompt: str, options: list[str], default: int | None
 
             key = _read_key(fd)
 
+            if key == "\x03":
+                raise KeyboardInterrupt
+
             if key in ("\r", "\n"):
                 if typed:
                     idx = int(typed) - 1
