@@ -73,7 +73,7 @@ class TestBuildMinimalConfig:
         assert "models" in data
         assert len(data["models"]) == 1
         model = data["models"][0]
-        assert model["name"] == "default"
+        assert model["name"] == "gpt-4o"
         assert model["use"] == "langchain_openai:ChatOpenAI"
         assert model["model"] == "gpt-4o"
         assert model["api_key"] == "$OPENAI_API_KEY"
