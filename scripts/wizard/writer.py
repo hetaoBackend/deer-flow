@@ -138,6 +138,19 @@ def _build_tools(
     return tools
 
 
+def _make_model_config_name(model_name: str) -> str:
+    """Derive a meaningful config model name from the provider model identifier.
+
+    Replaces path separators and dots with hyphens so the result is a clean
+    YAML-friendly identifier (e.g. "google/gemini-2.5-pro" → "gemini-2-5-pro",
+    "gpt-5.4" → "gpt-5-4", "deepseek-chat" → "deepseek-chat").
+    """
+    # Take only the last path component for namespaced models (e.g. "org/model-name")
+    base = model_name.split("/")[-1]
+    # Replace dots with hyphens so "gpt-5.4" → "gpt-5-4"
+    return base.replace(".", "-")
+
+
 def build_minimal_config(
     *,
     provider_use: str,
@@ -166,7 +179,7 @@ def build_minimal_config(
     today = date.today().isoformat()
 
     model_entry: dict[str, Any] = {
-        "name": "default",
+        "name": _make_model_config_name(model_name),
         "display_name": display_name,
         "use": provider_use,
         "model": model_name,
