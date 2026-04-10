@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import getpass
+import shutil
 import sys
 
 try:
@@ -130,10 +131,24 @@ def _read_key(fd: int) -> str:
     return f"\x1b[{third}"
 
 
+def _terminal_width() -> int:
+    return max(shutil.get_terminal_size(fallback=(80, 24)).columns, 40)
+
+
+def _truncate_line(text: str, max_width: int) -> str:
+    if len(text) <= max_width:
+        return text
+    if max_width <= 1:
+        return text[:max_width]
+    return f"{text[: max_width - 1]}…"
+
+
 def _render_choice_menu(options: list[str], selected: int) -> int:
     number_width = len(str(len(options)))
+    menu_width = _terminal_width()
     for i, opt in enumerate(options, 1):
-        line = f"{i:>{number_width}}. {opt}"
+        prefix_width = number_width + 4
+        line = _truncate_line(f"{i:>{number_width}}. {opt}", menu_width - prefix_width)
         if i - 1 == selected:
             prefix = f"{green('›')} "
             print(f"{prefix}{inverse(bold(line))}")
@@ -153,7 +168,8 @@ def _ask_choice_with_arrows(prompt: str, options: list[str], default: int | None
     try:
         sys.stdout.write("\x1b[?25l")
         tty.setraw(fd)
-        print(f"{prompt}  {cyan('(↑/↓ move, Enter confirm, number quick-select)')}")
+        prompt_help = f"{prompt}  (↑/↓ move, Enter confirm, number quick-select)"
+        print(cyan(_truncate_line(prompt_help, _terminal_width())))
 
         while True:
             if rendered_lines:

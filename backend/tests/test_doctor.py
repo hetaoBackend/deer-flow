@@ -147,6 +147,31 @@ class TestCheckLLMApiKey:
 
 
 # ---------------------------------------------------------------------------
+# check_llm_auth
+# ---------------------------------------------------------------------------
+
+
+class TestCheckLLMAuth:
+    def test_codex_auth_file_missing_fails(self, tmp_path, monkeypatch):
+        cfg = tmp_path / "config.yaml"
+        cfg.write_text(
+            "config_version: 5\nmodels:\n  - name: codex\n    use: deerflow.models.openai_codex_provider:CodexChatModel\n    model: gpt-5.4\n"
+        )
+        monkeypatch.setenv("CODEX_AUTH_PATH", str(tmp_path / "missing-auth.json"))
+        results = doctor.check_llm_auth(cfg)
+        assert any(result.status == "fail" and "Codex CLI auth available" in result.label for result in results)
+
+    def test_claude_oauth_env_passes(self, tmp_path, monkeypatch):
+        cfg = tmp_path / "config.yaml"
+        cfg.write_text(
+            "config_version: 5\nmodels:\n  - name: claude\n    use: deerflow.models.claude_provider:ClaudeChatModel\n    model: claude-sonnet-4-6\n"
+        )
+        monkeypatch.setenv("CLAUDE_CODE_OAUTH_TOKEN", "token")
+        results = doctor.check_llm_auth(cfg)
+        assert any(result.status == "ok" and "Claude auth available" in result.label for result in results)
+
+
+# ---------------------------------------------------------------------------
 # check_web_search
 # ---------------------------------------------------------------------------
 
@@ -189,6 +214,14 @@ class TestCheckWebSearch:
         result = doctor.check_web_search(tmp_path / "config.yaml")
         assert result.status == "skip"
 
+    def test_invalid_provider_use_fails(self, tmp_path):
+        cfg = tmp_path / "config.yaml"
+        cfg.write_text(
+            "config_version: 5\ntools:\n  - name: web_search\n    use: deerflow.community.not_real.tools:web_search_tool\n"
+        )
+        result = doctor.check_web_search(cfg)
+        assert result.status == "fail"
+
 
 # ---------------------------------------------------------------------------
 # check_web_fetch
@@ -221,6 +254,14 @@ class TestCheckWebFetch:
         result = doctor.check_web_fetch(cfg)
         assert result.status == "warn"
         assert result.fix is not None
+
+    def test_invalid_provider_use_fails(self, tmp_path):
+        cfg = tmp_path / "config.yaml"
+        cfg.write_text(
+            "config_version: 5\ntools:\n  - name: web_fetch\n    use: deerflow.community.not_real.tools:web_fetch_tool\n"
+        )
+        result = doctor.check_web_fetch(cfg)
+        assert result.status == "fail"
 
 
 # ---------------------------------------------------------------------------
