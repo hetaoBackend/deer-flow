@@ -117,7 +117,7 @@ def _clear_rendered_lines(count: int) -> None:
     if count <= 0:
         return
     sys.stdout.write("\x1b[2K\r")
-    for _ in range(count - 1):
+    for _ in range(count):
         sys.stdout.write("\x1b[1A\x1b[2K\r")
 
 
@@ -169,7 +169,8 @@ def _ask_choice_with_arrows(prompt: str, options: list[str], default: int | None
 
     try:
         sys.stdout.write("\x1b[?25l")
-        tty.setraw(fd)
+        sys.stdout.flush()
+        tty.setcbreak(fd)
         prompt_help = f"{prompt}  (↑/↓ move, Enter confirm, number quick-select)"
         print(cyan(_truncate_line(prompt_help, max(_terminal_width() - 2, 20))))
 
