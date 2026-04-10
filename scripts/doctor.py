@@ -73,6 +73,22 @@ def _parse_major(version_text: str) -> int | None:
     return int(v) if v.isdigit() else None
 
 
+def _load_yaml_file(path: Path) -> dict:
+    import yaml
+
+    with open(path, encoding="utf-8") as f:
+        data = yaml.safe_load(f) or {}
+    if not isinstance(data, dict):
+        raise ValueError("top-level config must be a YAML mapping")
+    return data
+
+
+def _load_app_config(config_path: Path) -> object:
+    from deerflow.config.app_config import AppConfig
+
+    return AppConfig.from_file(str(config_path))
+
+
 # ---------------------------------------------------------------------------
 # Check result container
 # ---------------------------------------------------------------------------
@@ -230,10 +246,7 @@ def check_models_configured(config_path: Path) -> CheckResult:
     if not config_path.exists():
         return CheckResult("models configured", "skip")
     try:
-        import yaml
-
-        with open(config_path, encoding="utf-8") as f:
-            data = yaml.safe_load(f) or {}
+        data = _load_yaml_file(config_path)
         models = data.get("models", [])
         if models:
             return CheckResult("models configured", "ok", f"{len(models)} model(s)")
@@ -245,6 +258,22 @@ def check_models_configured(config_path: Path) -> CheckResult:
         )
     except Exception as exc:
         return CheckResult("models configured", "fail", str(exc))
+
+
+def check_config_loadable(config_path: Path) -> CheckResult:
+    if not config_path.exists():
+        return CheckResult("config.yaml loadable", "skip")
+
+    try:
+        _load_app_config(config_path)
+        return CheckResult("config.yaml loadable", "ok")
+    except Exception as exc:
+        return CheckResult(
+            "config.yaml loadable",
+            "fail",
+            str(exc),
+            fix="Run 'make setup' again, or compare with config.example.yaml",
+        )
 
 
 def check_llm_api_key(config_path: Path) -> list[CheckResult]:
@@ -340,62 +369,157 @@ def check_llm_package(config_path: Path) -> list[CheckResult]:
 
 
 def check_web_search(config_path: Path) -> CheckResult:
-    """Warn (not fail) if no web search is configured."""
+    return check_web_tool(config_path, tool_name="web_search", label="web search configured")
+
+
+def check_web_tool(config_path: Path, *, tool_name: str, label: str) -> CheckResult:
+    """Warn (not fail) if a web capability is not configured."""
     if not config_path.exists():
-        return CheckResult("web search configured", "skip")
+        return CheckResult(label, "skip")
 
     try:
-        import yaml
         from dotenv import load_dotenv
 
         env_path = config_path.parent / ".env"
         if env_path.exists():
             load_dotenv(env_path, override=False)
 
-        with open(config_path, encoding="utf-8") as f:
-            data = yaml.safe_load(f) or {}
+        data = _load_yaml_file(config_path)
 
-        search_tool_uses = [
-            t.get("use", "")
-            for t in data.get("tools", [])
-            if t.get("name") == "web_search"
-        ]
+        tool_uses = [t.get("use", "") for t in data.get("tools", []) if t.get("name") == tool_name]
+        if not tool_uses:
+            return CheckResult(
+                label,
+                "warn",
+                f"no {tool_name} tool in config",
+                fix=f"Run 'make setup' to configure {tool_name}",
+            )
 
-        # DuckDuckGo requires no key
-        for use in search_tool_uses:
-            if "ddg_search" in use:
-                return CheckResult("web search configured", "ok", "DuckDuckGo (no key needed)")
-
-        # API-key search providers: check env var is set
-        key_providers = {
-            "tavily": "TAVILY_API_KEY",
-            "infoquest": "INFOQUEST_API_KEY",
-            "exa": "EXA_API_KEY",
+        free_providers = {
+            "web_search": {"ddg_search": "DuckDuckGo (no key needed)"},
+            "web_fetch": {"jina_ai": "Jina AI Reader (no key needed)"},
         }
-        for use in search_tool_uses:
-            for provider, var in key_providers.items():
+        key_providers = {
+            "web_search": {
+                "tavily": "TAVILY_API_KEY",
+                "infoquest": "INFOQUEST_API_KEY",
+                "exa": "EXA_API_KEY",
+                "firecrawl": "FIRECRAWL_API_KEY",
+            },
+            "web_fetch": {
+                "infoquest": "INFOQUEST_API_KEY",
+                "exa": "EXA_API_KEY",
+                "firecrawl": "FIRECRAWL_API_KEY",
+            },
+        }
+
+        for use in tool_uses:
+            for provider, detail in free_providers.get(tool_name, {}).items():
+                if provider in use:
+                    return CheckResult(label, "ok", detail)
+
+        for use in tool_uses:
+            for provider, var in key_providers.get(tool_name, {}).items():
                 if provider in use:
                     val = os.environ.get(var)
                     if val:
-                        return CheckResult("web search configured", "ok", f"{provider} ({var} set)")
+                        return CheckResult(label, "ok", f"{provider} ({var} set)")
                     return CheckResult(
-                        "web search configured",
+                        label,
                         "warn",
                         f"{provider} configured but {var} not set",
                         fix=f"Add {var}=<your-key> to .env, or run 'make setup'",
                     )
 
-        if not search_tool_uses:
-            return CheckResult(
-                "web search configured",
-                "warn",
-                "no web_search tool in config",
-                fix="Run 'make setup' to configure a search provider",
-            )
-
-        return CheckResult("web search configured", "ok")
+        return CheckResult(label, "ok")
     except Exception as exc:
-        return CheckResult("web search configured", "warn", str(exc))
+        return CheckResult(label, "warn", str(exc))
+
+
+def check_web_fetch(config_path: Path) -> CheckResult:
+    return check_web_tool(config_path, tool_name="web_fetch", label="web fetch configured")
+
+
+def check_frontend_env(project_root: Path) -> CheckResult:
+    env_path = project_root / "frontend" / ".env"
+    if env_path.exists():
+        return CheckResult("frontend/.env found", "ok")
+    return CheckResult(
+        "frontend/.env found",
+        "warn",
+        fix="Run 'make setup' or copy frontend/.env.example to frontend/.env",
+    )
+
+
+def check_sandbox(config_path: Path) -> list[CheckResult]:
+    if not config_path.exists():
+        return [CheckResult("sandbox configured", "skip")]
+
+    try:
+        data = _load_yaml_file(config_path)
+        sandbox = data.get("sandbox")
+        if not isinstance(sandbox, dict):
+            return [
+                CheckResult(
+                    "sandbox configured",
+                    "fail",
+                    "missing sandbox section",
+                    fix="Run 'make setup' to choose an execution mode",
+                )
+            ]
+
+        sandbox_use = sandbox.get("use", "")
+        tools = data.get("tools", [])
+        tool_names = {tool.get("name") for tool in tools if isinstance(tool, dict)}
+        results: list[CheckResult] = []
+
+        if "LocalSandboxProvider" in sandbox_use:
+            results.append(CheckResult("sandbox configured", "ok", "Local sandbox"))
+            has_bash_tool = "bash" in tool_names
+            allow_host_bash = bool(sandbox.get("allow_host_bash", False))
+            if has_bash_tool and not allow_host_bash:
+                results.append(
+                    CheckResult(
+                        "bash compatibility",
+                        "warn",
+                        "bash tool configured but host bash is disabled",
+                        fix="Enable host bash only in a fully trusted environment, or switch to container sandbox",
+                    )
+                )
+            elif allow_host_bash:
+                results.append(
+                    CheckResult(
+                        "bash compatibility",
+                        "warn",
+                        "host bash enabled on LocalSandboxProvider",
+                        fix="Use container sandbox for stronger isolation when bash is required",
+                    )
+                )
+        elif "AioSandboxProvider" in sandbox_use:
+            results.append(CheckResult("sandbox configured", "ok", "Container sandbox"))
+            if not sandbox.get("provisioner_url") and not (shutil.which("docker") or shutil.which("container")):
+                results.append(
+                    CheckResult(
+                        "container runtime available",
+                        "warn",
+                        "no Docker/Apple Container runtime detected",
+                        fix="Install Docker Desktop / Apple Container, or switch to local sandbox",
+                    )
+                )
+        elif sandbox_use:
+            results.append(CheckResult("sandbox configured", "ok", sandbox_use))
+        else:
+            results.append(
+                CheckResult(
+                    "sandbox configured",
+                    "fail",
+                    "sandbox.use is empty",
+                    fix="Run 'make setup' to choose an execution mode",
+                )
+            )
+        return results
+    except Exception as exc:
+        return [CheckResult("sandbox configured", "fail", str(exc))]
 
 
 def check_env_file(project_root: Path) -> CheckResult:
@@ -446,8 +570,10 @@ def main() -> int:
     # ── Configuration ─────────────────────────────────────────────────────────
     cfg_checks: list[CheckResult] = [
         check_env_file(project_root),
+        check_frontend_env(project_root),
         check_config_exists(config_path),
         check_config_version(config_path, project_root),
+        check_config_loadable(config_path),
         check_models_configured(config_path),
     ]
     sections.append(("Configuration", cfg_checks))
@@ -459,9 +585,13 @@ def main() -> int:
     ]
     sections.append(("LLM Provider", llm_checks))
 
-    # ── Web Search ────────────────────────────────────────────────────────────
-    search_checks = [check_web_search(config_path)]
-    sections.append(("Web Search", search_checks))
+    # ── Web Capabilities ─────────────────────────────────────────────────────
+    search_checks = [check_web_search(config_path), check_web_fetch(config_path)]
+    sections.append(("Web Capabilities", search_checks))
+
+    # ── Sandbox ──────────────────────────────────────────────────────────────
+    sandbox_checks = check_sandbox(config_path)
+    sections.append(("Sandbox", sandbox_checks))
 
     # ── Render ────────────────────────────────────────────────────────────────
     total_fails = 0

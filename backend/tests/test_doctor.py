@@ -69,6 +69,32 @@ class TestCheckConfigVersion:
 
 
 # ---------------------------------------------------------------------------
+# check_config_loadable
+# ---------------------------------------------------------------------------
+
+
+class TestCheckConfigLoadable:
+    def test_loadable_config(self, tmp_path, monkeypatch):
+        cfg = tmp_path / "config.yaml"
+        cfg.write_text("config_version: 5\n")
+        monkeypatch.setattr(doctor, "_load_app_config", lambda _path: object())
+        result = doctor.check_config_loadable(cfg)
+        assert result.status == "ok"
+
+    def test_invalid_config(self, tmp_path, monkeypatch):
+        cfg = tmp_path / "config.yaml"
+        cfg.write_text("config_version: 5\n")
+
+        def fail(_path):
+            raise ValueError("bad config")
+
+        monkeypatch.setattr(doctor, "_load_app_config", fail)
+        result = doctor.check_config_loadable(cfg)
+        assert result.status == "fail"
+        assert "bad config" in result.detail
+
+
+# ---------------------------------------------------------------------------
 # check_models_configured
 # ---------------------------------------------------------------------------
 
@@ -165,6 +191,39 @@ class TestCheckWebSearch:
 
 
 # ---------------------------------------------------------------------------
+# check_web_fetch
+# ---------------------------------------------------------------------------
+
+
+class TestCheckWebFetch:
+    def test_jina_always_ok(self, tmp_path):
+        cfg = tmp_path / "config.yaml"
+        cfg.write_text(
+            "config_version: 5\ntools:\n  - name: web_fetch\n    use: deerflow.community.jina_ai.tools:web_fetch_tool\n"
+        )
+        result = doctor.check_web_fetch(cfg)
+        assert result.status == "ok"
+        assert "Jina AI" in result.detail
+
+    def test_firecrawl_without_key_warns(self, tmp_path, monkeypatch):
+        monkeypatch.delenv("FIRECRAWL_API_KEY", raising=False)
+        cfg = tmp_path / "config.yaml"
+        cfg.write_text(
+            "config_version: 5\ntools:\n  - name: web_fetch\n    use: deerflow.community.firecrawl.tools:web_fetch_tool\n"
+        )
+        result = doctor.check_web_fetch(cfg)
+        assert result.status == "warn"
+        assert "FIRECRAWL_API_KEY" in (result.fix or "")
+
+    def test_no_fetch_tool_warns(self, tmp_path):
+        cfg = tmp_path / "config.yaml"
+        cfg.write_text("config_version: 5\ntools: []\n")
+        result = doctor.check_web_fetch(cfg)
+        assert result.status == "warn"
+        assert result.fix is not None
+
+
+# ---------------------------------------------------------------------------
 # check_env_file
 # ---------------------------------------------------------------------------
 
@@ -178,6 +237,54 @@ class TestCheckEnvFile:
         (tmp_path / ".env").write_text("KEY=val\n")
         result = doctor.check_env_file(tmp_path)
         assert result.status == "ok"
+
+
+# ---------------------------------------------------------------------------
+# check_frontend_env
+# ---------------------------------------------------------------------------
+
+
+class TestCheckFrontendEnv:
+    def test_missing(self, tmp_path):
+        result = doctor.check_frontend_env(tmp_path)
+        assert result.status == "warn"
+
+    def test_present(self, tmp_path):
+        frontend_dir = tmp_path / "frontend"
+        frontend_dir.mkdir()
+        (frontend_dir / ".env").write_text("KEY=val\n")
+        result = doctor.check_frontend_env(tmp_path)
+        assert result.status == "ok"
+
+
+# ---------------------------------------------------------------------------
+# check_sandbox
+# ---------------------------------------------------------------------------
+
+
+class TestCheckSandbox:
+    def test_missing_sandbox_fails(self, tmp_path):
+        cfg = tmp_path / "config.yaml"
+        cfg.write_text("config_version: 5\n")
+        results = doctor.check_sandbox(cfg)
+        assert results[0].status == "fail"
+
+    def test_local_sandbox_with_disabled_host_bash_warns(self, tmp_path):
+        cfg = tmp_path / "config.yaml"
+        cfg.write_text(
+            "config_version: 5\nsandbox:\n  use: deerflow.sandbox.local:LocalSandboxProvider\n  allow_host_bash: false\ntools:\n  - name: bash\n    use: deerflow.sandbox.tools:bash_tool\n"
+        )
+        results = doctor.check_sandbox(cfg)
+        assert any(result.status == "warn" for result in results)
+
+    def test_container_sandbox_without_runtime_warns(self, tmp_path, monkeypatch):
+        cfg = tmp_path / "config.yaml"
+        cfg.write_text(
+            "config_version: 5\nsandbox:\n  use: deerflow.community.aio_sandbox:AioSandboxProvider\ntools: []\n"
+        )
+        monkeypatch.setattr(doctor.shutil, "which", lambda _name: None)
+        results = doctor.check_sandbox(cfg)
+        assert any(result.label == "container runtime available" and result.status == "warn" for result in results)
 
 
 # ---------------------------------------------------------------------------
