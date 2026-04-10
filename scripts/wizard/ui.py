@@ -126,20 +126,17 @@ def _read_key(fd: int) -> str:
     return f"\x1b[{third}"
 
 
-def _render_choice_menu(prompt: str, options: list[str], selected: int, typed: str) -> int:
-    prompt_line = f"{prompt}  {cyan('Use ↑/↓ to move, Enter to confirm, or type a number.')}"
-    if typed:
-        prompt_line += f" {yellow(f'[{typed}]')}"
-    print(prompt_line)
+def _render_choice_menu(options: list[str], selected: int) -> int:
+    number_width = len(str(len(options)))
     for i, opt in enumerate(options, 1):
         if i - 1 == selected:
-            prefix = green("›")
+            prefix = f"{green('›')} "
             label = bold(opt)
-            print(f" {prefix} {i}. {label}")
+            print(f"{prefix}{i:>{number_width}}. {label}")
         else:
-            print(f"   {i}. {opt}")
+            print(f"  {i:>{number_width}}. {opt}")
     sys.stdout.flush()
-    return len(options) + 1
+    return len(options)
 
 
 def _ask_choice_with_arrows(prompt: str, options: list[str], default: int | None = None) -> int:
@@ -152,11 +149,12 @@ def _ask_choice_with_arrows(prompt: str, options: list[str], default: int | None
     try:
         sys.stdout.write("\x1b[?25l")
         tty.setraw(fd)
+        print(f"{prompt}  {cyan('(↑/↓ move, Enter confirm, number quick-select)')}")
 
         while True:
             if rendered_lines:
                 _clear_rendered_lines(rendered_lines)
-            rendered_lines = _render_choice_menu(prompt, options, selected, typed)
+            rendered_lines = _render_choice_menu(options, selected)
 
             key = _read_key(fd)
 
