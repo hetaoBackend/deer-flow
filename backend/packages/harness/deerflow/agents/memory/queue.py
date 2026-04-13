@@ -164,6 +164,17 @@ class MemoryUpdateQueue:
 
         self._process_queue()
 
+    def flush_nowait(self) -> None:
+        """Start queue processing immediately in a background thread."""
+        with self._lock:
+            if self._timer is not None:
+                self._timer.cancel()
+
+            timer = threading.Timer(0, self._process_queue)
+            timer.daemon = True
+            self._timer = timer
+            timer.start()
+
     def clear(self) -> None:
         """Clear the queue without processing.
 
