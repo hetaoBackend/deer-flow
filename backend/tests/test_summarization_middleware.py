@@ -92,6 +92,17 @@ def test_multiple_before_summarization_hooks_run_in_registration_order() -> None
     assert call_order == ["first", "second", "third"]
 
 
+@pytest.mark.anyio
+async def test_abefore_model_calls_hooks_same_as_sync() -> None:
+    captured: list[SummarizationEvent] = []
+    middleware = _middleware(before_summarization=[captured.append])
+
+    await middleware.abefore_model({"messages": _messages()}, _runtime())
+
+    assert len(captured) == 1
+    assert [message.content for message in captured[0].messages_to_summarize] == ["user-1", "assistant-1"]
+
+
 def test_memory_flush_hook_skips_when_memory_disabled(monkeypatch: pytest.MonkeyPatch) -> None:
     queue = MagicMock()
     monkeypatch.setattr("deerflow.agents.memory.summarization_hook.get_memory_config", lambda: MemoryConfig(enabled=False))

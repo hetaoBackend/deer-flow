@@ -37,7 +37,10 @@ def _resolve_thread_id(runtime: Runtime) -> str | None:
     """Resolve the current thread ID from runtime context or LangGraph config."""
     thread_id = runtime.context.get("thread_id") if runtime.context else None
     if thread_id is None:
-        config_data = get_config()
+        try:
+            config_data = get_config()
+        except RuntimeError:
+            return None
         thread_id = config_data.get("configurable", {}).get("thread_id")
     return thread_id
 
@@ -79,6 +82,9 @@ class DeerFlowSummarizationMiddleware(SummarizationMiddleware):
             return
 
         messages = state["messages"]
+        # This intentionally mirrors the parent middleware's private decision path
+        # so hooks see the same slice that is about to be compressed. Keep this in
+        # sync with upstream SummarizationMiddleware behavior.
         self._ensure_message_ids(messages)
 
         total_tokens = self.token_counter(messages)

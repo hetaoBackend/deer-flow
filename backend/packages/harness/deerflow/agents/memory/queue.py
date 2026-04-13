@@ -171,6 +171,8 @@ class MemoryUpdateQueue:
                 self._timer.cancel()
 
             timer = threading.Timer(0, self._process_queue)
+            # Daemon thread: queued messages may be lost if the process exits
+            # before _process_queue completes. Acceptable for best-effort memory updates.
             timer.daemon = True
             self._timer = timer
             timer.start()
