@@ -25,6 +25,7 @@ def memory_flush_hook(event: SummarizationEvent) -> None:
     queue.add(
         thread_id=event.thread_id,
         messages=filtered_messages,
+        agent_name=event.agent_name,
         correction_detected=correction_detected,
         reinforcement_detected=reinforcement_detected,
     )

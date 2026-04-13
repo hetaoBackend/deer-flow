@@ -22,6 +22,7 @@ class SummarizationEvent:
     messages_to_summarize: list[AnyMessage]
     preserved_messages: list[AnyMessage]
     thread_id: str | None
+    agent_name: str | None
     runtime: Runtime
 
 
@@ -39,6 +40,18 @@ def _resolve_thread_id(runtime: Runtime) -> str | None:
         config_data = get_config()
         thread_id = config_data.get("configurable", {}).get("thread_id")
     return thread_id
+
+
+def _resolve_agent_name(runtime: Runtime) -> str | None:
+    """Resolve the current agent name from runtime context or LangGraph config."""
+    agent_name = runtime.context.get("agent_name") if runtime.context else None
+    if agent_name is None:
+        try:
+            config_data = get_config()
+        except RuntimeError:
+            return None
+        agent_name = config_data.get("configurable", {}).get("agent_name")
+    return agent_name
 
 
 class DeerFlowSummarizationMiddleware(SummarizationMiddleware):
@@ -81,6 +94,7 @@ class DeerFlowSummarizationMiddleware(SummarizationMiddleware):
             messages_to_summarize=messages_to_summarize,
             preserved_messages=preserved_messages,
             thread_id=_resolve_thread_id(runtime),
+            agent_name=_resolve_agent_name(runtime),
             runtime=runtime,
         )
 

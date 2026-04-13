@@ -20,8 +20,13 @@ def _messages() -> list:
     ]
 
 
-def _runtime(thread_id: str | None = "thread-1") -> SimpleNamespace:
-    return SimpleNamespace(context={} if thread_id is None else {"thread_id": thread_id})
+def _runtime(thread_id: str | None = "thread-1", agent_name: str | None = None) -> SimpleNamespace:
+    context = {}
+    if thread_id is not None:
+        context["thread_id"] = thread_id
+    if agent_name is not None:
+        context["agent_name"] = agent_name
+    return SimpleNamespace(context=context)
 
 
 def _middleware(*, before_summarization=None, trigger=("messages", 4), keep=("messages", 2)) -> DeerFlowSummarizationMiddleware:
@@ -46,6 +51,7 @@ def test_before_summarization_hook_receives_messages_before_compression() -> Non
     assert [message.content for message in captured[0].messages_to_summarize] == ["user-1", "assistant-1"]
     assert [message.content for message in captured[0].preserved_messages] == ["user-2", "assistant-2"]
     assert captured[0].thread_id == "thread-1"
+    assert captured[0].agent_name is None
     assert isinstance(result["messages"][0], RemoveMessage)
     assert result["messages"][1].content.startswith("Here is a summary")
 
@@ -96,6 +102,7 @@ def test_memory_flush_hook_skips_when_memory_disabled(monkeypatch: pytest.Monkey
             messages_to_summarize=_messages()[:2],
             preserved_messages=[],
             thread_id="thread-1",
+            agent_name=None,
             runtime=_runtime(),
         )
     )
@@ -114,6 +121,7 @@ def test_memory_flush_hook_skips_when_thread_id_missing(monkeypatch: pytest.Monk
             messages_to_summarize=_messages()[:2],
             preserved_messages=[],
             thread_id=None,
+            agent_name=None,
             runtime=_runtime(None),
         )
     )
@@ -137,6 +145,7 @@ def test_memory_flush_hook_enqueues_filtered_messages_and_flushes(monkeypatch: p
             messages_to_summarize=messages,
             preserved_messages=[],
             thread_id="thread-1",
+            agent_name=None,
             runtime=_runtime(),
         )
     )
@@ -148,3 +157,22 @@ def test_memory_flush_hook_enqueues_filtered_messages_and_flushes(monkeypatch: p
     assert add_kwargs["correction_detected"] is False
     assert add_kwargs["reinforcement_detected"] is False
     queue.flush_nowait.assert_called_once_with()
+
+
+def test_memory_flush_hook_preserves_agent_scoped_memory(monkeypatch: pytest.MonkeyPatch) -> None:
+    queue = MagicMock()
+    monkeypatch.setattr("deerflow.agents.memory.summarization_hook.get_memory_config", lambda: MemoryConfig(enabled=True))
+    monkeypatch.setattr("deerflow.agents.memory.summarization_hook.get_memory_queue", lambda: queue)
+
+    memory_flush_hook(
+        SummarizationEvent(
+            messages_to_summarize=_messages()[:2],
+            preserved_messages=[],
+            thread_id="thread-1",
+            agent_name="research-agent",
+            runtime=_runtime(agent_name="research-agent"),
+        )
+    )
+
+    queue.add.assert_called_once()
+    assert queue.add.call_args.kwargs["agent_name"] == "research-agent"
