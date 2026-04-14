@@ -8,8 +8,9 @@ from typing import Protocol, runtime_checkable
 
 from langchain.agents import AgentState
 from langchain.agents.middleware import SummarizationMiddleware
-from langchain_core.messages import AnyMessage
+from langchain_core.messages import AnyMessage, RemoveMessage
 from langgraph.config import get_config
+from langgraph.graph.message import REMOVE_ALL_MESSAGES
 from langgraph.runtime import Runtime
 
 logger = logging.getLogger(__name__)
@@ -19,8 +20,8 @@ logger = logging.getLogger(__name__)
 class SummarizationEvent:
     """Context emitted before conversation history is summarized away."""
 
-    messages_to_summarize: list[AnyMessage]
-    preserved_messages: list[AnyMessage]
+    messages_to_summarize: tuple[AnyMessage, ...]
+    preserved_messages: tuple[AnyMessage, ...]
     thread_id: str | None
     agent_name: str | None
     runtime: Runtime
@@ -70,35 +71,73 @@ class DeerFlowSummarizationMiddleware(SummarizationMiddleware):
         self._before_summarization_hooks = before_summarization or []
 
     def before_model(self, state: AgentState, runtime: Runtime) -> dict | None:
-        self._fire_hooks(state, runtime)
-        return super().before_model(state, runtime)
+        return self._maybe_summarize(state, runtime)
 
     async def abefore_model(self, state: AgentState, runtime: Runtime) -> dict | None:
-        self._fire_hooks(state, runtime)
-        return await super().abefore_model(state, runtime)
+        return await self._amaybe_summarize(state, runtime)
 
-    def _fire_hooks(self, state: AgentState, runtime: Runtime) -> None:
-        if not self._before_summarization_hooks:
-            return
-
+    def _maybe_summarize(self, state: AgentState, runtime: Runtime) -> dict | None:
         messages = state["messages"]
-        # This intentionally mirrors the parent middleware's private decision path
-        # so hooks see the same slice that is about to be compressed. Keep this in
-        # sync with upstream SummarizationMiddleware behavior.
         self._ensure_message_ids(messages)
 
         total_tokens = self.token_counter(messages)
         if not self._should_summarize(messages, total_tokens):
-            return
+            return None
 
         cutoff_index = self._determine_cutoff_index(messages)
         if cutoff_index <= 0:
-            return
+            return None
 
         messages_to_summarize, preserved_messages = self._partition_messages(messages, cutoff_index)
+        self._fire_hooks(messages_to_summarize, preserved_messages, runtime)
+        summary = self._create_summary(messages_to_summarize)
+        new_messages = self._build_new_messages(summary)
+
+        return {
+            "messages": [
+                RemoveMessage(id=REMOVE_ALL_MESSAGES),
+                *new_messages,
+                *preserved_messages,
+            ]
+        }
+
+    async def _amaybe_summarize(self, state: AgentState, runtime: Runtime) -> dict | None:
+        messages = state["messages"]
+        self._ensure_message_ids(messages)
+
+        total_tokens = self.token_counter(messages)
+        if not self._should_summarize(messages, total_tokens):
+            return None
+
+        cutoff_index = self._determine_cutoff_index(messages)
+        if cutoff_index <= 0:
+            return None
+
+        messages_to_summarize, preserved_messages = self._partition_messages(messages, cutoff_index)
+        self._fire_hooks(messages_to_summarize, preserved_messages, runtime)
+        summary = await self._acreate_summary(messages_to_summarize)
+        new_messages = self._build_new_messages(summary)
+
+        return {
+            "messages": [
+                RemoveMessage(id=REMOVE_ALL_MESSAGES),
+                *new_messages,
+                *preserved_messages,
+            ]
+        }
+
+    def _fire_hooks(
+        self,
+        messages_to_summarize: list[AnyMessage],
+        preserved_messages: list[AnyMessage],
+        runtime: Runtime,
+    ) -> None:
+        if not self._before_summarization_hooks:
+            return
+
         event = SummarizationEvent(
-            messages_to_summarize=messages_to_summarize,
-            preserved_messages=preserved_messages,
+            messages_to_summarize=tuple(messages_to_summarize),
+            preserved_messages=tuple(preserved_messages),
             thread_id=_resolve_thread_id(runtime),
             agent_name=_resolve_agent_name(runtime),
             runtime=runtime,
@@ -108,4 +147,5 @@ class DeerFlowSummarizationMiddleware(SummarizationMiddleware):
             try:
                 hook(event)
             except Exception:
-                logger.exception("before_summarization hook %s failed", type(hook).__name__)
+                hook_name = getattr(hook, "__name__", None) or type(hook).__name__
+                logger.exception("before_summarization hook %s failed", hook_name)

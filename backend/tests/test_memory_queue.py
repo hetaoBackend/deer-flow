@@ -109,6 +109,39 @@ def test_flush_nowait_cancels_existing_timer_and_starts_immediate_timer() -> Non
     assert queue._timer is created_timer
 
 
+def test_add_nowait_cancels_existing_timer_and_starts_immediate_timer() -> None:
+    queue = MemoryUpdateQueue()
+    existing_timer = MagicMock()
+    queue._timer = existing_timer
+    created_timer = MagicMock()
+
+    with (
+        patch("deerflow.agents.memory.queue.get_memory_config", return_value=_memory_config(enabled=True)),
+        patch("deerflow.agents.memory.queue.threading.Timer", return_value=created_timer) as timer_cls,
+    ):
+        queue.add_nowait(thread_id="thread-1", messages=["conversation"], agent_name="lead-agent")
+
+    existing_timer.cancel.assert_called_once_with()
+    timer_cls.assert_called_once_with(0, queue._process_queue)
+    assert queue.pending_count == 1
+    assert queue._queue[0].agent_name == "lead-agent"
+    assert created_timer.daemon is True
+    created_timer.start.assert_called_once_with()
+
+
+def test_process_queue_reschedules_immediately_when_already_processing() -> None:
+    queue = MemoryUpdateQueue()
+    queue._processing = True
+    created_timer = MagicMock()
+
+    with patch("deerflow.agents.memory.queue.threading.Timer", return_value=created_timer) as timer_cls:
+        queue._process_queue()
+
+    timer_cls.assert_called_once_with(0, queue._process_queue)
+    assert created_timer.daemon is True
+    created_timer.start.assert_called_once_with()
+
+
 def test_flush_nowait_is_non_blocking() -> None:
     queue = MemoryUpdateQueue()
     started = threading.Event()

@@ -75,7 +75,7 @@ def test_before_summarization_hook_exception_does_not_block_compression(caplog: 
     with caplog.at_level("ERROR"):
         result = middleware.before_model({"messages": _messages()}, _runtime())
 
-    assert "before_summarization hook function failed" in caplog.text
+    assert "before_summarization hook _broken_hook failed" in caplog.text
     assert isinstance(result["messages"][0], RemoveMessage)
 
 
@@ -110,16 +110,15 @@ def test_memory_flush_hook_skips_when_memory_disabled(monkeypatch: pytest.Monkey
 
     memory_flush_hook(
         SummarizationEvent(
-            messages_to_summarize=_messages()[:2],
-            preserved_messages=[],
+            messages_to_summarize=tuple(_messages()[:2]),
+            preserved_messages=(),
             thread_id="thread-1",
             agent_name=None,
             runtime=_runtime(),
         )
     )
 
-    queue.add.assert_not_called()
-    queue.flush_nowait.assert_not_called()
+    queue.add_nowait.assert_not_called()
 
 
 def test_memory_flush_hook_skips_when_thread_id_missing(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -129,16 +128,15 @@ def test_memory_flush_hook_skips_when_thread_id_missing(monkeypatch: pytest.Monk
 
     memory_flush_hook(
         SummarizationEvent(
-            messages_to_summarize=_messages()[:2],
-            preserved_messages=[],
+            messages_to_summarize=tuple(_messages()[:2]),
+            preserved_messages=(),
             thread_id=None,
             agent_name=None,
             runtime=_runtime(None),
         )
     )
 
-    queue.add.assert_not_called()
-    queue.flush_nowait.assert_not_called()
+    queue.add_nowait.assert_not_called()
 
 
 def test_memory_flush_hook_enqueues_filtered_messages_and_flushes(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -153,21 +151,20 @@ def test_memory_flush_hook_enqueues_filtered_messages_and_flushes(monkeypatch: p
 
     memory_flush_hook(
         SummarizationEvent(
-            messages_to_summarize=messages,
-            preserved_messages=[],
+            messages_to_summarize=tuple(messages),
+            preserved_messages=(),
             thread_id="thread-1",
             agent_name=None,
             runtime=_runtime(),
         )
     )
 
-    queue.add.assert_called_once()
-    add_kwargs = queue.add.call_args.kwargs
+    queue.add_nowait.assert_called_once()
+    add_kwargs = queue.add_nowait.call_args.kwargs
     assert add_kwargs["thread_id"] == "thread-1"
     assert [message.content for message in add_kwargs["messages"]] == ["Question", "Final answer"]
     assert add_kwargs["correction_detected"] is False
     assert add_kwargs["reinforcement_detected"] is False
-    queue.flush_nowait.assert_called_once_with()
 
 
 def test_memory_flush_hook_preserves_agent_scoped_memory(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -177,13 +174,13 @@ def test_memory_flush_hook_preserves_agent_scoped_memory(monkeypatch: pytest.Mon
 
     memory_flush_hook(
         SummarizationEvent(
-            messages_to_summarize=_messages()[:2],
-            preserved_messages=[],
+            messages_to_summarize=tuple(_messages()[:2]),
+            preserved_messages=(),
             thread_id="thread-1",
             agent_name="research-agent",
             runtime=_runtime(agent_name="research-agent"),
         )
     )
 
-    queue.add.assert_called_once()
-    assert queue.add.call_args.kwargs["agent_name"] == "research-agent"
+    queue.add_nowait.assert_called_once()
+    assert queue.add_nowait.call_args.kwargs["agent_name"] == "research-agent"
