@@ -14,6 +14,7 @@ from deerflow.config.memory_config import get_memory_config
 
 logger = logging.getLogger(__name__)
 
+
 class MemoryMiddlewareState(AgentState):
     """Compatible with the `ThreadState` schema."""
 
