@@ -381,8 +381,8 @@ class MemoryUpdater:
             response_text = "\n".join(lines[1:-1] if lines[-1] == "```" else lines[1:])
 
         update_data = json.loads(response_text)
-        # Bug 1 fix: deep-copy before in-place mutation so a subsequent save()
-        # failure cannot corrupt the still-cached original object reference.
+        # Deep-copy before in-place mutation so a subsequent save() failure
+        # cannot corrupt the still-cached original object reference.
         updated_memory = self._apply_updates(copy.deepcopy(current_memory), update_data, thread_id)
         updated_memory = _strip_upload_mentions_from_memory(updated_memory)
         return get_memory_storage().save(updated_memory, agent_name)

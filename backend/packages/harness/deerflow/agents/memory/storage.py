@@ -66,7 +66,7 @@ class FileMemoryStorage(MemoryStorage):
         # Per-agent memory cache: keyed by agent_name (None = global)
         # Value: (memory_data, file_mtime)
         self._memory_cache: dict[str | None, tuple[dict[str, Any], float | None]] = {}
-        # Guards all reads and writes to _memory_cache (Bug 3: thread-safety)
+        # Guards all reads and writes to _memory_cache across concurrent callers.
         self._cache_lock = threading.Lock()
 
     def _validate_agent_name(self, agent_name: str) -> None:
@@ -148,9 +148,9 @@ class FileMemoryStorage(MemoryStorage):
 
         try:
             file_path.parent.mkdir(parents=True, exist_ok=True)
-            # Bug 4 fix: shallow-copy before adding lastUpdated so the caller's
-            # dict is not mutated as a side-effect (and the cache reference is not
-            # silently updated before the file write succeeds).
+            # Shallow-copy before adding lastUpdated so the caller's dict is not
+            # mutated as a side-effect, and the cache reference is not silently
+            # updated before the file write succeeds.
             memory_data = {**memory_data, "lastUpdated": utc_now_iso_z()}
 
             temp_path = file_path.with_suffix(".tmp")

@@ -884,10 +884,10 @@ class TestReinforcementHint:
 
 
 class TestFinalizeCacheIsolation:
-    """Bug 1 regression: _finalize_update must not mutate the cached memory object."""
+    """_finalize_update must not mutate the cached memory object."""
 
     def test_deepcopy_prevents_cache_corruption_on_save_failure(self):
-        """Bug 1: If save() fails, the in-memory snapshot used by _finalize_update
+        """If save() fails, the in-memory snapshot used by _finalize_update
         must remain independent of any object the storage layer may still hold in
         its cache.  The deepcopy in _finalize_update achieves this — the object
         passed to _apply_updates is always a fresh copy, never the cache reference.

@@ -111,7 +111,7 @@ class TestFileMemoryStorage:
                 assert memory_file.exists()
 
     def test_save_does_not_mutate_caller_dict(self, tmp_path):
-        """Bug 4: save() must not mutate the caller's dict (lastUpdated side-effect)."""
+        """save() must not mutate the caller's dict (lastUpdated side-effect)."""
         memory_file = tmp_path / "memory.json"
 
         def mock_get_paths():
@@ -129,12 +129,11 @@ class TestFileMemoryStorage:
                 assert "lastUpdated" not in original
 
     def test_cache_not_corrupted_when_save_fails(self, tmp_path):
-        """Bug 1 (storage side): cache must remain clean when save() raises OSError.
+        """Cache must remain clean when save() raises OSError.
 
-        If save() fails after the atomic rename, the cache must NOT be updated
-        with the new data.  This is the storage-layer counterpart to the deepcopy
-        fix in updater._finalize_update(); together they prevent stale mutations
-        from leaking into the cache when persistence fails.
+        If save() fails, the cache must NOT be updated with the new data.
+        Together with the deepcopy in updater._finalize_update(), this prevents
+        stale mutations from leaking into the cache when persistence fails.
         """
         memory_file = tmp_path / "memory.json"
         memory_file.parent.mkdir(parents=True, exist_ok=True)
@@ -166,7 +165,7 @@ class TestFileMemoryStorage:
                 assert after["facts"][0]["content"] == "original"
 
     def test_cache_thread_safety(self, tmp_path):
-        """Bug 3: concurrent load/reload calls must not race on _memory_cache."""
+        """Concurrent load/reload calls must not race on _memory_cache."""
         memory_file = tmp_path / "memory.json"
         memory_file.parent.mkdir(parents=True, exist_ok=True)
         import json as _json
