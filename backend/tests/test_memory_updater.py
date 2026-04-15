@@ -897,12 +897,14 @@ class TestFinalizeCacheIsolation:
 
         import json as _json
 
-        new_fact_json = _json.dumps({
-            "user": {},
-            "history": {},
-            "newFacts": [{"content": "new fact", "category": "context", "confidence": 0.9}],
-            "factsToRemove": [],
-        })
+        new_fact_json = _json.dumps(
+            {
+                "user": {},
+                "history": {},
+                "newFacts": [{"content": "new fact", "category": "context", "confidence": 0.9}],
+                "factsToRemove": [],
+            }
+        )
         mock_response = MagicMock()
         mock_response.content = new_fact_json
         mock_model = AsyncMock()
