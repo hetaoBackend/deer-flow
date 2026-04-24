@@ -2,8 +2,10 @@
 
 import json
 import sys
+from types import SimpleNamespace
 
 import pytest
+from langchain_core.messages import ToolMessage
 from langchain_core.tools import tool as langchain_tool
 
 from deerflow.config.tool_search_config import ToolSearchConfig, load_tool_search_config_from_dict
@@ -509,3 +511,50 @@ class TestToolSearchPromotion:
         assert "slack_send_message" not in remaining
         assert "slack_list_channels" not in remaining
         assert len(registry) == 4
+
+
+class TestDeferredToolExecutionGate:
+    def test_unpromoted_deferred_tool_call_is_blocked(self, registry):
+        from deerflow.agents.middlewares.deferred_tool_filter_middleware import DeferredToolFilterMiddleware
+
+        set_deferred_registry(registry)
+        middleware = DeferredToolFilterMiddleware()
+        request = SimpleNamespace(tool_call={"name": "github_create_issue", "id": "call-1"})
+        called = False
+
+        def handler(_request):
+            nonlocal called
+            called = True
+            return ToolMessage(content="executed", tool_call_id="call-1", name="github_create_issue")
+
+        result = middleware.wrap_tool_call(request, handler)
+
+        assert called is False
+        assert isinstance(result, ToolMessage)
+        assert result.status == "error"
+        assert result.tool_call_id == "call-1"
+        assert "tool_search" in result.content
+        assert "github_create_issue" in result.content
+
+    @pytest.mark.anyio
+    async def test_unpromoted_deferred_tool_call_is_blocked_async(self, registry):
+        from deerflow.agents.middlewares.deferred_tool_filter_middleware import DeferredToolFilterMiddleware
+
+        set_deferred_registry(registry)
+        middleware = DeferredToolFilterMiddleware()
+        request = SimpleNamespace(tool_call={"name": "github_create_issue", "id": "call-1"})
+        called = False
+
+        async def handler(_request):
+            nonlocal called
+            called = True
+            return ToolMessage(content="executed", tool_call_id="call-1", name="github_create_issue")
+
+        result = await middleware.awrap_tool_call(request, handler)
+
+        assert called is False
+        assert isinstance(result, ToolMessage)
+        assert result.status == "error"
+        assert result.tool_call_id == "call-1"
+        assert "tool_search" in result.content
+        assert "github_create_issue" in result.content
