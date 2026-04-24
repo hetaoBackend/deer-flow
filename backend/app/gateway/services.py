@@ -142,7 +142,7 @@ def build_run_config(
                     thread_id,
                     list(request_config.get("configurable", {}).keys()),
                 )
-            config["context"] = request_config["context"]
+            config["context"] = dict(request_config["context"])
         else:
             configurable = {"thread_id": thread_id}
             configurable.update(request_config.get("configurable", {}))
@@ -155,12 +155,18 @@ def build_run_config(
 
     # Inject custom agent name when the caller specified a non-default assistant.
     # Honour an explicit configurable["agent_name"] in the request if already set.
-    if assistant_id and assistant_id != _DEFAULT_ASSISTANT_ID and "configurable" in config:
-        if "agent_name" not in config["configurable"]:
-            normalized = assistant_id.strip().lower().replace("_", "-")
-            if not normalized or not re.fullmatch(r"[a-z0-9-]+", normalized):
-                raise ValueError(f"Invalid assistant_id {assistant_id!r}: must contain only letters, digits, and hyphens after normalization.")
-            config["configurable"]["agent_name"] = normalized
+    if assistant_id and assistant_id != _DEFAULT_ASSISTANT_ID:
+        normalized = assistant_id.strip().lower().replace("_", "-")
+        if not normalized or not re.fullmatch(r"[a-z0-9-]+", normalized):
+            raise ValueError(f"Invalid assistant_id {assistant_id!r}: must contain only letters, digits, and hyphens after normalization.")
+        if "configurable" in config:
+            target = config["configurable"]
+        elif "context" in config:
+            target = config["context"]
+        else:
+            target = config.setdefault("configurable", {})
+        if target is not None and "agent_name" not in target:
+            target["agent_name"] = normalized
     if metadata:
         config.setdefault("metadata", {}).update(metadata)
     return config
