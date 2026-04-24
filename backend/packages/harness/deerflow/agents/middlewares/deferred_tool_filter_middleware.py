@@ -63,10 +63,7 @@ class DeferredToolFilterMiddleware(AgentMiddleware[AgentState]):
 
         tool_call_id = str(request.tool_call.get("id") or "missing_tool_call_id")
         return ToolMessage(
-            content=(
-                f"Error: Tool '{tool_name}' is deferred and has not been loaded yet. "
-                "Call tool_search first to fetch and promote this tool's schema, then retry."
-            ),
+            content=(f"Error: Tool '{tool_name}' is deferred and has not been loaded yet. Call tool_search first to fetch and promote this tool's schema, then retry."),
             tool_call_id=tool_call_id,
             name=tool_name,
             status="error",
