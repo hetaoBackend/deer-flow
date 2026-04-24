@@ -38,7 +38,7 @@ class DeferredToolFilterMiddleware(AgentMiddleware[AgentState]):
         if not registry:
             return request
 
-        deferred_names = {e.name for e in registry.entries}
+        deferred_names = registry.deferred_names
         active_tools = [t for t in request.tools if getattr(t, "name", None) not in deferred_names]
 
         if len(active_tools) < len(request.tools):
@@ -57,13 +57,12 @@ class DeferredToolFilterMiddleware(AgentMiddleware[AgentState]):
         if not tool_name:
             return None
 
-        deferred_names = {e.name for e in registry.entries}
-        if tool_name not in deferred_names:
+        if not registry.contains(tool_name):
             return None
 
         tool_call_id = str(request.tool_call.get("id") or "missing_tool_call_id")
         return ToolMessage(
-            content=(f"Error: Tool '{tool_name}' is deferred and has not been loaded yet. Call tool_search first to fetch and promote this tool's schema, then retry."),
+            content=(f"Error: Tool '{tool_name}' is deferred and has not been promoted yet. Call tool_search first to expose and promote this tool's schema, then retry."),
             tool_call_id=tool_call_id,
             name=tool_name,
             status="error",

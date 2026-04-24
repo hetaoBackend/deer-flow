@@ -85,6 +85,16 @@ class TestDeferredToolRegistry:
         assert "github_create_issue" in names
         assert "slack_send_message" in names
 
+    def test_deferred_names(self, registry):
+        names = registry.deferred_names
+        assert "github_create_issue" in names
+        assert "slack_send_message" in names
+        assert len(names) == 6
+
+    def test_contains(self, registry):
+        assert registry.contains("github_create_issue") is True
+        assert registry.contains("not_registered") is False
+
     def test_search_select_single(self, registry):
         results = registry.search("select:github_create_issue")
         assert len(results) == 1
@@ -535,6 +545,45 @@ class TestDeferredToolExecutionGate:
         assert result.tool_call_id == "call-1"
         assert "tool_search" in result.content
         assert "github_create_issue" in result.content
+
+    def test_promoted_deferred_tool_call_is_allowed(self, registry):
+        from deerflow.agents.middlewares.deferred_tool_filter_middleware import DeferredToolFilterMiddleware
+
+        registry.promote({"github_create_issue"})
+        set_deferred_registry(registry)
+        middleware = DeferredToolFilterMiddleware()
+        request = SimpleNamespace(tool_call={"name": "github_create_issue", "id": "call-1"})
+        called = False
+
+        def handler(_request):
+            nonlocal called
+            called = True
+            return ToolMessage(content="executed", tool_call_id="call-1", name="github_create_issue")
+
+        result = middleware.wrap_tool_call(request, handler)
+
+        assert called is True
+        assert isinstance(result, ToolMessage)
+        assert result.content == "executed"
+
+    def test_non_deferred_tool_call_is_allowed(self, registry):
+        from deerflow.agents.middlewares.deferred_tool_filter_middleware import DeferredToolFilterMiddleware
+
+        set_deferred_registry(registry)
+        middleware = DeferredToolFilterMiddleware()
+        request = SimpleNamespace(tool_call={"name": "local_tool", "id": "call-1"})
+        called = False
+
+        def handler(_request):
+            nonlocal called
+            called = True
+            return ToolMessage(content="executed", tool_call_id="call-1", name="local_tool")
+
+        result = middleware.wrap_tool_call(request, handler)
+
+        assert called is True
+        assert isinstance(result, ToolMessage)
+        assert result.content == "executed"
 
     @pytest.mark.anyio
     async def test_unpromoted_deferred_tool_call_is_blocked_async(self, registry):
