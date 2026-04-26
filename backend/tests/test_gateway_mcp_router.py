@@ -43,6 +43,32 @@ def test_get_mcp_configuration_redacts_sensitive_values(monkeypatch) -> None:
     assert server.oauth.extra_token_params == {"audience_secret": mcp._REDACTED_VALUE}
 
 
+def test_get_mcp_configuration_redacts_empty_oauth_secrets(monkeypatch) -> None:
+    config = ExtensionsConfig(
+        mcp_servers={
+            "secure": McpServerConfig(
+                enabled=True,
+                type="http",
+                url="https://mcp.example.test",
+                oauth=McpOAuthConfig(
+                    token_url="https://auth.example.test/token",
+                    client_secret="",
+                    refresh_token="",
+                ),
+            )
+        },
+        skills={},
+    )
+    monkeypatch.setattr(mcp, "get_extensions_config", lambda: config)
+
+    response = asyncio.run(mcp.get_mcp_configuration())
+    oauth = response.mcp_servers["secure"].oauth
+
+    assert oauth is not None
+    assert oauth.client_secret == mcp._REDACTED_VALUE
+    assert oauth.refresh_token == mcp._REDACTED_VALUE
+
+
 def test_update_mcp_configuration_preserves_redacted_existing_values(tmp_path, monkeypatch) -> None:
     config_path = tmp_path / "extensions_config.json"
     config_path.write_text(
@@ -125,6 +151,136 @@ def test_update_mcp_configuration_preserves_redacted_existing_values(tmp_path, m
     assert response.mcp_servers["secure"].env == {"TOKEN": mcp._REDACTED_VALUE}
 
 
+def test_update_mcp_configuration_rejects_redacted_values_after_url_change(tmp_path) -> None:
+    config_path = tmp_path / "extensions_config.json"
+    config_path.write_text(
+        json.dumps(
+            {
+                "mcpServers": {
+                    "secure": {
+                        "enabled": True,
+                        "type": "http",
+                        "url": "https://mcp.example.test",
+                        "headers": {"Authorization": "$MCP_AUTH_HEADER"},
+                    }
+                },
+                "skills": {},
+            }
+        ),
+        encoding="utf-8",
+    )
+    request = mcp.McpConfigUpdateRequest(
+        mcp_servers={
+            "secure": mcp.McpServerConfigResponse(
+                enabled=True,
+                type="http",
+                url="https://evil.example.test",
+                headers={"Authorization": mcp._REDACTED_VALUE},
+            )
+        }
+    )
+
+    with (
+        patch.object(mcp.ExtensionsConfig, "resolve_config_path", return_value=config_path),
+        patch.object(mcp, "get_extensions_config", return_value=ExtensionsConfig(mcp_servers={}, skills={})),
+    ):
+        with pytest.raises(HTTPException) as exc:
+            asyncio.run(mcp.update_mcp_configuration(request))
+
+    assert exc.value.status_code == 400
+    assert "changing url" in str(exc.value.detail)
+
+
+def test_update_mcp_configuration_rejects_redacted_oauth_after_token_url_change(tmp_path) -> None:
+    config_path = tmp_path / "extensions_config.json"
+    config_path.write_text(
+        json.dumps(
+            {
+                "mcpServers": {
+                    "secure": {
+                        "enabled": True,
+                        "type": "http",
+                        "url": "https://mcp.example.test",
+                        "oauth": {
+                            "token_url": "https://auth.example.test/token",
+                            "client_id": "client-id",
+                            "client_secret": "$MCP_CLIENT_SECRET",
+                        },
+                    }
+                },
+                "skills": {},
+            }
+        ),
+        encoding="utf-8",
+    )
+    request = mcp.McpConfigUpdateRequest(
+        mcp_servers={
+            "secure": mcp.McpServerConfigResponse(
+                enabled=True,
+                type="http",
+                url="https://mcp.example.test",
+                oauth=mcp.McpOAuthConfigResponse(
+                    token_url="https://evil.example.test/token",
+                    client_id="client-id",
+                    client_secret=mcp._REDACTED_VALUE,
+                ),
+            )
+        }
+    )
+
+    with (
+        patch.object(mcp.ExtensionsConfig, "resolve_config_path", return_value=config_path),
+        patch.object(mcp, "get_extensions_config", return_value=ExtensionsConfig(mcp_servers={}, skills={})),
+    ):
+        with pytest.raises(HTTPException) as exc:
+            asyncio.run(mcp.update_mcp_configuration(request))
+
+    assert exc.value.status_code == 400
+    assert "oauth.token_url" in str(exc.value.detail)
+
+
+def test_update_mcp_configuration_rejects_redacted_stdio_env_after_args_change(tmp_path) -> None:
+    config_path = tmp_path / "extensions_config.json"
+    config_path.write_text(
+        json.dumps(
+            {
+                "mcpServers": {
+                    "local": {
+                        "enabled": True,
+                        "type": "stdio",
+                        "command": "npx",
+                        "args": ["-y", "@example/old-server"],
+                        "env": {"TOKEN": "$MCP_TOKEN"},
+                    }
+                },
+                "skills": {},
+            }
+        ),
+        encoding="utf-8",
+    )
+    request = mcp.McpConfigUpdateRequest(
+        mcp_servers={
+            "local": mcp.McpServerConfigResponse(
+                enabled=True,
+                type="stdio",
+                command="npx",
+                args=["-y", "@example/new-server"],
+                env={"TOKEN": mcp._REDACTED_VALUE},
+            )
+        }
+    )
+
+    with (
+        patch.object(mcp.ExtensionsConfig, "resolve_config_path", return_value=config_path),
+        patch.object(mcp, "get_extensions_config", return_value=ExtensionsConfig(mcp_servers={}, skills={})),
+    ):
+        with pytest.raises(HTTPException) as exc:
+            asyncio.run(mcp.update_mcp_configuration(request))
+
+    assert exc.value.status_code == 400
+    assert "changing command or args" in str(exc.value.detail)
+
+
 def test_update_mcp_configuration_rejects_disallowed_stdio_command(tmp_path) -> None:
     config_path = tmp_path / "extensions_config.json"
     config_path.write_text(json.dumps({"mcpServers": {}, "skills": {}}), encoding="utf-8")
@@ -146,11 +302,41 @@ def test_update_mcp_configuration_rejects_disallowed_stdio_command(tmp_path) -> 
             asyncio.run(mcp.update_mcp_configuration(request))
 
     assert exc.value.status_code == 400
+    assert "bare executable" in str(exc.value.detail)
+
+
+def test_update_mcp_configuration_rejects_default_python_stdio_command(tmp_path) -> None:
+    config_path = tmp_path / "extensions_config.json"
+    config_path.write_text(json.dumps({"mcpServers": {}, "skills": {}}), encoding="utf-8")
+    request = mcp.McpConfigUpdateRequest(
+        mcp_servers={
+            "python": mcp.McpServerConfigResponse(
+                enabled=True,
+                type="stdio",
+                command="python",
+            )
+        }
+    )
+
+    with (
+        patch.object(mcp.ExtensionsConfig, "resolve_config_path", return_value=config_path),
+        patch.object(mcp, "get_extensions_config", return_value=ExtensionsConfig(mcp_servers={}, skills={})),
+    ):
+        with pytest.raises(HTTPException) as exc:
+            asyncio.run(mcp.update_mcp_configuration(request))
+
+    assert exc.value.status_code == 400
     assert "not allowed" in str(exc.value.detail)
 
 
-def test_mcp_config_admin_token_is_optional_but_enforced_when_configured(monkeypatch) -> None:
+def test_mcp_config_admin_token_fails_closed_unless_explicitly_allowed(monkeypatch) -> None:
     monkeypatch.delenv(mcp._MCP_CONFIG_ADMIN_TOKEN_ENV, raising=False)
+    monkeypatch.delenv(mcp._MCP_CONFIG_ALLOW_UNAUTH_ENV, raising=False)
+    with pytest.raises(HTTPException) as exc:
+        mcp._require_mcp_config_admin(None)
+    assert exc.value.status_code == 403
+
+    monkeypatch.setenv(mcp._MCP_CONFIG_ALLOW_UNAUTH_ENV, "true")
     mcp._require_mcp_config_admin(None)
 
     monkeypatch.setenv(mcp._MCP_CONFIG_ADMIN_TOKEN_ENV, "secret-token")
