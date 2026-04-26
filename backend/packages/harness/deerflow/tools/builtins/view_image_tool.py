@@ -9,6 +9,21 @@ from langgraph.types import Command
 from langgraph.typing import ContextT
 
 from deerflow.agents.thread_state import ThreadState
+from deerflow.config.paths import VIRTUAL_PATH_PREFIX
+
+_ALLOWED_IMAGE_VIRTUAL_ROOTS = (
+    f"{VIRTUAL_PATH_PREFIX}/workspace",
+    f"{VIRTUAL_PATH_PREFIX}/uploads",
+    f"{VIRTUAL_PATH_PREFIX}/outputs",
+)
+_ALLOWED_IMAGE_VIRTUAL_ROOTS_TEXT = ", ".join(_ALLOWED_IMAGE_VIRTUAL_ROOTS)
+
+
+def _is_allowed_image_virtual_path(image_path: str) -> bool:
+    return any(
+        image_path == root or image_path.startswith(f"{root}/")
+        for root in _ALLOWED_IMAGE_VIRTUAL_ROOTS
+    )
 
 
 @tool("view_image", parse_docstring=True)
@@ -29,21 +44,38 @@ def view_image_tool(
     - For multiple files at once (use present_files instead)
 
     Args:
-        image_path: Absolute path to the image file. Common formats supported: jpg, jpeg, png, webp.
+        image_path: Absolute /mnt/user-data virtual path to the image file. Common formats supported: jpg, jpeg, png, webp.
     """
-    from deerflow.sandbox.tools import get_thread_data, replace_virtual_path
+    from deerflow.sandbox.exceptions import SandboxRuntimeError
+    from deerflow.sandbox.tools import (
+        _resolve_and_validate_user_data_path,
+        get_thread_data,
+        validate_local_tool_path,
+    )
 
-    # Replace virtual path with actual path
-    # /mnt/user-data/* paths are mapped to thread-specific directories
     thread_data = get_thread_data(runtime)
-    actual_path = replace_virtual_path(image_path, thread_data)
 
-    # Validate that the path is absolute
-    path = Path(actual_path)
-    if not path.is_absolute():
+    if not _is_allowed_image_virtual_path(image_path):
         return Command(
-            update={"messages": [ToolMessage(f"Error: Path must be absolute, got: {image_path}", tool_call_id=tool_call_id)]},
+            update={
+                "messages": [
+                    ToolMessage(
+                        f"Error: Only image paths under {_ALLOWED_IMAGE_VIRTUAL_ROOTS_TEXT} are allowed",
+                        tool_call_id=tool_call_id,
+                    )
+                ]
+            },
         )
+
+    try:
+        validate_local_tool_path(image_path, thread_data, read_only=True)
+        actual_path = _resolve_and_validate_user_data_path(image_path, thread_data)
+    except (PermissionError, SandboxRuntimeError) as e:
+        return Command(
+            update={"messages": [ToolMessage(f"Error: {str(e)}", tool_call_id=tool_call_id)]},
+        )
+
+    path = Path(actual_path)
 
     # Validate that the file exists
     if not path.exists():
