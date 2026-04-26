@@ -1,15 +1,23 @@
 import json
 import logging
+import os
+import tempfile
 from pathlib import Path
 from typing import Literal
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, Header, HTTPException
 from pydantic import BaseModel, Field
 
 from deerflow.config.extensions_config import ExtensionsConfig, get_extensions_config, reload_extensions_config
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api", tags=["mcp"])
+
+_REDACTED_VALUE = "********"
+_MCP_CONFIG_ADMIN_TOKEN_ENV = "DEER_FLOW_MCP_CONFIG_ADMIN_TOKEN"
+_MCP_STDIO_ALLOWLIST_ENV = "DEER_FLOW_MCP_STDIO_COMMAND_ALLOWLIST"
+_DEFAULT_STDIO_COMMAND_ALLOWLIST = {"npx", "uvx", "node", "python", "python3"}
+_SENSITIVE_OAUTH_FIELDS = {"client_secret", "refresh_token"}
 
 
 class McpOAuthConfigResponse(BaseModel):
@@ -63,11 +71,152 @@ class McpConfigUpdateRequest(BaseModel):
     )
 
 
+def _require_mcp_config_admin(authorization: str | None = Header(default=None)) -> None:
+    """Require a static bearer token when MCP config admin auth is configured."""
+    expected_token = os.getenv(_MCP_CONFIG_ADMIN_TOKEN_ENV)
+    if not expected_token:
+        return
+    if authorization != f"Bearer {expected_token}":
+        raise HTTPException(status_code=403, detail="MCP configuration admin token is required")
+
+
+def _redact_mapping_values(values: dict[str, str]) -> dict[str, str]:
+    return {key: _REDACTED_VALUE for key in values}
+
+
+def _redact_oauth_config(oauth: dict | None) -> dict | None:
+    if oauth is None:
+        return None
+    redacted = dict(oauth)
+    for key in _SENSITIVE_OAUTH_FIELDS:
+        if redacted.get(key):
+            redacted[key] = _REDACTED_VALUE
+    if isinstance(redacted.get("extra_token_params"), dict):
+        redacted["extra_token_params"] = _redact_mapping_values(redacted["extra_token_params"])
+    return redacted
+
+
+def _server_response_payload(server) -> dict:
+    payload = server.model_dump()
+    if payload.get("env"):
+        payload["env"] = _redact_mapping_values(payload["env"])
+    if payload.get("headers"):
+        payload["headers"] = _redact_mapping_values(payload["headers"])
+    payload["oauth"] = _redact_oauth_config(payload.get("oauth"))
+    return payload
+
+
+def _build_mcp_config_response(config) -> McpConfigResponse:
+    return McpConfigResponse(
+        mcp_servers={
+            name: McpServerConfigResponse(**_server_response_payload(server))
+            for name, server in config.mcp_servers.items()
+        },
+    )
+
+
+def _load_raw_config(config_path: Path) -> dict:
+    if not config_path.exists():
+        return {}
+    with open(config_path, encoding="utf-8") as f:
+        try:
+            loaded = json.load(f)
+        except json.JSONDecodeError:
+            return {}
+    return loaded if isinstance(loaded, dict) else {}
+
+
+def _restore_redacted_mapping(new_values: dict[str, str], existing_values: dict | None) -> dict[str, str]:
+    if not isinstance(existing_values, dict):
+        existing_values = {}
+    restored = dict(new_values)
+    for key, value in list(restored.items()):
+        if value == _REDACTED_VALUE and key in existing_values:
+            restored[key] = existing_values[key]
+    return restored
+
+
+def _restore_redacted_oauth(new_oauth: dict | None, existing_oauth: dict | None) -> dict | None:
+    if new_oauth is None:
+        return None
+    if not isinstance(existing_oauth, dict):
+        existing_oauth = {}
+    restored = dict(new_oauth)
+    for key in _SENSITIVE_OAUTH_FIELDS:
+        if restored.get(key) == _REDACTED_VALUE and key in existing_oauth:
+            restored[key] = existing_oauth[key]
+    if isinstance(restored.get("extra_token_params"), dict):
+        existing_params = existing_oauth.get("extra_token_params") if isinstance(existing_oauth, dict) else {}
+        restored["extra_token_params"] = _restore_redacted_mapping(restored["extra_token_params"], existing_params)
+    return restored
+
+
+def _restore_redacted_mcp_values(config_data: dict, existing_raw_config: dict) -> None:
+    existing_servers = existing_raw_config.get("mcpServers")
+    if not isinstance(existing_servers, dict):
+        existing_servers = {}
+
+    for name, server_data in config_data.get("mcpServers", {}).items():
+        existing_server = existing_servers.get(name)
+        if not isinstance(existing_server, dict):
+            existing_server = {}
+        if isinstance(server_data.get("env"), dict):
+            server_data["env"] = _restore_redacted_mapping(server_data["env"], existing_server.get("env"))
+        if isinstance(server_data.get("headers"), dict):
+            server_data["headers"] = _restore_redacted_mapping(server_data["headers"], existing_server.get("headers"))
+        if isinstance(server_data.get("oauth"), dict):
+            server_data["oauth"] = _restore_redacted_oauth(server_data["oauth"], existing_server.get("oauth"))
+
+
+def _stdio_command_allowlist() -> set[str]:
+    raw = os.getenv(_MCP_STDIO_ALLOWLIST_ENV)
+    if raw is None:
+        return set(_DEFAULT_STDIO_COMMAND_ALLOWLIST)
+    return {item.strip() for item in raw.split(",") if item.strip()}
+
+
+def _validate_mcp_server_config(name: str, server: McpServerConfigResponse) -> None:
+    if server.type not in {"stdio", "sse", "http"}:
+        raise HTTPException(status_code=400, detail=f"Unsupported MCP server type for '{name}': {server.type}")
+
+    if server.type == "stdio":
+        if not server.command:
+            raise HTTPException(status_code=400, detail=f"MCP stdio server '{name}' requires a command")
+        command_name = Path(server.command).name
+        allowed = _stdio_command_allowlist()
+        if command_name not in allowed:
+            allowed_text = ", ".join(sorted(allowed)) or "(none)"
+            raise HTTPException(
+                status_code=400,
+                detail=f"MCP stdio command for '{name}' is not allowed: {command_name}. Allowed commands: {allowed_text}",
+            )
+        return
+
+    if not server.url:
+        raise HTTPException(status_code=400, detail=f"MCP {server.type} server '{name}' requires a url")
+    if not (server.url.startswith("http://") or server.url.startswith("https://")):
+        raise HTTPException(status_code=400, detail=f"MCP server '{name}' url must use http:// or https://")
+
+
+def _write_json_atomic(config_path: Path, config_data: dict) -> None:
+    config_path.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.NamedTemporaryFile("w", encoding="utf-8", dir=config_path.parent, delete=False) as tmp:
+        tmp_path = Path(tmp.name)
+        os.chmod(tmp_path, 0o600)
+        json.dump(config_data, tmp, indent=2)
+        tmp.write("\n")
+        tmp.flush()
+        os.fsync(tmp.fileno())
+    os.replace(tmp_path, config_path)
+    os.chmod(config_path, 0o600)
+
+
 @router.get(
     "/mcp/config",
     response_model=McpConfigResponse,
     summary="Get MCP Configuration",
     description="Retrieve the current Model Context Protocol (MCP) server configurations.",
+    dependencies=[Depends(_require_mcp_config_admin)],
 )
 async def get_mcp_configuration() -> McpConfigResponse:
     """Get the current MCP configuration.
@@ -92,7 +241,7 @@ async def get_mcp_configuration() -> McpConfigResponse:
     """
     config = get_extensions_config()
 
-    return McpConfigResponse(mcp_servers={name: McpServerConfigResponse(**server.model_dump()) for name, server in config.mcp_servers.items()})
+    return _build_mcp_config_response(config)
 
 
 @router.put(
@@ -100,6 +249,7 @@ async def get_mcp_configuration() -> McpConfigResponse:
     response_model=McpConfigResponse,
     summary="Update MCP Configuration",
     description="Update Model Context Protocol (MCP) server configurations and save to file.",
+    dependencies=[Depends(_require_mcp_config_admin)],
 )
 async def update_mcp_configuration(request: McpConfigUpdateRequest) -> McpConfigResponse:
     """Update the MCP configuration.
@@ -144,16 +294,20 @@ async def update_mcp_configuration(request: McpConfigUpdateRequest) -> McpConfig
 
         # Load current config to preserve skills configuration
         current_config = get_extensions_config()
+        existing_raw_config = _load_raw_config(config_path)
+
+        for name, server in request.mcp_servers.items():
+            _validate_mcp_server_config(name, server)
 
         # Convert request to dict format for JSON serialization
         config_data = {
             "mcpServers": {name: server.model_dump() for name, server in request.mcp_servers.items()},
             "skills": {name: {"enabled": skill.enabled} for name, skill in current_config.skills.items()},
         }
+        _restore_redacted_mcp_values(config_data, existing_raw_config)
 
         # Write the configuration to file
-        with open(config_path, "w", encoding="utf-8") as f:
-            json.dump(config_data, f, indent=2)
+        _write_json_atomic(config_path, config_data)
 
         logger.info(f"MCP configuration updated and saved to: {config_path}")
 
@@ -162,8 +316,10 @@ async def update_mcp_configuration(request: McpConfigUpdateRequest) -> McpConfig
 
         # Reload the configuration and update the global cache
         reloaded_config = reload_extensions_config()
-        return McpConfigResponse(mcp_servers={name: McpServerConfigResponse(**server.model_dump()) for name, server in reloaded_config.mcp_servers.items()})
+        return _build_mcp_config_response(reloaded_config)
 
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Failed to update MCP configuration: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Failed to update MCP configuration: {str(e)}")
