@@ -41,11 +41,13 @@ def list_dir(path: str, max_depth: int = 2) -> list[str]:
 
                 if item.is_symlink():
                     try:
-                        if not _is_within_root(item.resolve()):
+                        item_resolved = item.resolve()
+                        if not _is_within_root(item_resolved):
                             continue
                     except OSError:
                         continue
-                    result.append(str(item))
+                    post_fix = "/" if item_resolved.is_dir() else ""
+                    result.append(str(item_resolved) + post_fix)
                     continue
 
                 item_resolved = item.resolve()

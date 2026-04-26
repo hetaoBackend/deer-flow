@@ -339,8 +339,14 @@ class LocalSandbox(Sandbox):
     def list_dir(self, path: str, max_depth=2) -> list[str]:
         resolved_path = self._resolve_path(path)
         entries = list_dir(resolved_path, max_depth)
-        # Reverse resolve local paths back to container paths in output
-        return [self._reverse_resolve_paths_in_output(entry) for entry in entries]
+        # Reverse resolve local paths back to container paths and preserve
+        # list_dir's trailing "/" marker for directories.
+        result: list[str] = []
+        for entry in entries:
+            is_dir = entry.endswith(("/", "\\"))
+            reversed_entry = self._reverse_resolve_path(entry.rstrip("/\\")) if is_dir else self._reverse_resolve_path(entry)
+            result.append(f"{reversed_entry}/" if is_dir and not reversed_entry.endswith("/") else reversed_entry)
+        return result
 
     def read_file(self, path: str) -> str:
         resolved_path = self._resolve_path(path)

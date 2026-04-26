@@ -269,6 +269,26 @@ class TestSymlinkEscapes:
         assert all("secret.txt" not in entry for entry in entries)
         assert all("outside" not in entry for entry in entries)
 
+    def test_list_dir_formats_internal_directory_symlink_like_directory(self, tmp_path):
+        mount_dir = tmp_path / "mount"
+        nested_dir = mount_dir / "nested"
+        linked_dir = nested_dir / "linked-dir"
+        linked_dir.mkdir(parents=True)
+        _symlink_to(linked_dir, mount_dir / "dir-link", target_is_directory=True)
+
+        sandbox = LocalSandbox(
+            "test",
+            [
+                PathMapping(container_path="/mnt/data", local_path=str(mount_dir), read_only=False),
+            ],
+        )
+
+        entries = sandbox.list_dir("/mnt/data", max_depth=1)
+
+        assert "/mnt/data/nested/" in entries
+        assert "/mnt/data/nested/linked-dir/" in entries
+        assert "/mnt/data/dir-link" not in entries
+
     def test_write_file_blocks_symlink_into_nested_read_only_mount(self, tmp_path):
         repo_dir = tmp_path / "repo"
         repo_dir.mkdir()
