@@ -27,10 +27,7 @@ _EXTENSION_TO_MIME = {
 
 
 def _is_allowed_image_virtual_path(image_path: str) -> bool:
-    return any(
-        image_path == root or image_path.startswith(f"{root}/")
-        for root in _ALLOWED_IMAGE_VIRTUAL_ROOTS
-    )
+    return any(image_path == root or image_path.startswith(f"{root}/") for root in _ALLOWED_IMAGE_VIRTUAL_ROOTS)
 
 
 def _detect_image_mime(image_data: bytes) -> str | None:
