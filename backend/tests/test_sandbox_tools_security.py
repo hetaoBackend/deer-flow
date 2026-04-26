@@ -346,6 +346,60 @@ def test_validate_local_bash_command_paths_blocks_traversal_in_skills() -> None:
             )
 
 
+@pytest.mark.parametrize(
+    "command",
+    [
+        "cat ../uploads/secret.txt",
+        "cat subdir/../../secret.txt",
+        "python script.py --input=../secret.txt",
+        "echo ok > ../outputs/result.txt",
+    ],
+)
+def test_validate_local_bash_command_paths_blocks_relative_dotdot_segments(command: str) -> None:
+    with pytest.raises(PermissionError, match="path traversal"):
+        validate_local_bash_command_paths(command, _THREAD_DATA)
+
+
+def test_validate_local_bash_command_paths_blocks_cd_root_escape() -> None:
+    with pytest.raises(PermissionError, match="Unsafe working directory"):
+        validate_local_bash_command_paths("cd / && cat etc/passwd", _THREAD_DATA)
+
+
+def test_validate_local_bash_command_paths_blocks_cd_parent_escape() -> None:
+    with pytest.raises(PermissionError, match="path traversal"):
+        validate_local_bash_command_paths("cd .. && cat etc/passwd", _THREAD_DATA)
+
+
+def test_validate_local_bash_command_paths_blocks_cd_env_var_escape() -> None:
+    with pytest.raises(PermissionError, match="Unsafe working directory"):
+        validate_local_bash_command_paths("cd $HOME && cat .ssh/id_rsa", _THREAD_DATA)
+
+
+def test_validate_local_bash_command_paths_allows_workspace_relative_paths() -> None:
+    validate_local_bash_command_paths(
+        "mkdir -p reports && python script.py data/input.csv > reports/out.txt",
+        _THREAD_DATA,
+    )
+
+
+def test_validate_local_bash_command_paths_allows_cd_virtual_workspace_with_relative_paths() -> None:
+    validate_local_bash_command_paths(
+        "cd /mnt/user-data/workspace && cat data/input.csv > reports/out.txt",
+        _THREAD_DATA,
+    )
+
+
+def test_validate_local_bash_command_paths_allows_http_url_dotdot_segments() -> None:
+    validate_local_bash_command_paths(
+        "curl https://example.com/packages/../archive.tar.gz -o /mnt/user-data/workspace/archive.tar.gz",
+        _THREAD_DATA,
+    )
+    validate_local_bash_command_paths(
+        "curl http://example.com/packages/../archive.tar.gz -o /mnt/user-data/workspace/archive.tar.gz",
+        _THREAD_DATA,
+    )
+
+
 def test_bash_tool_rejects_host_bash_when_local_sandbox_default(monkeypatch) -> None:
     runtime = SimpleNamespace(
         state={"sandbox": {"sandbox_id": "local"}, "thread_data": _THREAD_DATA.copy()},
@@ -365,6 +419,28 @@ def test_bash_tool_rejects_host_bash_when_local_sandbox_default(monkeypatch) -> 
     )
 
     assert "Host bash execution is disabled" in result
+
+
+def test_bash_tool_blocks_relative_traversal_before_host_execution(monkeypatch) -> None:
+    runtime = SimpleNamespace(
+        state={"sandbox": {"sandbox_id": "local"}, "thread_data": _THREAD_DATA.copy()},
+        context={"thread_id": "thread-1"},
+    )
+
+    monkeypatch.setattr(
+        "deerflow.sandbox.tools.ensure_sandbox_initialized",
+        lambda runtime: SimpleNamespace(execute_command=lambda command: pytest.fail("unsafe command should not execute")),
+    )
+    monkeypatch.setattr("deerflow.sandbox.tools.ensure_thread_directories_exist", lambda runtime: None)
+    monkeypatch.setattr("deerflow.sandbox.tools.is_host_bash_allowed", lambda: True)
+
+    result = bash_tool.func(
+        runtime=runtime,
+        description="run command",
+        command="cat ../uploads/secret.txt",
+    )
+
+    assert "path traversal" in result
 
 
 # ---------- Skills path tests ----------
