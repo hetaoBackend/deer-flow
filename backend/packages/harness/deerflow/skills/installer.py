@@ -20,6 +20,39 @@ from deerflow.skills.validation import _validate_skill_frontmatter
 
 logger = logging.getLogger(__name__)
 
+_SCAN_TEXT_SUFFIXES = frozenset(
+    {
+        ".bash",
+        ".cfg",
+        ".conf",
+        ".css",
+        ".csv",
+        ".env",
+        ".fish",
+        ".html",
+        ".ini",
+        ".js",
+        ".json",
+        ".jsonl",
+        ".jsx",
+        ".markdown",
+        ".md",
+        ".mjs",
+        ".ps1",
+        ".py",
+        ".rst",
+        ".sh",
+        ".toml",
+        ".ts",
+        ".tsx",
+        ".txt",
+        ".xml",
+        ".yaml",
+        ".yml",
+        ".zsh",
+    }
+)
+
 
 class SkillAlreadyExistsError(ValueError):
     """Raised when a skill with the same name is already installed."""
@@ -121,25 +154,59 @@ def safe_extract_skill_archive(
                 dst.write(chunk)
 
 
-async def _scan_skill_markdown_or_raise(skill_dir: Path, skill_name: str) -> None:
-    """Run the skill security scanner against SKILL.md before installation."""
-    skill_md = skill_dir / "SKILL.md"
+def _is_script_support_file(rel_path: Path) -> bool:
+    return bool(rel_path.parts) and rel_path.parts[0] == "scripts"
+
+
+def _should_scan_support_file(rel_path: Path) -> bool:
+    return _is_script_support_file(rel_path) or rel_path.suffix.lower() in _SCAN_TEXT_SUFFIXES
+
+
+async def _scan_skill_file_or_raise(skill_dir: Path, path: Path, skill_name: str, *, executable: bool) -> None:
+    rel_path = path.relative_to(skill_dir).as_posix()
+    location = f"{skill_name}/{rel_path}"
     try:
-        content = skill_md.read_text(encoding="utf-8")
+        content = path.read_text(encoding="utf-8")
     except UnicodeDecodeError as e:
-        raise SkillSecurityScanError(f"Security scan failed for skill '{skill_name}': SKILL.md must be valid UTF-8") from e
+        raise SkillSecurityScanError(f"Security scan failed for skill '{skill_name}': {location} must be valid UTF-8") from e
 
     try:
-        result = await scan_skill_content(content, executable=False, location=f"{skill_name}/SKILL.md")
+        result = await scan_skill_content(content, executable=executable, location=location)
     except Exception as e:
-        raise SkillSecurityScanError(f"Security scan failed for skill '{skill_name}': {e}") from e
+        raise SkillSecurityScanError(f"Security scan failed for {location}: {e}") from e
 
     decision = getattr(result, "decision", None)
     reason = str(getattr(result, "reason", "") or "No reason provided.")
     if decision == "block":
-        raise SkillSecurityScanError(f"Security scan blocked skill '{skill_name}': {reason}")
+        if rel_path == "SKILL.md":
+            raise SkillSecurityScanError(f"Security scan blocked skill '{skill_name}': {reason}")
+        raise SkillSecurityScanError(f"Security scan blocked {location}: {reason}")
+    if executable and decision != "allow":
+        raise SkillSecurityScanError(f"Security scan rejected executable {location}: {reason}")
     if decision not in {"allow", "warn"}:
-        raise SkillSecurityScanError(f"Security scan failed for skill '{skill_name}': invalid scanner decision {decision!r}")
+        raise SkillSecurityScanError(f"Security scan failed for {location}: invalid scanner decision {decision!r}")
+
+
+async def _scan_skill_archive_contents_or_raise(skill_dir: Path, skill_name: str) -> None:
+    """Run the skill security scanner against all installable text and script files."""
+    skill_md = skill_dir / "SKILL.md"
+    await _scan_skill_file_or_raise(skill_dir, skill_md, skill_name, executable=False)
+
+    for path in sorted(skill_dir.rglob("*")):
+        if not path.is_file():
+            continue
+
+        rel_path = path.relative_to(skill_dir)
+        if rel_path == Path("SKILL.md"):
+            continue
+        if path.name == "SKILL.md":
+            raise SkillSecurityScanError(
+                f"Security scan failed for skill '{skill_name}': nested SKILL.md is not allowed at {skill_name}/{rel_path.as_posix()}"
+            )
+        if not _should_scan_support_file(rel_path):
+            continue
+
+        await _scan_skill_file_or_raise(skill_dir, path, skill_name, executable=_is_script_support_file(rel_path))
 
 
 async def ainstall_skill_from_archive(
@@ -201,9 +268,14 @@ async def ainstall_skill_from_archive(
         if target.exists():
             raise SkillAlreadyExistsError(f"Skill '{skill_name}' already exists")
 
-        await _scan_skill_markdown_or_raise(skill_dir, skill_name)
+        await _scan_skill_archive_contents_or_raise(skill_dir, skill_name)
 
-        shutil.copytree(skill_dir, target)
+        with tempfile.TemporaryDirectory(prefix=f".installing-{skill_name}-", dir=custom_dir) as staging_root:
+            staging_target = Path(staging_root) / skill_name
+            shutil.copytree(skill_dir, staging_target)
+            if target.exists():
+                raise SkillAlreadyExistsError(f"Skill '{skill_name}' already exists")
+            staging_target.replace(target)
         logger.info("Skill %r installed to %s", skill_name, target)
 
     return {
