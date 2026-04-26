@@ -20,38 +20,8 @@ from deerflow.skills.validation import _validate_skill_frontmatter
 
 logger = logging.getLogger(__name__)
 
-_SCAN_TEXT_SUFFIXES = frozenset(
-    {
-        ".bash",
-        ".cfg",
-        ".conf",
-        ".css",
-        ".csv",
-        ".env",
-        ".fish",
-        ".html",
-        ".ini",
-        ".js",
-        ".json",
-        ".jsonl",
-        ".jsx",
-        ".markdown",
-        ".md",
-        ".mjs",
-        ".ps1",
-        ".py",
-        ".rst",
-        ".sh",
-        ".toml",
-        ".ts",
-        ".tsx",
-        ".txt",
-        ".xml",
-        ".yaml",
-        ".yml",
-        ".zsh",
-    }
-)
+_PROMPT_INPUT_DIRS = {"references", "templates"}
+_PROMPT_INPUT_SUFFIXES = frozenset({".json", ".markdown", ".md", ".rst", ".txt", ".yaml", ".yml"})
 
 
 class SkillAlreadyExistsError(ValueError):
@@ -159,7 +129,25 @@ def _is_script_support_file(rel_path: Path) -> bool:
 
 
 def _should_scan_support_file(rel_path: Path) -> bool:
-    return _is_script_support_file(rel_path) or rel_path.suffix.lower() in _SCAN_TEXT_SUFFIXES
+    if _is_script_support_file(rel_path):
+        return True
+    return bool(rel_path.parts) and rel_path.parts[0] in _PROMPT_INPUT_DIRS and rel_path.suffix.lower() in _PROMPT_INPUT_SUFFIXES
+
+
+def _move_staged_skill_into_reserved_target(staging_target: Path, target: Path) -> None:
+    installed = False
+    reserved = False
+    try:
+        target.mkdir(mode=0o700)
+        reserved = True
+        for child in staging_target.iterdir():
+            shutil.move(str(child), target / child.name)
+        installed = True
+    except FileExistsError as e:
+        raise SkillAlreadyExistsError(f"Skill '{target.name}' already exists") from e
+    finally:
+        if reserved and not installed and target.exists():
+            shutil.rmtree(target)
 
 
 async def _scan_skill_file_or_raise(skill_dir: Path, path: Path, skill_name: str, *, executable: bool) -> None:
@@ -271,9 +259,7 @@ async def ainstall_skill_from_archive(
         with tempfile.TemporaryDirectory(prefix=f".installing-{skill_name}-", dir=custom_dir) as staging_root:
             staging_target = Path(staging_root) / skill_name
             shutil.copytree(skill_dir, staging_target)
-            if target.exists():
-                raise SkillAlreadyExistsError(f"Skill '{skill_name}' already exists")
-            staging_target.replace(target)
+            _move_staged_skill_into_reserved_target(staging_target, target)
         logger.info("Skill %r installed to %s", skill_name, target)
 
     return {

@@ -1,5 +1,6 @@
 """Tests for deerflow.skills.installer — shared skill installation logic."""
 
+import shutil
 import stat
 import zipfile
 from pathlib import Path
@@ -227,6 +228,8 @@ class TestInstallSkillFromArchive:
             zf.writestr("test-skill/templates/prompt.txt", "Use care.\n")
             zf.writestr("test-skill/scripts/run.sh", "#!/bin/sh\necho ok\n")
             zf.writestr("test-skill/assets/logo.png", b"\x89PNG\r\n\x1a\n")
+            zf.writestr("test-skill/references/.env", "TOKEN=secret\n")
+            zf.writestr("test-skill/templates/config.cfg", "TOKEN=secret\n")
         skills_root = tmp_path / "skills"
         skills_root.mkdir()
         calls = []
@@ -261,6 +264,7 @@ class TestInstallSkillFromArchive:
                 "location": "test-skill/templates/prompt.txt",
             },
         ]
+        assert all("secret" not in call["content"] for call in calls)
 
     def test_nested_skill_markdown_prevents_install(self, tmp_path):
         zip_path = tmp_path / "test-skill.skill"
@@ -329,6 +333,42 @@ class TestInstallSkillFromArchive:
         custom_dir = skills_root / "custom"
         assert not (custom_dir / "test-skill").exists()
         assert not [path for path in custom_dir.iterdir() if path.name.startswith(".installing-test-skill-")]
+
+    def test_concurrent_target_creation_does_not_get_clobbered(self, tmp_path, monkeypatch):
+        zip_path = self._make_skill_zip(tmp_path)
+        skills_root = tmp_path / "skills"
+        skills_root.mkdir()
+        target = skills_root / "custom" / "test-skill"
+        original_copytree = shutil.copytree
+
+        def _copytree(src, dst):
+            target.mkdir(parents=True)
+            (target / "marker.txt").write_text("external", encoding="utf-8")
+            return original_copytree(src, dst)
+
+        monkeypatch.setattr("deerflow.skills.installer.shutil.copytree", _copytree)
+
+        with pytest.raises(ValueError, match="already exists"):
+            install_skill_from_archive(zip_path, skills_root=skills_root)
+
+        assert (target / "marker.txt").read_text(encoding="utf-8") == "external"
+        assert not (target / "SKILL.md").exists()
+
+    def test_move_failure_cleans_reserved_target(self, tmp_path, monkeypatch):
+        zip_path = self._make_skill_zip(tmp_path)
+        skills_root = tmp_path / "skills"
+        skills_root.mkdir()
+
+        def _move(src, dst):
+            Path(dst).write_text("partial", encoding="utf-8")
+            raise OSError("move failed")
+
+        monkeypatch.setattr("deerflow.skills.installer.shutil.move", _move)
+
+        with pytest.raises(OSError, match="move failed"):
+            install_skill_from_archive(zip_path, skills_root=skills_root)
+
+        assert not (skills_root / "custom" / "test-skill").exists()
 
     def test_duplicate_raises(self, tmp_path):
         zip_path = self._make_skill_zip(tmp_path)
