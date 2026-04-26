@@ -1,7 +1,8 @@
 import logging
+import os
 from types import SimpleNamespace
 
-from deerflow.community.aio_sandbox.local_backend import LocalContainerBackend, _format_container_mount, _redact_container_command_for_log
+from deerflow.community.aio_sandbox.local_backend import LocalContainerBackend, _format_container_command_for_log, _format_container_mount, _redact_container_command_for_log
 
 
 def test_format_container_mount_uses_mount_syntax_for_docker_windows_paths():
@@ -49,6 +50,40 @@ def test_redact_container_command_for_log_redacts_env_values():
     assert "--env=TOKEN=<redacted>" in redacted
     assert "secret-value" not in " ".join(redacted)
     assert "token-value" not in " ".join(redacted)
+
+
+def test_redact_container_command_for_log_keeps_inherited_env_names():
+    redacted = _redact_container_command_for_log(
+        [
+            "docker",
+            "run",
+            "-e",
+            "API_KEY",
+            "--env=TOKEN",
+            "--name",
+            "sandbox",
+            "image",
+        ]
+    )
+
+    assert redacted == [
+        "docker",
+        "run",
+        "-e",
+        "API_KEY",
+        "--env=TOKEN",
+        "--name",
+        "sandbox",
+        "image",
+    ]
+
+
+def test_format_container_command_for_log_uses_windows_quoting(monkeypatch):
+    monkeypatch.setattr(os, "name", "nt")
+
+    command = _format_container_command_for_log(["docker", "run", "--name", "sandbox one", "image"])
+
+    assert command == 'docker run --name "sandbox one" image'
 
 
 def test_start_container_logs_redacted_env_values(monkeypatch, caplog):

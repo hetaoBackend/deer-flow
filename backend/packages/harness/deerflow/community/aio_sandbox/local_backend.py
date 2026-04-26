@@ -94,8 +94,11 @@ def _redact_container_command_for_log(cmd: list[str]) -> list[str]:
 
     for arg in cmd:
         if redact_next_env:
-            key = arg.split("=", 1)[0]
-            redacted.append(f"{key}=<redacted>" if key else "<redacted>")
+            if "=" in arg:
+                key = arg.split("=", 1)[0]
+                redacted.append(f"{key}=<redacted>" if key else "<redacted>")
+            else:
+                redacted.append(arg)
             redact_next_env = False
             continue
 
@@ -106,13 +109,22 @@ def _redact_container_command_for_log(cmd: list[str]) -> list[str]:
 
         if arg.startswith("--env="):
             value = arg.removeprefix("--env=")
-            key = value.split("=", 1)[0]
-            redacted.append(f"--env={key}=<redacted>" if key else "--env=<redacted>")
+            if "=" in value:
+                key = value.split("=", 1)[0]
+                redacted.append(f"--env={key}=<redacted>" if key else "--env=<redacted>")
+            else:
+                redacted.append(arg)
             continue
 
         redacted.append(arg)
 
     return redacted
+
+
+def _format_container_command_for_log(cmd: list[str]) -> str:
+    if os.name == "nt":
+        return subprocess.list2cmdline(cmd)
+    return shlex.join(cmd)
 
 
 class LocalContainerBackend(SandboxBackend):
@@ -493,7 +505,7 @@ class LocalContainerBackend(SandboxBackend):
 
         cmd.append(self._image)
 
-        log_cmd = shlex.join(_redact_container_command_for_log(cmd))
+        log_cmd = _format_container_command_for_log(_redact_container_command_for_log(cmd))
         logger.info(f"Starting container using {self._runtime}: {log_cmd}")
 
         try:
