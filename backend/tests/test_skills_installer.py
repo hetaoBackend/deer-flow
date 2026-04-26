@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 
 from deerflow.skills.installer import (
+    SkillSecurityScanError,
     install_skill_from_archive,
     is_symlink_member,
     is_unsafe_zip_member,
@@ -14,6 +15,7 @@ from deerflow.skills.installer import (
     safe_extract_skill_archive,
     should_ignore_archive_entry,
 )
+from deerflow.skills.security_scanner import ScanResult
 
 # ---------------------------------------------------------------------------
 # is_unsafe_zip_member
@@ -169,6 +171,13 @@ class TestSafeExtract:
 
 
 class TestInstallSkillFromArchive:
+    @pytest.fixture(autouse=True)
+    def _allow_security_scan(self, monkeypatch):
+        async def _scan(*args, **kwargs):
+            return ScanResult(decision="allow", reason="ok")
+
+        monkeypatch.setattr("deerflow.skills.installer.scan_skill_content", _scan)
+
     def _make_skill_zip(self, tmp_path: Path, skill_name: str = "test-skill") -> Path:
         """Create a valid .skill archive."""
         zip_path = tmp_path / f"{skill_name}.skill"
@@ -187,6 +196,43 @@ class TestInstallSkillFromArchive:
         assert result["success"] is True
         assert result["skill_name"] == "test-skill"
         assert (skills_root / "custom" / "test-skill" / "SKILL.md").exists()
+
+    def test_scans_skill_markdown_before_install(self, tmp_path, monkeypatch):
+        zip_path = self._make_skill_zip(tmp_path)
+        skills_root = tmp_path / "skills"
+        skills_root.mkdir()
+        calls = []
+
+        async def _scan(content, *, executable, location):
+            calls.append({"content": content, "executable": executable, "location": location})
+            return ScanResult(decision="allow", reason="ok")
+
+        monkeypatch.setattr("deerflow.skills.installer.scan_skill_content", _scan)
+
+        install_skill_from_archive(zip_path, skills_root=skills_root)
+
+        assert calls == [
+            {
+                "content": "---\nname: test-skill\ndescription: A test skill\n---\n\n# test-skill\n",
+                "executable": False,
+                "location": "test-skill/SKILL.md",
+            }
+        ]
+
+    def test_security_scan_block_prevents_install(self, tmp_path, monkeypatch):
+        zip_path = self._make_skill_zip(tmp_path, skill_name="blocked-skill")
+        skills_root = tmp_path / "skills"
+        skills_root.mkdir()
+
+        async def _scan(*args, **kwargs):
+            return ScanResult(decision="block", reason="prompt injection")
+
+        monkeypatch.setattr("deerflow.skills.installer.scan_skill_content", _scan)
+
+        with pytest.raises(SkillSecurityScanError, match="Security scan blocked.*prompt injection"):
+            install_skill_from_archive(zip_path, skills_root=skills_root)
+
+        assert not (skills_root / "custom" / "blocked-skill").exists()
 
     def test_duplicate_raises(self, tmp_path):
         zip_path = self._make_skill_zip(tmp_path)
