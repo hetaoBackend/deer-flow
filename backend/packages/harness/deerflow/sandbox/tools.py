@@ -42,6 +42,26 @@ _DEFAULT_GREP_MAX_RESULTS = 100
 _MAX_GREP_MAX_RESULTS = 500
 _LOCAL_BASH_CWD_COMMANDS = {"cd", "pushd"}
 _LOCAL_BASH_COMMAND_WRAPPERS = {"command", "builtin"}
+_LOCAL_BASH_COMMAND_PREFIX_KEYWORDS = {"!", "{", "case", "do", "elif", "else", "for", "if", "select", "then", "time", "until", "while"}
+_LOCAL_BASH_COMMAND_END_KEYWORDS = {"}", "done", "esac", "fi"}
+_LOCAL_BASH_ROOT_PATH_COMMANDS = {
+    "awk",
+    "cat",
+    "cp",
+    "du",
+    "find",
+    "grep",
+    "head",
+    "less",
+    "ln",
+    "ls",
+    "more",
+    "mv",
+    "rm",
+    "sed",
+    "tail",
+    "tar",
+}
 _SHELL_COMMAND_SEPARATORS = {";", "&&", "||", "|", "|&", "&", "(", ")"}
 _SHELL_REDIRECTION_OPERATORS = {
     "<",
@@ -785,6 +805,23 @@ def _looks_like_unsafe_cwd_target(target: str | None) -> bool:
     return target == "-" or target.startswith(("$", "`", "~", "/", "..")) or _has_dotdot_path_segment(target)
 
 
+def _validate_local_bash_root_path_args(command_name: str, tokens: list[str], start_index: int) -> None:
+    if command_name not in _LOCAL_BASH_ROOT_PATH_COMMANDS:
+        return
+
+    index = start_index
+    while index < len(tokens):
+        token = tokens[index]
+        if _is_shell_command_separator(token):
+            return
+        if _is_shell_redirection_operator(token):
+            index += 2
+            continue
+        if token == "/" and not _is_non_file_url_token(token):
+            raise PermissionError(f"Unsafe absolute paths in command: /. Use paths under {VIRTUAL_PATH_PREFIX}")
+        index += 1
+
+
 def _validate_local_bash_shell_tokens(command: str, allowed_paths: list[str]) -> None:
     """Conservatively reject relative path escapes missed by absolute-path scanning."""
     if re.search(r"\$\([^)]*\b(?:cd|pushd)\b", command):
@@ -792,23 +829,9 @@ def _validate_local_bash_shell_tokens(command: str, allowed_paths: list[str]) ->
 
     tokens = _split_shell_tokens(command)
 
-    for index, token in enumerate(tokens):
-        command_name = token.rsplit("/", 1)[-1]
-        if command_name in _LOCAL_BASH_CWD_COMMANDS:
-            target, _ = _next_cd_target(tokens, index + 1)
-            if _looks_like_unsafe_cwd_target(target):
-                _validate_local_bash_cwd_target(command_name, target, allowed_paths)
-        elif command_name in _LOCAL_BASH_COMMAND_WRAPPERS and index + 1 < len(tokens):
-            wrapped_name = tokens[index + 1].rsplit("/", 1)[-1]
-            if wrapped_name in _LOCAL_BASH_CWD_COMMANDS:
-                target, _ = _next_cd_target(tokens, index + 2)
-                _validate_local_bash_cwd_target(wrapped_name, target, allowed_paths)
-
     for token in tokens:
         if _is_shell_command_separator(token) or _is_shell_redirection_operator(token):
             continue
-        if token == "/" and not _is_non_file_url_token(token):
-            raise PermissionError(f"Unsafe absolute paths in command: /. Use paths under {VIRTUAL_PATH_PREFIX}")
         if _has_dotdot_path_segment(token):
             raise PermissionError("Access denied: path traversal detected")
 
@@ -830,12 +853,16 @@ def _validate_local_bash_shell_tokens(command: str, allowed_paths: list[str]) ->
             index += 1
             continue
 
+        command_name = token.rsplit("/", 1)[-1]
+        if at_command_start and command_name in _LOCAL_BASH_COMMAND_PREFIX_KEYWORDS | _LOCAL_BASH_COMMAND_END_KEYWORDS:
+            index += 1
+            continue
+
         if not at_command_start:
             index += 1
             continue
 
         at_command_start = False
-        command_name = token.rsplit("/", 1)[-1]
         if command_name in _LOCAL_BASH_COMMAND_WRAPPERS and index + 1 < len(tokens):
             wrapped_name = tokens[index + 1].rsplit("/", 1)[-1]
             if wrapped_name in _LOCAL_BASH_CWD_COMMANDS:
@@ -843,8 +870,10 @@ def _validate_local_bash_shell_tokens(command: str, allowed_paths: list[str]) ->
                 _validate_local_bash_cwd_target(wrapped_name, target, allowed_paths)
                 index = next_index
                 continue
+            _validate_local_bash_root_path_args(wrapped_name, tokens, index + 2)
 
         if command_name not in _LOCAL_BASH_CWD_COMMANDS:
+            _validate_local_bash_root_path_args(command_name, tokens, index + 1)
             index += 1
             continue
 

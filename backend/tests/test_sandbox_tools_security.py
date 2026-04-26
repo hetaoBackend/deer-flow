@@ -400,11 +400,23 @@ def test_validate_local_bash_command_paths_blocks_complex_cd_escapes(command: st
     [
         "ls /",
         "ln -s / root && cat root/etc/passwd",
+        "command ls /",
     ],
 )
 def test_validate_local_bash_command_paths_blocks_bare_root_path(command: str) -> None:
     with pytest.raises(PermissionError, match="Unsafe absolute paths"):
         validate_local_bash_command_paths(command, _THREAD_DATA)
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "echo cd /",
+        "printf '%s\\n' pushd /",
+    ],
+)
+def test_validate_local_bash_command_paths_allows_cd_words_as_arguments(command: str) -> None:
+    validate_local_bash_command_paths(command, _THREAD_DATA)
 
 
 def test_validate_local_bash_command_paths_allows_workspace_relative_paths() -> None:
