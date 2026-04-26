@@ -143,6 +143,9 @@ class LocalSandbox(Sandbox):
     def _resolve_path(self, path: str) -> str:
         return self._resolve_path_with_mapping(path).path
 
+    def _is_resolved_path_read_only(self, resolved: ResolvedPath) -> bool:
+        return bool(resolved.mapping and resolved.mapping.read_only) or self._is_read_only_path(resolved.path)
+
     def _reverse_resolve_path(self, path: str) -> str:
         """
         Reverse resolve local path back to container path using mappings.
@@ -358,11 +361,7 @@ class LocalSandbox(Sandbox):
     def write_file(self, path: str, content: str, append: bool = False) -> None:
         resolved = self._resolve_path_with_mapping(path)
         resolved_path = resolved.path
-        if resolved.mapping is not None:
-            is_read_only = resolved.mapping.read_only
-        else:
-            is_read_only = self._is_read_only_path(resolved_path)
-        if is_read_only:
+        if self._is_resolved_path_read_only(resolved):
             raise OSError(errno.EROFS, "Read-only file system", path)
         try:
             dir_path = os.path.dirname(resolved_path)
@@ -418,11 +417,7 @@ class LocalSandbox(Sandbox):
     def update_file(self, path: str, content: bytes) -> None:
         resolved = self._resolve_path_with_mapping(path)
         resolved_path = resolved.path
-        if resolved.mapping is not None:
-            is_read_only = resolved.mapping.read_only
-        else:
-            is_read_only = self._is_read_only_path(resolved_path)
-        if is_read_only:
+        if self._is_resolved_path_read_only(resolved):
             raise OSError(errno.EROFS, "Read-only file system", path)
         try:
             dir_path = os.path.dirname(resolved_path)

@@ -247,6 +247,72 @@ class TestSymlinkEscapes:
         assert exc_info.value.errno == errno.EROFS
         assert not (writable_dir / "file.txt").exists()
 
+    def test_list_dir_does_not_follow_symlink_escape_from_mount(self, tmp_path):
+        mount_dir = tmp_path / "mount"
+        mount_dir.mkdir()
+        outside_dir = tmp_path / "outside"
+        outside_dir.mkdir()
+        (outside_dir / "secret.txt").write_text("secret")
+        _symlink_to(outside_dir, mount_dir / "escape", target_is_directory=True)
+        (mount_dir / "visible.txt").write_text("visible")
+
+        sandbox = LocalSandbox(
+            "test",
+            [
+                PathMapping(container_path="/mnt/data", local_path=str(mount_dir), read_only=False),
+            ],
+        )
+
+        entries = sandbox.list_dir("/mnt/data", max_depth=2)
+
+        assert "/mnt/data/visible.txt" in entries
+        assert all("secret.txt" not in entry for entry in entries)
+        assert all("outside" not in entry for entry in entries)
+
+    def test_write_file_blocks_symlink_into_nested_read_only_mount(self, tmp_path):
+        repo_dir = tmp_path / "repo"
+        repo_dir.mkdir()
+        protected_dir = repo_dir / "protected"
+        protected_dir.mkdir()
+        _symlink_to(protected_dir, repo_dir / "link-to-protected", target_is_directory=True)
+
+        sandbox = LocalSandbox(
+            "test",
+            [
+                PathMapping(container_path="/mnt/repo", local_path=str(repo_dir), read_only=False),
+                PathMapping(container_path="/mnt/repo/protected", local_path=str(protected_dir), read_only=True),
+            ],
+        )
+
+        with pytest.raises(OSError) as exc_info:
+            sandbox.write_file("/mnt/repo/link-to-protected/file.txt", "bypass")
+
+        assert exc_info.value.errno == errno.EROFS
+        assert not (protected_dir / "file.txt").exists()
+
+    def test_update_file_blocks_symlink_into_nested_read_only_mount(self, tmp_path):
+        repo_dir = tmp_path / "repo"
+        repo_dir.mkdir()
+        protected_dir = repo_dir / "protected"
+        protected_dir.mkdir()
+        existing = protected_dir / "file.txt"
+        existing.write_bytes(b"original")
+        _symlink_to(protected_dir, repo_dir / "link-to-protected", target_is_directory=True)
+
+        sandbox = LocalSandbox(
+            "test",
+            [
+                PathMapping(container_path="/mnt/repo", local_path=str(repo_dir), read_only=False),
+                PathMapping(container_path="/mnt/repo/protected", local_path=str(protected_dir), read_only=True),
+            ],
+        )
+
+        with pytest.raises(OSError) as exc_info:
+            sandbox.update_file("/mnt/repo/link-to-protected/file.txt", b"changed")
+
+        assert exc_info.value.errno == errno.EROFS
+        assert existing.read_bytes() == b"original"
+
 
 class TestMultipleMounts:
     def test_multiple_read_write_mounts(self, tmp_path):
