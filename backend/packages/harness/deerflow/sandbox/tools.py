@@ -41,6 +41,7 @@ _MAX_GLOB_MAX_RESULTS = 1000
 _DEFAULT_GREP_MAX_RESULTS = 100
 _MAX_GREP_MAX_RESULTS = 500
 _LOCAL_BASH_CWD_COMMANDS = {"cd", "pushd"}
+_LOCAL_BASH_COMMAND_WRAPPERS = {"command", "builtin"}
 _SHELL_COMMAND_SEPARATORS = {";", "&&", "||", "|", "|&", "&", "(", ")"}
 _SHELL_REDIRECTION_OPERATORS = {
     "<",
@@ -686,7 +687,8 @@ def _has_dotdot_path_segment(token: str) -> bool:
 
 def _split_shell_tokens(command: str) -> list[str]:
     try:
-        lexer = shlex.shlex(command, posix=True, punctuation_chars=True)
+        normalized = command.replace("\r\n", "\n").replace("\r", "\n").replace("\n", " ; ")
+        lexer = shlex.shlex(normalized, posix=True, punctuation_chars=True)
         lexer.whitespace_split = True
         lexer.commenters = ""
         return list(lexer)
@@ -764,13 +766,49 @@ def _next_cd_target(tokens: list[str], start_index: int) -> tuple[str | None, in
     return None, index
 
 
+def _validate_local_bash_cwd_target(command_name: str, target: str | None, allowed_paths: list[str]) -> None:
+    if target is None or target == "-":
+        raise PermissionError(f"Unsafe working directory change in command: {command_name}. Use paths under {VIRTUAL_PATH_PREFIX}")
+    if target.startswith(("$", "`")):
+        raise PermissionError(f"Unsafe working directory change in command: {command_name} {target}. Use paths under {VIRTUAL_PATH_PREFIX}")
+    if target.startswith("~"):
+        raise PermissionError(f"Unsafe working directory change in command: {command_name} {target}. Use paths under {VIRTUAL_PATH_PREFIX}")
+    if target.startswith("/"):
+        _reject_path_traversal(target)
+        if not _is_allowed_local_bash_absolute_path(target, allowed_paths, allow_system_paths=False):
+            raise PermissionError(f"Unsafe working directory change in command: {command_name} {target}. Use paths under {VIRTUAL_PATH_PREFIX}")
+
+
+def _looks_like_unsafe_cwd_target(target: str | None) -> bool:
+    if target is None:
+        return False
+    return target == "-" or target.startswith(("$", "`", "~", "/", "..")) or _has_dotdot_path_segment(target)
+
+
 def _validate_local_bash_shell_tokens(command: str, allowed_paths: list[str]) -> None:
     """Conservatively reject relative path escapes missed by absolute-path scanning."""
+    if re.search(r"\$\([^)]*\b(?:cd|pushd)\b", command):
+        raise PermissionError(f"Unsafe working directory change in command substitution. Use paths under {VIRTUAL_PATH_PREFIX}")
+
     tokens = _split_shell_tokens(command)
+
+    for index, token in enumerate(tokens):
+        command_name = token.rsplit("/", 1)[-1]
+        if command_name in _LOCAL_BASH_CWD_COMMANDS:
+            target, _ = _next_cd_target(tokens, index + 1)
+            if _looks_like_unsafe_cwd_target(target):
+                _validate_local_bash_cwd_target(command_name, target, allowed_paths)
+        elif command_name in _LOCAL_BASH_COMMAND_WRAPPERS and index + 1 < len(tokens):
+            wrapped_name = tokens[index + 1].rsplit("/", 1)[-1]
+            if wrapped_name in _LOCAL_BASH_CWD_COMMANDS:
+                target, _ = _next_cd_target(tokens, index + 2)
+                _validate_local_bash_cwd_target(wrapped_name, target, allowed_paths)
 
     for token in tokens:
         if _is_shell_command_separator(token) or _is_shell_redirection_operator(token):
             continue
+        if token == "/" and not _is_non_file_url_token(token):
+            raise PermissionError(f"Unsafe absolute paths in command: /. Use paths under {VIRTUAL_PATH_PREFIX}")
         if _has_dotdot_path_segment(token):
             raise PermissionError("Access denied: path traversal detected")
 
@@ -798,21 +836,20 @@ def _validate_local_bash_shell_tokens(command: str, allowed_paths: list[str]) ->
 
         at_command_start = False
         command_name = token.rsplit("/", 1)[-1]
+        if command_name in _LOCAL_BASH_COMMAND_WRAPPERS and index + 1 < len(tokens):
+            wrapped_name = tokens[index + 1].rsplit("/", 1)[-1]
+            if wrapped_name in _LOCAL_BASH_CWD_COMMANDS:
+                target, next_index = _next_cd_target(tokens, index + 2)
+                _validate_local_bash_cwd_target(wrapped_name, target, allowed_paths)
+                index = next_index
+                continue
+
         if command_name not in _LOCAL_BASH_CWD_COMMANDS:
             index += 1
             continue
 
         target, next_index = _next_cd_target(tokens, index + 1)
-        if target is None or target == "-":
-            raise PermissionError(f"Unsafe working directory change in command: {command_name}. Use paths under {VIRTUAL_PATH_PREFIX}")
-        if target.startswith(("$", "`")):
-            raise PermissionError(f"Unsafe working directory change in command: {command_name} {target}. Use paths under {VIRTUAL_PATH_PREFIX}")
-        if target.startswith("~"):
-            raise PermissionError(f"Unsafe working directory change in command: {command_name} {target}. Use paths under {VIRTUAL_PATH_PREFIX}")
-        if target.startswith("/"):
-            _reject_path_traversal(target)
-            if not _is_allowed_local_bash_absolute_path(target, allowed_paths, allow_system_paths=False):
-                raise PermissionError(f"Unsafe working directory change in command: {command_name} {target}. Use paths under {VIRTUAL_PATH_PREFIX}")
+        _validate_local_bash_cwd_target(command_name, target, allowed_paths)
         index = next_index
 
 

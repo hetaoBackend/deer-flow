@@ -375,6 +375,38 @@ def test_validate_local_bash_command_paths_blocks_cd_env_var_escape() -> None:
         validate_local_bash_command_paths("cd $HOME && cat .ssh/id_rsa", _THREAD_DATA)
 
 
+def test_validate_local_bash_command_paths_blocks_multiline_cd_escape() -> None:
+    with pytest.raises(PermissionError, match="Unsafe working directory"):
+        validate_local_bash_command_paths("echo ok\ncd $HOME && cat .ssh/id_rsa", _THREAD_DATA)
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "command cd / && cat etc/passwd",
+        "builtin cd $HOME && cat .ssh/id_rsa",
+        "if cd $HOME; then cat .ssh/id_rsa; fi",
+        "{ cd /; cat etc/passwd; }",
+        'echo "$(cd $HOME && cat .ssh/id_rsa)"',
+    ],
+)
+def test_validate_local_bash_command_paths_blocks_complex_cd_escapes(command: str) -> None:
+    with pytest.raises(PermissionError, match="Unsafe working directory"):
+        validate_local_bash_command_paths(command, _THREAD_DATA)
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "ls /",
+        "ln -s / root && cat root/etc/passwd",
+    ],
+)
+def test_validate_local_bash_command_paths_blocks_bare_root_path(command: str) -> None:
+    with pytest.raises(PermissionError, match="Unsafe absolute paths"):
+        validate_local_bash_command_paths(command, _THREAD_DATA)
+
+
 def test_validate_local_bash_command_paths_allows_workspace_relative_paths() -> None:
     validate_local_bash_command_paths(
         "mkdir -p reports && python script.py data/input.csv > reports/out.txt",
