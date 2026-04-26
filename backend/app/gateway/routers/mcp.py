@@ -1,9 +1,11 @@
 import json
 import logging
 import os
+import secrets
 import tempfile
 from pathlib import Path
 from typing import Literal
+from urllib.parse import urlparse
 
 from fastapi import APIRouter, Depends, Header, HTTPException
 from pydantic import BaseModel, Field
@@ -16,6 +18,7 @@ router = APIRouter(prefix="/api", tags=["mcp"])
 _REDACTED_VALUE = "********"
 _MCP_CONFIG_ADMIN_TOKEN_ENV = "DEER_FLOW_MCP_CONFIG_ADMIN_TOKEN"
 _MCP_CONFIG_ALLOW_UNAUTH_ENV = "DEER_FLOW_MCP_CONFIG_ALLOW_UNAUTH"
+_MCP_HTTP_ALLOWED_HOSTS_ENV = "DEER_FLOW_MCP_HTTP_ALLOWED_HOSTS"
 _MCP_STDIO_ALLOWLIST_ENV = "DEER_FLOW_MCP_STDIO_COMMAND_ALLOWLIST"
 _DEFAULT_STDIO_COMMAND_ALLOWLIST = {"npx", "uvx"}
 _SENSITIVE_OAUTH_FIELDS = {"client_secret", "refresh_token"}
@@ -75,11 +78,23 @@ class McpConfigUpdateRequest(BaseModel):
 def _require_mcp_config_admin(authorization: str | None = Header(default=None)) -> None:
     """Require a static bearer token unless unauthenticated config admin is explicitly enabled."""
     expected_token = os.getenv(_MCP_CONFIG_ADMIN_TOKEN_ENV)
-    if expected_token and authorization == f"Bearer {expected_token}":
-        return
+    if expected_token:
+        token = _parse_bearer_token(authorization)
+        if token is not None and secrets.compare_digest(token, expected_token):
+            return
+        raise HTTPException(status_code=403, detail="MCP configuration admin token is required")
     if not expected_token and os.getenv(_MCP_CONFIG_ALLOW_UNAUTH_ENV, "").strip().lower() in {"1", "true", "yes", "on"}:
         return
     raise HTTPException(status_code=403, detail="MCP configuration admin token is required")
+
+
+def _parse_bearer_token(authorization: str | None) -> str | None:
+    if authorization is None:
+        return None
+    parts = authorization.strip().split()
+    if len(parts) != 2 or parts[0].lower() != "bearer":
+        return None
+    return parts[1]
 
 
 def _redact_mapping_values(values: dict[str, str]) -> dict[str, str]:
@@ -278,6 +293,40 @@ def _stdio_command_allowlist() -> set[str]:
     return {item.strip() for item in raw.split(",") if item.strip() and "/" not in item and "\\" not in item}
 
 
+def _http_allowed_hosts() -> set[str]:
+    raw = os.getenv(_MCP_HTTP_ALLOWED_HOSTS_ENV)
+    if raw is None:
+        return set()
+    return {item.strip().lower() for item in raw.split(",") if item.strip()}
+
+
+def _host_matches_allowed_pattern(hostname: str, pattern: str) -> bool:
+    if pattern == "*":
+        return True
+    if pattern.startswith("*."):
+        suffix = pattern[1:]
+        return hostname.endswith(suffix) and hostname != pattern[2:]
+    return hostname == pattern
+
+
+def _validate_http_url(name: str, url: str | None, *, field_name: str) -> None:
+    if not url:
+        raise HTTPException(status_code=400, detail=f"MCP server '{name}' {field_name} is required")
+    parsed = urlparse(url)
+    if parsed.scheme not in {"http", "https"} or not parsed.netloc or not parsed.hostname:
+        raise HTTPException(status_code=400, detail=f"MCP server '{name}' {field_name} must use http:// or https://")
+
+    allowed_hosts = _http_allowed_hosts()
+    if allowed_hosts:
+        hostname = parsed.hostname.lower()
+        if not any(_host_matches_allowed_pattern(hostname, pattern) for pattern in allowed_hosts):
+            allowed_text = ", ".join(sorted(allowed_hosts))
+            raise HTTPException(
+                status_code=400,
+                detail=f"MCP server '{name}' {field_name} host is not allowed: {hostname}. Allowed hosts: {allowed_text}",
+            )
+
+
 def _validate_mcp_server_config(name: str, server: McpServerConfigResponse) -> None:
     if server.type not in {"stdio", "sse", "http"}:
         raise HTTPException(status_code=400, detail=f"Unsupported MCP server type for '{name}': {server.type}")
@@ -298,12 +347,22 @@ def _validate_mcp_server_config(name: str, server: McpServerConfigResponse) -> N
                 status_code=400,
                 detail=f"MCP stdio command for '{name}' is not allowed: {command_name}. Allowed commands: {allowed_text}",
             )
+        if server.oauth is not None:
+            raise HTTPException(status_code=400, detail=f"MCP stdio server '{name}' does not support OAuth configuration")
         return
 
-    if not server.url:
-        raise HTTPException(status_code=400, detail=f"MCP {server.type} server '{name}' requires a url")
-    if not (server.url.startswith("http://") or server.url.startswith("https://")):
-        raise HTTPException(status_code=400, detail=f"MCP server '{name}' url must use http:// or https://")
+    _validate_http_url(name, server.url, field_name="url")
+
+    if server.oauth is not None:
+        if server.oauth.enabled:
+            _validate_http_url(name, server.oauth.token_url, field_name="oauth.token_url")
+
+
+def _validate_extensions_config_data(config_data: dict) -> None:
+    try:
+        ExtensionsConfig.model_validate(config_data)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Invalid MCP configuration: {e}") from e
 
 
 def _write_json_atomic(config_path: Path, config_data: dict) -> None:
@@ -340,7 +399,7 @@ async def get_mcp_configuration() -> McpConfigResponse:
                     "enabled": true,
                     "command": "npx",
                     "args": ["-y", "@modelcontextprotocol/server-github"],
-                    "env": {"GITHUB_TOKEN": "ghp_xxx"},
+                    "env": {"GITHUB_TOKEN": "********"},
                     "description": "GitHub MCP server for repository operations"
                 }
             }
@@ -413,6 +472,7 @@ async def update_mcp_configuration(request: McpConfigUpdateRequest) -> McpConfig
             "skills": {name: {"enabled": skill.enabled} for name, skill in current_config.skills.items()},
         }
         _restore_redacted_mcp_values(config_data, existing_raw_config)
+        _validate_extensions_config_data(config_data)
 
         # Write the configuration to file
         _write_json_atomic(config_path, config_data)
