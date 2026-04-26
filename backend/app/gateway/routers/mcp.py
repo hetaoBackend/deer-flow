@@ -110,10 +110,7 @@ def _server_response_payload(server) -> dict:
 
 def _build_mcp_config_response(config) -> McpConfigResponse:
     return McpConfigResponse(
-        mcp_servers={
-            name: McpServerConfigResponse(**_server_response_payload(server))
-            for name, server in config.mcp_servers.items()
-        },
+        mcp_servers={name: McpServerConfigResponse(**_server_response_payload(server)) for name, server in config.mcp_servers.items()},
     )
 
 
