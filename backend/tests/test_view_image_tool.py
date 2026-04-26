@@ -118,6 +118,30 @@ def test_view_image_rejects_oversized_image(tmp_path: Path, monkeypatch: pytest.
     assert "viewed_images" not in result.update
 
 
+def test_view_image_sanitizes_read_errors(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    thread_data = _make_thread_data(tmp_path)
+    image_path = Path(thread_data["uploads_path"]) / "sample.png"
+    image_path.write_bytes(PNG_BYTES)
+
+    def _open(*args, **kwargs):
+        raise PermissionError(f"permission denied: {image_path}")
+
+    monkeypatch.setattr("builtins.open", _open)
+
+    result = view_image_tool.func(
+        runtime=_make_runtime(thread_data),
+        image_path="/mnt/user-data/uploads/sample.png",
+        tool_call_id="tc-read-error",
+    )
+
+    message = _message_content(result)
+    assert "Error reading image file" in message
+    assert str(image_path) not in message
+    assert str(Path(thread_data["uploads_path"])) not in message
+    assert "/mnt/user-data/uploads/sample.png" in message
+    assert "viewed_images" not in result.update
+
+
 @pytest.mark.skipif(os.name == "nt", reason="symlink semantics differ on Windows")
 def test_view_image_rejects_uploads_symlink_escape(tmp_path: Path) -> None:
     thread_data = _make_thread_data(tmp_path)

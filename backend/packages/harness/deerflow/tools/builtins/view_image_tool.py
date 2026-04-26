@@ -8,7 +8,7 @@ from langchain_core.messages import ToolMessage
 from langgraph.types import Command
 from langgraph.typing import ContextT
 
-from deerflow.agents.thread_state import ThreadState
+from deerflow.agents.thread_state import ThreadDataState, ThreadState
 from deerflow.config.paths import VIRTUAL_PATH_PREFIX
 
 _ALLOWED_IMAGE_VIRTUAL_ROOTS = (
@@ -40,6 +40,12 @@ def _detect_image_mime(image_data: bytes) -> str | None:
     return None
 
 
+def _sanitize_image_error(error: Exception, thread_data: ThreadDataState | None) -> str:
+    from deerflow.sandbox.tools import mask_local_paths_in_output
+
+    return mask_local_paths_in_output(f"{type(error).__name__}: {error}", thread_data)
+
+
 @tool("view_image", parse_docstring=True)
 def view_image_tool(
     runtime: ToolRuntime[ContextT, ThreadState],
@@ -62,8 +68,8 @@ def view_image_tool(
     """
     from deerflow.sandbox.exceptions import SandboxRuntimeError
     from deerflow.sandbox.tools import (
-        _resolve_and_validate_user_data_path,
         get_thread_data,
+        resolve_and_validate_user_data_path,
         validate_local_tool_path,
     )
 
@@ -83,7 +89,7 @@ def view_image_tool(
 
     try:
         validate_local_tool_path(image_path, thread_data, read_only=True)
-        actual_path = _resolve_and_validate_user_data_path(image_path, thread_data)
+        actual_path = resolve_and_validate_user_data_path(image_path, thread_data)
     except (PermissionError, SandboxRuntimeError) as e:
         return Command(
             update={"messages": [ToolMessage(f"Error: {str(e)}", tool_call_id=tool_call_id)]},
@@ -119,7 +125,7 @@ def view_image_tool(
         image_size = path.stat().st_size
     except OSError as e:
         return Command(
-            update={"messages": [ToolMessage(f"Error reading image metadata: {str(e)}", tool_call_id=tool_call_id)]},
+            update={"messages": [ToolMessage(f"Error reading image metadata: {_sanitize_image_error(e, thread_data)}", tool_call_id=tool_call_id)]},
         )
     if image_size > _MAX_IMAGE_BYTES:
         return Command(
@@ -132,7 +138,7 @@ def view_image_tool(
             image_data = f.read()
     except Exception as e:
         return Command(
-            update={"messages": [ToolMessage(f"Error reading image file: {str(e)}", tool_call_id=tool_call_id)]},
+            update={"messages": [ToolMessage(f"Error reading image file: {_sanitize_image_error(e, thread_data)}", tool_call_id=tool_call_id)]},
         )
 
     detected_mime_type = _detect_image_mime(image_data)
