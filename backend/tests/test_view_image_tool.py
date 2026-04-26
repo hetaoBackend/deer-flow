@@ -1,4 +1,5 @@
 import base64
+import importlib
 import os
 from pathlib import Path
 from types import SimpleNamespace
@@ -6,6 +7,8 @@ from types import SimpleNamespace
 import pytest
 
 from deerflow.tools.builtins.view_image_tool import view_image_tool
+
+view_image_module = importlib.import_module("deerflow.tools.builtins.view_image_tool")
 
 PNG_BYTES = base64.b64decode(
     "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
@@ -69,6 +72,52 @@ def test_view_image_reads_virtual_uploads_path(tmp_path: Path) -> None:
     viewed_image = result.update["viewed_images"]["/mnt/user-data/uploads/sample.png"]
     assert viewed_image["base64"] == base64.b64encode(PNG_BYTES).decode("utf-8")
     assert viewed_image["mime_type"] == "image/png"
+
+
+def test_view_image_rejects_spoofed_extension(tmp_path: Path) -> None:
+    thread_data = _make_thread_data(tmp_path)
+    image_path = Path(thread_data["uploads_path"]) / "not-really.png"
+    image_path.write_bytes(b"not an image")
+
+    result = view_image_tool.func(
+        runtime=_make_runtime(thread_data),
+        image_path="/mnt/user-data/uploads/not-really.png",
+        tool_call_id="tc-spoofed",
+    )
+
+    assert "contents do not match" in _message_content(result)
+    assert "viewed_images" not in result.update
+
+
+def test_view_image_rejects_mismatched_magic_bytes(tmp_path: Path) -> None:
+    thread_data = _make_thread_data(tmp_path)
+    image_path = Path(thread_data["uploads_path"]) / "jpeg-named-png.png"
+    image_path.write_bytes(b"\xff\xd8\xff\xe0fake-jpeg")
+
+    result = view_image_tool.func(
+        runtime=_make_runtime(thread_data),
+        image_path="/mnt/user-data/uploads/jpeg-named-png.png",
+        tool_call_id="tc-mismatch",
+    )
+
+    assert "file extension indicates image/png" in _message_content(result)
+    assert "viewed_images" not in result.update
+
+
+def test_view_image_rejects_oversized_image(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    thread_data = _make_thread_data(tmp_path)
+    image_path = Path(thread_data["uploads_path"]) / "sample.png"
+    image_path.write_bytes(PNG_BYTES)
+    monkeypatch.setattr(view_image_module, "_MAX_IMAGE_BYTES", len(PNG_BYTES) - 1)
+
+    result = view_image_tool.func(
+        runtime=_make_runtime(thread_data),
+        image_path="/mnt/user-data/uploads/sample.png",
+        tool_call_id="tc-oversized",
+    )
+
+    assert "Image file is too large" in _message_content(result)
+    assert "viewed_images" not in result.update
 
 
 @pytest.mark.skipif(os.name == "nt", reason="symlink semantics differ on Windows")

@@ -17,6 +17,13 @@ _ALLOWED_IMAGE_VIRTUAL_ROOTS = (
     f"{VIRTUAL_PATH_PREFIX}/outputs",
 )
 _ALLOWED_IMAGE_VIRTUAL_ROOTS_TEXT = ", ".join(_ALLOWED_IMAGE_VIRTUAL_ROOTS)
+_MAX_IMAGE_BYTES = 20 * 1024 * 1024
+_EXTENSION_TO_MIME = {
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".png": "image/png",
+    ".webp": "image/webp",
+}
 
 
 def _is_allowed_image_virtual_path(image_path: str) -> bool:
@@ -24,6 +31,16 @@ def _is_allowed_image_virtual_path(image_path: str) -> bool:
         image_path == root or image_path.startswith(f"{root}/")
         for root in _ALLOWED_IMAGE_VIRTUAL_ROOTS
     )
+
+
+def _detect_image_mime(image_data: bytes) -> str | None:
+    if image_data.startswith(b"\xff\xd8\xff"):
+        return "image/jpeg"
+    if image_data.startswith(b"\x89PNG\r\n\x1a\n"):
+        return "image/png"
+    if len(image_data) >= 12 and image_data.startswith(b"RIFF") and image_data[8:12] == b"WEBP":
+        return "image/webp"
+    return None
 
 
 @tool("view_image", parse_docstring=True)
@@ -90,33 +107,48 @@ def view_image_tool(
         )
 
     # Validate image extension
-    valid_extensions = {".jpg", ".jpeg", ".png", ".webp"}
-    if path.suffix.lower() not in valid_extensions:
+    expected_mime_type = _EXTENSION_TO_MIME.get(path.suffix.lower())
+    if expected_mime_type is None:
         return Command(
-            update={"messages": [ToolMessage(f"Error: Unsupported image format: {path.suffix}. Supported formats: {', '.join(valid_extensions)}", tool_call_id=tool_call_id)]},
+            update={"messages": [ToolMessage(f"Error: Unsupported image format: {path.suffix}. Supported formats: {', '.join(_EXTENSION_TO_MIME)}", tool_call_id=tool_call_id)]},
         )
 
     # Detect MIME type from file extension
     mime_type, _ = mimetypes.guess_type(actual_path)
     if mime_type is None:
-        # Fallback to default MIME types for common image formats
-        extension_to_mime = {
-            ".jpg": "image/jpeg",
-            ".jpeg": "image/jpeg",
-            ".png": "image/png",
-            ".webp": "image/webp",
-        }
-        mime_type = extension_to_mime.get(path.suffix.lower(), "application/octet-stream")
+        mime_type = expected_mime_type
+
+    try:
+        image_size = path.stat().st_size
+    except OSError as e:
+        return Command(
+            update={"messages": [ToolMessage(f"Error reading image metadata: {str(e)}", tool_call_id=tool_call_id)]},
+        )
+    if image_size > _MAX_IMAGE_BYTES:
+        return Command(
+            update={"messages": [ToolMessage(f"Error: Image file is too large: {image_size} bytes. Maximum supported size is {_MAX_IMAGE_BYTES} bytes", tool_call_id=tool_call_id)]},
+        )
 
     # Read image file and convert to base64
     try:
         with open(actual_path, "rb") as f:
             image_data = f.read()
-            image_base64 = base64.b64encode(image_data).decode("utf-8")
     except Exception as e:
         return Command(
             update={"messages": [ToolMessage(f"Error reading image file: {str(e)}", tool_call_id=tool_call_id)]},
         )
+
+    detected_mime_type = _detect_image_mime(image_data)
+    if detected_mime_type is None:
+        return Command(
+            update={"messages": [ToolMessage("Error: File contents do not match a supported image format", tool_call_id=tool_call_id)]},
+        )
+    if detected_mime_type != expected_mime_type:
+        return Command(
+            update={"messages": [ToolMessage(f"Error: Image contents are {detected_mime_type}, but file extension indicates {expected_mime_type}", tool_call_id=tool_call_id)]},
+        )
+    mime_type = detected_mime_type
+    image_base64 = base64.b64encode(image_data).decode("utf-8")
 
     # Update viewed_images in state
     # The merge_viewed_images reducer will handle merging with existing images
