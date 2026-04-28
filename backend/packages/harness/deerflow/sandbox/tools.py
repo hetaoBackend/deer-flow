@@ -587,7 +587,7 @@ def validate_local_tool_path(path: str, thread_data: ThreadDataState | None, *, 
     This function is a security gate — it checks whether *path* may be
     accessed and raises on violation.  It does **not** resolve the virtual
     path to a host path; callers are responsible for resolution via
-    ``_resolve_and_validate_user_data_path`` or ``_resolve_skills_path``.
+    ``resolve_and_validate_user_data_path`` or ``_resolve_skills_path``.
 
     Allowed virtual-path families:
       - ``/mnt/user-data/*``  — always allowed (read + write)
@@ -880,6 +880,9 @@ def _validate_local_bash_shell_tokens(command: str, allowed_paths: list[str]) ->
         target, next_index = _next_cd_target(tokens, index + 1)
         _validate_local_bash_cwd_target(command_name, target, allowed_paths)
         index = next_index
+def resolve_and_validate_user_data_path(path: str, thread_data: ThreadDataState) -> str:
+    """Resolve a /mnt/user-data virtual path and validate it stays in bounds."""
+    return _resolve_and_validate_user_data_path(path, thread_data)
 
 
 def validate_local_bash_command_paths(command: str, thread_data: ThreadDataState | None) -> None:
