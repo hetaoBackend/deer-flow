@@ -881,6 +881,7 @@ def _validate_local_bash_shell_tokens(command: str, allowed_paths: list[str]) ->
         _validate_local_bash_cwd_target(command_name, target, allowed_paths)
         index = next_index
 
+
 def resolve_and_validate_user_data_path(path: str, thread_data: ThreadDataState) -> str:
     """Resolve a /mnt/user-data virtual path and validate it stays in bounds."""
     return _resolve_and_validate_user_data_path(path, thread_data)
